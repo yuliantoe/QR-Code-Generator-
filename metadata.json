@@ -1,0 +1,6 @@
+{
+  "name": "DinamisQR - Generator QR Code Dinamis & Manajemen Tautan",
+  "description": "Platform generator QR code dinamis profesional. Ubah link tujuan kapan saja tanpa perlu mencetak ulang QR code fisik yang sudah tersebar.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

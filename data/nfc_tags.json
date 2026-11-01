@@ -1,0 +1,28 @@
+[
+  {
+    "id": "nfc-senopati",
+    "tagUid": "04:3A:82:1F:B4:71:80",
+    "placeName": "Kopi Kenangan Senopati",
+    "googleReviewUrl": "https://maps.app.goo.gl/kopi-kenangan-review",
+    "pin": "1234",
+    "status": "active",
+    "totalTaps": 429,
+    "lastTappedAt": "2026-10-28T10:24:11.661Z",
+    "notes": "Akrilik stand NFC di meja kasir utama",
+    "createdAt": "2026-10-13T10:23:46.189Z",
+    "updatedAt": "2026-10-28T08:23:46.189Z"
+  },
+  {
+    "id": "nfc-bukris",
+    "tagUid": "04:6B:91:2E:C5:82:80",
+    "placeName": "Warung Bu Kris Fatmawati",
+    "googleReviewUrl": "https://maps.app.goo.gl/warung-bukris-review",
+    "pin": "8888",
+    "status": "active",
+    "totalTaps": 892,
+    "lastTappedAt": "2026-10-28T06:23:46.189Z",
+    "notes": "Kartu tap NFC Google Review di kasir & resepsionis",
+    "createdAt": "2026-09-28T10:23:46.189Z",
+    "updatedAt": "2026-10-23T10:23:46.189Z"
+  }
+]

@@ -1,0 +1,123 @@
+[
+  {
+    "id": "qr-menu-resto",
+    "slug": "menu-resto",
+    "title": "Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)",
+    "targetUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop",
+    "status": "active",
+    "createdAt": "2026-09-28T10:11:47.903Z",
+    "updatedAt": "2026-10-28T07:11:47.903Z",
+    "tags": [
+      "Restoran",
+      "Meja Cetak",
+      "Buku Menu"
+    ],
+    "notes": "Dicetak di 25 stand akrilik meja. Saat pergantian musim atau promo baru, cukup ganti link tujuan di sini tanpa ganti akrilik.",
+    "totalScans": 842,
+    "lastScannedAt": "2026-10-28T09:53:47.903Z",
+    "urlHistory": [
+      {
+        "url": "https://example.com/menu-grand-opening-2026.pdf",
+        "changedAt": "2026-09-28T10:11:47.903Z",
+        "reason": "Menu Awal Grand Opening"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop",
+        "changedAt": "2026-10-28T07:11:47.903Z",
+        "reason": "Pembaruan Menu Baru Spesial Chef"
+      }
+    ],
+    "style": {
+      "fgColor": "#1e293b",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI UNTUK DAFTAR MENU",
+      "frameColor": "#0f172a",
+      "frameTextColor": "#ffffff",
+      "logoType": "preset",
+      "logo": "menu"
+    },
+    "utm": {
+      "source": "qr_meja_fisik",
+      "medium": "offline_print",
+      "campaign": "menu_pelanggan"
+    }
+  },
+  {
+    "id": "qr-kemasan-kopi",
+    "slug": "kopi-speciality",
+    "title": "Stiker Kemasan Kopi Robusta 250gr (5.000 Pcs Cetak)",
+    "targetUrl": "https://shopee.co.id",
+    "status": "active",
+    "createdAt": "2026-10-14T10:11:47.903Z",
+    "updatedAt": "2026-10-26T10:11:47.903Z",
+    "tags": [
+      "Packaging",
+      "Stiker Cetak",
+      "Shopee"
+    ],
+    "notes": "Stiker fisik sudah dicetak 5.000 pouch aluminium. Link tujuan diarahkan ke promo Shopee bulan ini.",
+    "totalScans": 1394,
+    "lastScannedAt": "2026-10-28T09:26:47.903Z",
+    "urlHistory": [
+      {
+        "url": "https://tokopedia.com",
+        "changedAt": "2026-10-14T10:11:47.903Z",
+        "reason": "Peluncuran batch 1"
+      },
+      {
+        "url": "https://shopee.co.id",
+        "changedAt": "2026-10-26T10:11:47.903Z",
+        "reason": "Dialihkan ke Toko Shopee Flash Sale"
+      }
+    ],
+    "style": {
+      "fgColor": "#78350f",
+      "bgColor": "#fffbeb",
+      "dotStyle": "dots",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "KLAIM PROMO PRODUK",
+      "frameColor": "#78350f",
+      "frameTextColor": "#ffffff",
+      "logoType": "preset",
+      "logo": "web"
+    }
+  },
+  {
+    "id": "qr-kartu-nama",
+    "slug": "budi-kartunama",
+    "title": "Kartu Nama Bisnis CEO (Cetak Kartu PVC Eksklusif)",
+    "targetUrl": "https://linkedin.com",
+    "status": "active",
+    "createdAt": "2026-08-29T10:11:47.904Z",
+    "updatedAt": "2026-10-18T10:11:47.904Z",
+    "tags": [
+      "Kartu Nama",
+      "Networking",
+      "PVC Card"
+    ],
+    "notes": "Dicetak di kartu nama fisik PVC. Bisa diubah ke portofolio, WhatsApp bisnis, atau LinkedIn kapan saja.",
+    "totalScans": 168,
+    "lastScannedAt": "2026-10-28T05:11:47.904Z",
+    "urlHistory": [
+      {
+        "url": "https://linkedin.com",
+        "changedAt": "2026-08-29T10:11:47.904Z",
+        "reason": "Profil awal"
+      }
+    ],
+    "style": {
+      "fgColor": "#09090b",
+      "bgColor": "#ffffff",
+      "dotStyle": "square",
+      "cornerStyle": "square",
+      "frameStyle": "none",
+      "frameColor": "#09090b",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  }
+]

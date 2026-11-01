@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #104F38;
+    background-color: #ffffff;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  code, kbd, samp, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Display & Section Headings */
+  h1, h2, h3, .font-display {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.025em;
+  }
+}
+
+/* Custom editorial & agency tokens matching image_210c7505 */
+.font-serif-italic {
+  font-family: 'Newsreader', 'Lora', Georgia, serif;
+  font-style: italic;
+}
+
+.text-forest {
+  color: #104F38;
+}
+
+.bg-forest {
+  background-color: #104F38;
+}
+
+.bg-canary {
+  background-color: #FFE600;
+}
+
+.text-canary-dark {
+  color: #104F38;
+}
+
+.bg-blush {
+  background-color: #FCD5CE;
+}
+
+.bg-lavender {
+  background-color: #B4B0FF;
+}
+
+.border-forest-subtle {
+  border-color: rgba(16, 79, 56, 0.15);
+}
+
+/* Architectural wireframe bracket borders */
+.wireframe-bracket-left {
+  position: relative;
+}
+.wireframe-bracket-left::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  border-top: 1.5px solid rgba(16, 79, 56, 0.4);
+  border-left: 1.5px solid rgba(16, 79, 56, 0.4);
+}
