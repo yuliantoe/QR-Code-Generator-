@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import type { DynamicQRCode, ScanRecord, QRAnalyticsSummary } from './src/types.ts';
+import { db } from './db.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,266 +14,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-const DATA_DIR = path.resolve(__dirname, 'data');
-const QR_FILE = path.resolve(DATA_DIR, 'qrcodes.json');
-const SCANS_FILE = path.resolve(DATA_DIR, 'scans.json');
-
-// Ensure data folder exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// Initial realistic seed data for Indonesian context
-const initialQRCodes: DynamicQRCode[] = [
-  {
-    id: 'qr-menu-resto',
-    code: 'QR-001',
-    slug: 'menu-resto',
-    title: 'Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)',
-    targetUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop',
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    tags: ['Restoran', 'Meja Cetak', 'Buku Menu'],
-    notes: 'Dicetak di 25 stand akrilik meja. Saat pergantian musim atau promo baru, cukup ganti link tujuan di sini tanpa ganti akrilik.',
-    totalScans: 842,
-    lastScannedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    urlHistory: [
-      {
-        url: 'https://example.com/menu-grand-opening-2026.pdf',
-        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-        reason: 'Menu Awal Grand Opening'
-      },
-      {
-        url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop',
-        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-        reason: 'Pembaruan Menu Baru Spesial Chef'
-      }
-    ],
-    style: {
-      fgColor: '#1e293b',
-      bgColor: '#ffffff',
-      dotStyle: 'rounded',
-      cornerStyle: 'rounded',
-      frameStyle: 'bottom-banner',
-      frameText: 'PINDAI UNTUK DAFTAR MENU',
-      frameColor: '#0f172a',
-      frameTextColor: '#ffffff',
-      logoType: 'preset',
-      logo: 'menu'
-    },
-    utm: {
-      source: 'qr_meja_fisik',
-      medium: 'offline_print',
-      campaign: 'menu_pelanggan'
-    }
-  },
-  {
-    id: 'qr-kemasan-kopi',
-    code: 'QR-002',
-    slug: 'kopi-speciality',
-    title: 'Stiker Kemasan Kopi Robusta 250gr (5.000 Pcs Cetak)',
-    targetUrl: 'https://shopee.co.id',
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    tags: ['Packaging', 'Stiker Cetak', 'Shopee'],
-    notes: 'Stiker fisik sudah dicetak 5.000 pouch aluminium. Link tujuan diarahkan ke promo Shopee bulan ini.',
-    totalScans: 1394,
-    lastScannedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    urlHistory: [
-      {
-        url: 'https://tokopedia.com',
-        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
-        reason: 'Peluncuran batch 1'
-      },
-      {
-        url: 'https://shopee.co.id',
-        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-        reason: 'Dialihkan ke Toko Shopee Flash Sale'
-      }
-    ],
-    style: {
-      fgColor: '#78350f',
-      bgColor: '#fffbeb',
-      dotStyle: 'dots',
-      cornerStyle: 'rounded',
-      frameStyle: 'bottom-banner',
-      frameText: 'KLAIM PROMO PRODUK',
-      frameColor: '#78350f',
-      frameTextColor: '#ffffff',
-      logoType: 'preset',
-      logo: 'web'
-    }
-  },
-  {
-    id: 'qr-kartu-nama',
-    code: 'QR-003',
-    slug: 'budi-kartunama',
-    title: 'Kartu Nama Bisnis CEO (Cetak Kartu PVC Eksklusif)',
-    targetUrl: 'https://linkedin.com',
-    status: 'active',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-    tags: ['Kartu Nama', 'Networking', 'PVC Card'],
-    notes: 'Dicetak di kartu nama fisik PVC. Bisa diubah ke portofolio, WhatsApp bisnis, atau LinkedIn kapan saja.',
-    totalScans: 168,
-    lastScannedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    urlHistory: [
-      {
-        url: 'https://linkedin.com',
-        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-        reason: 'Profil awal'
-      }
-    ],
-    style: {
-      fgColor: '#09090b',
-      bgColor: '#ffffff',
-      dotStyle: 'square',
-      cornerStyle: 'square',
-      frameStyle: 'none',
-      frameColor: '#09090b',
-      frameTextColor: '#ffffff',
-      logoType: 'none'
-    }
-  }
-];
-
-function loadQRCodes(): DynamicQRCode[] {
-  try {
-    if (fs.existsSync(QR_FILE)) {
-      const content = fs.readFileSync(QR_FILE, 'utf-8');
-      const items: DynamicQRCode[] = JSON.parse(content);
-      let modified = false;
-      items.forEach((item, idx) => {
-        if (!item.code || item.code.startsWith('QR-')) {
-          item.code = `QR ${(idx + 1).toString().padStart(3, '0')}`;
-          modified = true;
-        }
-      });
-      if (modified) {
-        saveQRCodes(items);
-      }
-      return items;
-    }
-  } catch (err) {
-    console.error('Failed to read qrcodes.json:', err);
-  }
-  saveQRCodes(initialQRCodes);
-  return initialQRCodes;
-}
-
-function saveQRCodes(items: DynamicQRCode[]): void {
-  try {
-    fs.writeFileSync(QR_FILE, JSON.stringify(items, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to save qrcodes.json:', err);
-  }
-}
-
-function loadScans(): ScanRecord[] {
-  try {
-    if (fs.existsSync(SCANS_FILE)) {
-      const content = fs.readFileSync(SCANS_FILE, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Failed to read scans.json:', err);
-  }
-  return [];
-}
-
-function saveScans(scans: ScanRecord[]): void {
-  try {
-    // Keep last 2,000 scans
-    const trimmed = scans.slice(-2000);
-    fs.writeFileSync(SCANS_FILE, JSON.stringify(trimmed, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to save scans.json:', err);
-  }
-}
-
-const USERS_FILE = path.resolve(DATA_DIR, 'users.json');
-const defaultUsers = [
-  {
-    username: 'admin',
-    password: 'admin123',
-    name: 'Administrator'
-  }
-];
-
-function loadUsers() {
-  try {
-    if (fs.existsSync(USERS_FILE)) {
-      const content = fs.readFileSync(USERS_FILE, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Failed to read users.json:', err);
-  }
-  saveUsers(defaultUsers);
-  return defaultUsers;
-}
-
-function saveUsers(users: any[]) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to save users.json:', err);
-  }
-}
-
-const NFC_FILE = path.resolve(DATA_DIR, 'nfc_tags.json');
-const initialNFCTags: any[] = [
-  {
-    id: 'nfc-senopati',
-    tagUid: '04:3A:82:1F:B4:71:80',
-    placeName: 'Kopi Kenangan Senopati',
-    googleReviewUrl: 'https://maps.app.goo.gl/kopi-kenangan-review',
-    pin: '1234',
-    status: 'active',
-    totalTaps: 428,
-    lastTappedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-    notes: 'Akrilik stand NFC di meja kasir utama',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-  },
-  {
-    id: 'nfc-bukris',
-    tagUid: '04:6B:91:2E:C5:82:80',
-    placeName: 'Warung Bu Kris Fatmawati',
-    googleReviewUrl: 'https://maps.app.goo.gl/warung-bukris-review',
-    pin: '8888',
-    status: 'active',
-    totalTaps: 892,
-    lastTappedAt: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    notes: 'Kartu tap NFC Google Review di kasir & resepsionis',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
-  }
-];
-
-function loadNFCTags(): any[] {
-  try {
-    if (fs.existsSync(NFC_FILE)) {
-      const content = fs.readFileSync(NFC_FILE, 'utf-8');
-      return JSON.parse(content);
-    }
-  } catch (err) {
-    console.error('Failed to read nfc_tags.json:', err);
-  }
-  saveNFCTags(initialNFCTags);
-  return initialNFCTags;
-}
-
-function saveNFCTags(tags: any[]) {
-  try {
-    fs.writeFileSync(NFC_FILE, JSON.stringify(tags, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to save nfc_tags.json:', err);
-  }
-}
-
+// Helper: Parse user agent for device and browser stats
 function parseUserAgent(uaString: string | undefined): { device: 'mobile' | 'desktop' | 'tablet' | 'unknown'; os: string; browser: string } {
   const ua = uaString || '';
   let device: 'mobile' | 'desktop' | 'tablet' | 'unknown' = 'desktop';
@@ -305,10 +46,9 @@ function parseUserAgent(uaString: string | undefined): { device: 'mobile' | 'des
 // DYNAMIC REDIRECT HANDLER: GET /r/:slug
 // This is what physical printed QR codes point to!
 // ==========================================
-app.get('/r/:slug', (req: Request, res: Response) => {
+app.get('/r/:slug', async (req: Request, res: Response) => {
   const { slug } = req.params;
-  const qrcodes = loadQRCodes();
-  const qr = qrcodes.find(item => item.slug.toLowerCase() === slug.toLowerCase() || item.id === slug);
+  const qr = await db.getQRCodeBySlug(slug);
 
   if (!qr) {
     return res.status(404).send(`
@@ -324,16 +64,15 @@ app.get('/r/:slug', (req: Request, res: Response) => {
           .icon { font-size: 48px; margin-bottom: 16px; }
           h1 { font-size: 20px; font-weight: 700; margin: 0 0 10px; color: #0f172a; }
           p { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0 0 24px; }
-          .code { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 13px; }
-          a { display: inline-block; background: #0f172a; color: white; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
+          a { display: inline-block; background: #0f172a; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; }
         </style>
       </head>
       <body>
         <div class="card">
           <div class="icon">🔍</div>
           <h1>QR Code Tidak Ditemukan</h1>
-          <p>Tautan dengan kode <span class="code">${slug}</span> tidak terdaftar atau telah dinonaktifkan oleh pemilik.</p>
-          <a href="/">Buka Dashboard Generator</a>
+          <p>Tautan dinamis <code>/r/${slug}</code> belum terdaftar atau telah dinonaktifkan oleh pemilik.</p>
+          <a href="/">Kembali ke Dashboard</a>
         </div>
       </body>
       </html>
@@ -444,9 +183,8 @@ app.get('/r/:slug', (req: Request, res: Response) => {
   const nowIso = new Date().toISOString();
   qr.totalScans = (qr.totalScans || 0) + 1;
   qr.lastScannedAt = nowIso;
-  saveQRCodes(qrcodes);
+  await db.saveQRCode(qr);
 
-  const scans = loadScans();
   const scanRecord: ScanRecord = {
     id: 'scan-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
     qrId: qr.id,
@@ -454,26 +192,27 @@ app.get('/r/:slug', (req: Request, res: Response) => {
     device,
     os,
     browser,
-    referer: referer.length > 100 ? referer.substring(0, 100) + '...' : referer
+    referer
   };
-  scans.push(scanRecord);
-  saveScans(scans);
+  await db.addScan(scanRecord);
 
-  // Construct final redirect URL with UTM if present
-  let destinationUrl = qr.targetUrl;
-  if (!destinationUrl.startsWith('http://') && !destinationUrl.startsWith('https://')) {
-    destinationUrl = 'https://' + destinationUrl;
-  }
-
+  // Construct destination URL with UTM params if configured
+  let destinationUrl = qr.targetUrl.trim();
   if (qr.utm && (qr.utm.source || qr.utm.medium || qr.utm.campaign)) {
     try {
       const urlObj = new URL(destinationUrl);
-      if (qr.utm.source) urlObj.searchParams.set('utm_source', qr.utm.source);
-      if (qr.utm.medium) urlObj.searchParams.set('utm_medium', qr.utm.medium);
-      if (qr.utm.campaign) urlObj.searchParams.set('utm_campaign', qr.utm.campaign);
+      if (qr.utm.source && !urlObj.searchParams.has('utm_source')) {
+        urlObj.searchParams.set('utm_source', qr.utm.source);
+      }
+      if (qr.utm.medium && !urlObj.searchParams.has('utm_medium')) {
+        urlObj.searchParams.set('utm_medium', qr.utm.medium);
+      }
+      if (qr.utm.campaign && !urlObj.searchParams.has('utm_campaign')) {
+        urlObj.searchParams.set('utm_campaign', qr.utm.campaign);
+      }
       destinationUrl = urlObj.toString();
     } catch {
-      // Keep destinationUrl as is if invalid URL structure
+      // Keep destinationUrl as is if parsing fails
     }
   }
 
@@ -490,10 +229,9 @@ app.get('/r/:slug', (req: Request, res: Response) => {
 // DYNAMIC NFC REDIRECT HANDLER: GET /nfc/:id
 // Physical NFC chips are programmed with this URL!
 // ==========================================
-app.get(['/nfc/:id', '/n/:id'], (req: Request, res: Response) => {
+app.get(['/nfc/:id', '/n/:id'], async (req: Request, res: Response) => {
   const { id } = req.params;
-  const tags = loadNFCTags();
-  const tag = tags.find((t: any) => t.id === id || t.tagUid === id || t.id.toLowerCase() === id.toLowerCase());
+  const tag = await db.getNFCTagById(id);
 
   if (!tag) {
     return res.status(404).send(`
@@ -554,7 +292,7 @@ app.get(['/nfc/:id', '/n/:id'], (req: Request, res: Response) => {
   // Increment total taps
   tag.totalTaps = (tag.totalTaps || 0) + 1;
   tag.lastTappedAt = new Date().toISOString();
-  saveNFCTags(tags);
+  await db.saveNFCTag(tag);
 
   let target = tag.googleReviewUrl.trim();
   if (!target.startsWith('http://') && !target.startsWith('https://')) {
@@ -573,14 +311,29 @@ app.get(['/nfc/:id', '/n/:id'], (req: Request, res: Response) => {
 // REST API ROUTES
 // ==========================================
 
+// Database Connection Status Check (Vercel Postgres Diagnostics)
+app.get('/api/db/status', async (_req: Request, res: Response) => {
+  try {
+    const status = await db.getStatus();
+    res.json({ success: true, status });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Database status check failed' });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 // Authentication: Login
-app.post('/api/auth/login', (req: Request, res: Response) => {
+app.post('/api/auth/login', async (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ success: false, error: 'Username dan password wajib diisi' });
   }
 
-  const users = loadUsers();
+  const users = await db.getUsers();
   const user = users.find(
     (u: any) => u.username.toLowerCase() === username.trim().toLowerCase()
   );
@@ -601,7 +354,7 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 });
 
 // Authentication: Current User
-app.get('/api/auth/me', (req: Request, res: Response) => {
+app.get('/api/auth/me', async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
@@ -612,7 +365,7 @@ app.get('/api/auth/me', (req: Request, res: Response) => {
     return res.status(401).json({ success: false, error: 'Token sesi tidak valid' });
   }
 
-  const users = loadUsers();
+  const users = await db.getUsers();
   const defaultAdmin = users[0] || { username: 'admin', name: 'Administrator' };
   return res.json({
     success: true,
@@ -629,7 +382,7 @@ app.post('/api/auth/logout', (_req: Request, res: Response) => {
 });
 
 // Authentication: Change Username and Password
-app.post('/api/auth/change-credentials', (req: Request, res: Response) => {
+app.post('/api/auth/change-credentials', async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
@@ -652,22 +405,20 @@ app.post('/api/auth/change-credentials', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Password baru minimal 4 karakter.' });
   }
 
-  const users = loadUsers();
+  const users = await db.getUsers();
   const user = users[0];
 
   if (!user || user.password !== currentPassword) {
     return res.status(401).json({ success: false, error: 'Password saat ini tidak sesuai.' });
   }
 
-  user.username = trimmedUsername;
-  user.password = newPassword;
-  saveUsers(users);
+  await db.updateUser(user.username, newPassword, trimmedUsername, user.name);
 
   return res.json({
     success: true,
     message: 'Username dan password berhasil diperbarui.',
     user: {
-      username: user.username,
+      username: trimmedUsername,
       name: user.name || 'Administrator'
     }
   });
@@ -678,8 +429,8 @@ app.post('/api/auth/change-credentials', (req: Request, res: Response) => {
 // ==========================================
 
 // List all NFC tags
-app.get('/api/nfc', (_req: Request, res: Response) => {
-  const tags = loadNFCTags();
+app.get('/api/nfc', async (_req: Request, res: Response) => {
+  const tags = await db.getNFCTags();
   res.json({ success: true, data: tags });
 });
 
@@ -736,7 +487,7 @@ app.get('/api/nfc/lookup-place', async (req: Request, res: Response) => {
 });
 
 // Activate or input new NFC tag
-app.post('/api/nfc/activate', (req: Request, res: Response) => {
+app.post('/api/nfc/activate', async (req: Request, res: Response) => {
   const { placeName, googleReviewUrl, pin, tagUid, notes } = req.body;
 
   if (!placeName || !googleReviewUrl || !pin) {
@@ -746,7 +497,7 @@ app.post('/api/nfc/activate', (req: Request, res: Response) => {
     });
   }
 
-  const tags = loadNFCTags();
+  const tags = await db.getNFCTags();
   const now = new Date().toISOString();
 
   let cleanId = 'nfc-' + placeName
@@ -791,8 +542,7 @@ app.post('/api/nfc/activate', (req: Request, res: Response) => {
     updatedAt: now
   };
 
-  tags.unshift(newTag);
-  saveNFCTags(tags);
+  await db.saveNFCTag(newTag);
 
   res.status(201).json({
     success: true,
@@ -803,18 +553,14 @@ app.post('/api/nfc/activate', (req: Request, res: Response) => {
 });
 
 // Update NFC tag (requires PIN verification)
-app.put('/api/nfc/:id', (req: Request, res: Response) => {
+app.put('/api/nfc/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { placeName, googleReviewUrl, pin, newPin, status, notes } = req.body;
 
-  const tags = loadNFCTags();
-  const index = tags.findIndex((t: any) => t.id === id);
-
-  if (index === -1) {
+  const tag = await db.getNFCTagById(id);
+  if (!tag) {
     return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
   }
-
-  const tag = tags[index];
 
   // Verify PIN
   if (pin && String(pin).trim() !== String(tag.pin).trim()) {
@@ -831,8 +577,7 @@ app.put('/api/nfc/:id', (req: Request, res: Response) => {
   if (notes !== undefined) tag.notes = notes;
   tag.updatedAt = new Date().toISOString();
 
-  tags[index] = tag;
-  saveNFCTags(tags);
+  await db.saveNFCTag(tag);
 
   res.json({
     success: true,
@@ -842,11 +587,10 @@ app.put('/api/nfc/:id', (req: Request, res: Response) => {
 });
 
 // Delete NFC tag (with PIN verification)
-app.delete('/api/nfc/:id', (req: Request, res: Response) => {
+app.delete('/api/nfc/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { pin } = req.body;
-  let tags = loadNFCTags();
-  const tag = tags.find((t: any) => t.id === id);
+  const tag = await db.getNFCTagById(id);
 
   if (!tag) {
     return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
@@ -856,17 +600,14 @@ app.delete('/api/nfc/:id', (req: Request, res: Response) => {
     return res.status(403).json({ success: false, error: 'PIN NFC Tag salah.' });
   }
 
-  tags = tags.filter((t: any) => t.id !== id);
-  saveNFCTags(tags);
-
+  await db.deleteNFCTag(id);
   res.json({ success: true, message: 'Tag NFC berhasil dihapus' });
 });
 
 // Test tap simulation
-app.post('/api/nfc/:id/test-tap', (req: Request, res: Response) => {
+app.post('/api/nfc/:id/test-tap', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const tags = loadNFCTags();
-  const tag = tags.find((t: any) => t.id === id);
+  const tag = await db.getNFCTagById(id);
 
   if (!tag) {
     return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
@@ -874,7 +615,7 @@ app.post('/api/nfc/:id/test-tap', (req: Request, res: Response) => {
 
   tag.totalTaps = (tag.totalTaps || 0) + 1;
   tag.lastTappedAt = new Date().toISOString();
-  saveNFCTags(tags);
+  await db.saveNFCTag(tag);
 
   res.json({
     success: true,
@@ -884,26 +625,22 @@ app.post('/api/nfc/:id/test-tap', (req: Request, res: Response) => {
   });
 });
 
-
 // Batch create QR codes (5, 10, or 15 at once)
-app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
+app.post('/api/qrcodes/batch', async (req: Request, res: Response) => {
   try {
     const { baseTitle, baseTargetUrl, count = 5, style, baseSlug, notes } = req.body;
 
     const batchCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), 30);
-    const qrcodes = loadQRCodes();
+    const qrcodes = await db.getQRCodes();
     const now = new Date().toISOString();
 
-    // Default title if empty
     const safeTitle = (baseTitle && String(baseTitle).trim()) ? String(baseTitle).trim() : 'Meja Restoran';
 
-    // Ensure valid targetUrl (fallback to default review/google URL if not provided)
     let finalTarget = (baseTargetUrl && String(baseTargetUrl).trim()) ? String(baseTargetUrl).trim() : 'https://google.com';
     if (!finalTarget.startsWith('http://') && !finalTarget.startsWith('https://')) {
       finalTarget = 'https://' + finalTarget;
     }
 
-    // Determine the starting sequence number from maximum existing QR code
     let maxExistingNum = 0;
     for (const q of qrcodes) {
       if (q.code) {
@@ -935,7 +672,6 @@ app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
       const pad = i.toString().padStart(2, '0');
       const itemTitle = `${safeTitle} #${pad}`;
 
-      // Unique slug
       let itemSlug = `${cleanBase}-${pad}`;
       let counter = 1;
       while (
@@ -950,7 +686,7 @@ app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
       const autoCode = `QR ${seqNum.toString().padStart(3, '0')}`;
 
       const newQR: DynamicQRCode = {
-        id: 'qr-' + Date.now() + '-' + i + '-' + Math.random().toString(36).substring(2, 6),
+        id: `qr-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
         code: autoCode,
         slug: itemSlug,
         title: itemTitle,
@@ -958,21 +694,18 @@ app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
         status: 'active',
         createdAt: now,
         updatedAt: now,
-        tags: ['Batch', `Meja ${pad}`],
-        notes: notes || `Dibuat serentak dalam batch (${batchCount} item)`,
+        tags: ['Batch Stand', safeTitle],
+        notes: notes || `Dibuat serentak batch ${batchCount} pcs stand meja.`,
         totalScans: 0,
         lastScannedAt: null,
         urlHistory: [
           {
             url: finalTarget,
             changedAt: now,
-            reason: 'Tautan Awal Dibuat (Batch)'
+            reason: `Batch generate ${batchCount} item`
           }
         ],
-        style: style ? {
-          ...style,
-          frameText: style.frameText ? `${style.frameText} #${pad}` : undefined
-        } : {
+        style: style || {
           fgColor: '#104F38',
           bgColor: '#ffffff',
           dotStyle: 'rounded',
@@ -988,8 +721,7 @@ app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
       createdItems.push(newQR);
     }
 
-    qrcodes.unshift(...createdItems);
-    saveQRCodes(qrcodes);
+    await db.saveBatchQRCodes(createdItems);
 
     return res.status(201).json({
       success: true,
@@ -1007,16 +739,15 @@ app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
 });
 
 // List all QR codes
-app.get('/api/qrcodes', (req: Request, res: Response) => {
-  const qrcodes = loadQRCodes();
+app.get('/api/qrcodes', async (_req: Request, res: Response) => {
+  const qrcodes = await db.getQRCodes();
   res.json({ success: true, data: qrcodes });
 });
 
 // Get single QR code
-app.get('/api/qrcodes/:id', (req: Request, res: Response) => {
+app.get('/api/qrcodes/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const qrcodes = loadQRCodes();
-  const qr = qrcodes.find(item => item.id === id || item.slug === id);
+  const qr = await db.getQRCodeById(id);
   if (!qr) {
     return res.status(404).json({ success: false, error: 'QR Code not found' });
   }
@@ -1024,17 +755,16 @@ app.get('/api/qrcodes/:id', (req: Request, res: Response) => {
 });
 
 // Create new dynamic QR code
-app.post('/api/qrcodes', (req: Request, res: Response) => {
+app.post('/api/qrcodes', async (req: Request, res: Response) => {
   const { title, targetUrl, slug, code, tags, notes, style, password, expiryDate, utm } = req.body;
 
   if (!title || !targetUrl) {
     return res.status(400).json({ success: false, error: 'Judul dan URL tujuan wajib diisi' });
   }
 
-  const qrcodes = loadQRCodes();
+  const qrcodes = await db.getQRCodes();
   const autoCode = code?.trim() || `QR ${(qrcodes.length + 1).toString().padStart(3, '0')}`;
 
-  // Create clean unique slug
   let generatedSlug = (slug || autoCode || title)
     .toLowerCase()
     .trim()
@@ -1043,10 +773,9 @@ app.post('/api/qrcodes', (req: Request, res: Response) => {
     .replace(/^-|-$/g, '');
 
   if (!generatedSlug || generatedSlug.length < 3) {
-    generatedSlug = autoCode.toLowerCase();
+    generatedSlug = autoCode.toLowerCase().replace(/\s+/g, '-');
   }
 
-  // Ensure slug uniqueness
   let finalSlug = generatedSlug;
   let counter = 1;
   while (qrcodes.some(item => item.slug.toLowerCase() === finalSlug.toLowerCase())) {
@@ -1091,25 +820,22 @@ app.post('/api/qrcodes', (req: Request, res: Response) => {
     utm: utm || undefined
   };
 
-  qrcodes.unshift(newQR);
-  saveQRCodes(qrcodes);
+  await db.saveQRCode(newQR);
 
   res.status(201).json({ success: true, data: newQR });
 });
 
-// Update dynamic QR code (The core feature: update target URL!)
-app.put('/api/qrcodes/:id', (req: Request, res: Response) => {
+// Update dynamic QR code (update target URL or properties)
+app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { title, targetUrl, status, tags, notes, style, password, expiryDate, utm, reason } = req.body;
 
-  const qrcodes = loadQRCodes();
-  const index = qrcodes.findIndex(item => item.id === id);
+  const current = await db.getQRCodeById(id);
 
-  if (index === -1) {
+  if (!current) {
     return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
   }
 
-  const current = qrcodes[index];
   const now = new Date().toISOString();
   let urlChanged = false;
 
@@ -1133,8 +859,7 @@ app.put('/api/qrcodes/:id', (req: Request, res: Response) => {
   if (utm !== undefined) current.utm = utm;
   current.updatedAt = now;
 
-  qrcodes[index] = current;
-  saveQRCodes(qrcodes);
+  await db.saveQRCode(current);
 
   res.json({
     success: true,
@@ -1146,31 +871,25 @@ app.put('/api/qrcodes/:id', (req: Request, res: Response) => {
 });
 
 // Delete QR code
-app.delete('/api/qrcodes/:id', (req: Request, res: Response) => {
+app.delete('/api/qrcodes/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  let qrcodes = loadQRCodes();
-  const exists = qrcodes.some(item => item.id === id);
-  if (!exists) {
+  const success = await db.deleteQRCode(id);
+  if (!success) {
     return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
   }
-
-  qrcodes = qrcodes.filter(item => item.id !== id);
-  saveQRCodes(qrcodes);
-
   res.json({ success: true, message: 'QR Code berhasil dihapus' });
 });
 
 // Analytics for a specific QR code
-app.get('/api/qrcodes/:id/analytics', (req: Request, res: Response) => {
+app.get('/api/qrcodes/:id/analytics', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const qrcodes = loadQRCodes();
-  const qr = qrcodes.find(item => item.id === id);
+  const qr = await db.getQRCodeById(id);
 
   if (!qr) {
     return res.status(404).json({ success: false, error: 'QR Code not found' });
   }
 
-  const allScans = loadScans();
+  const allScans = await db.getScans();
   const qrScans = allScans.filter(s => s.qrId === qr.id);
 
   const now = new Date();
@@ -1179,12 +898,17 @@ app.get('/api/qrcodes/:id/analytics', (req: Request, res: Response) => {
 
   let scansToday = 0;
   let scansLast7Days = 0;
-  const deviceBreakdown = { mobile: 0, desktop: 0, tablet: 0, unknown: 0 };
+
+  const deviceBreakdown: { mobile: number; desktop: number; tablet: number; unknown: number } = {
+    mobile: 0,
+    desktop: 0,
+    tablet: 0,
+    unknown: 0
+  };
   const osBreakdown: Record<string, number> = {};
   const browserBreakdown: Record<string, number> = {};
-  const dailyCountMap: Record<string, number> = {};
 
-  // Initialize last 7 days with 0
+  const dailyCountMap: Record<string, number> = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
     const dateStr = d.toISOString().split('T')[0];
@@ -1193,22 +917,20 @@ app.get('/api/qrcodes/:id/analytics', (req: Request, res: Response) => {
 
   qrScans.forEach(scan => {
     const scanDate = scan.timestamp.split('T')[0];
-    if (scanDate === todayStr) scansToday++;
-    if (new Date(scan.timestamp) >= sevenDaysAgo) scansLast7Days++;
+    const scanTime = new Date(scan.timestamp);
 
-    // Device
-    if (scan.device in deviceBreakdown) {
+    if (scanDate === todayStr) scansToday++;
+    if (scanTime >= sevenDaysAgo) scansLast7Days++;
+
+    if (scan.device === 'mobile' || scan.device === 'desktop' || scan.device === 'tablet') {
       deviceBreakdown[scan.device]++;
     } else {
       deviceBreakdown.unknown++;
     }
 
-    // OS
     osBreakdown[scan.os] = (osBreakdown[scan.os] || 0) + 1;
-    // Browser
     browserBreakdown[scan.browser] = (browserBreakdown[scan.browser] || 0) + 1;
 
-    // Daily
     if (scanDate in dailyCountMap) {
       dailyCountMap[scanDate]++;
     }
@@ -1235,13 +957,11 @@ app.get('/api/qrcodes/:id/analytics', (req: Request, res: Response) => {
 });
 
 // Synthetic test scan trigger for interactive in-dashboard simulation
-app.post('/api/qrcodes/:id/test-scan', (req: Request, res: Response) => {
+app.post('/api/qrcodes/:id/test-scan', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { simulatedDevice = 'mobile', simulatedOs = 'Android' } = req.body;
 
-  const qrcodes = loadQRCodes();
-  const qr = qrcodes.find(item => item.id === id);
-
+  const qr = await db.getQRCodeById(id);
   if (!qr) {
     return res.status(404).json({ success: false, error: 'QR Code not found' });
   }
@@ -1249,9 +969,8 @@ app.post('/api/qrcodes/:id/test-scan', (req: Request, res: Response) => {
   const nowIso = new Date().toISOString();
   qr.totalScans = (qr.totalScans || 0) + 1;
   qr.lastScannedAt = nowIso;
-  saveQRCodes(qrcodes);
+  await db.saveQRCode(qr);
 
-  const scans = loadScans();
   const newScan: ScanRecord = {
     id: 'test-scan-' + Date.now(),
     qrId: qr.id,
@@ -1261,8 +980,7 @@ app.post('/api/qrcodes/:id/test-scan', (req: Request, res: Response) => {
     browser: simulatedDevice === 'mobile' ? 'Mobile Chrome' : 'Desktop Safari',
     referer: 'Simulator Uji Scan Dashboard'
   };
-  scans.push(newScan);
-  saveScans(scans);
+  await db.addScan(newScan);
 
   res.json({
     success: true,
@@ -1273,9 +991,9 @@ app.post('/api/qrcodes/:id/test-scan', (req: Request, res: Response) => {
 });
 
 // Platform overview statistics
-app.get('/api/stats/overview', (req: Request, res: Response) => {
-  const qrcodes = loadQRCodes();
-  const scans = loadScans();
+app.get('/api/stats/overview', async (_req: Request, res: Response) => {
+  const qrcodes = await db.getQRCodes();
+  const scans = await db.getScans();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const totalQRs = qrcodes.length;
@@ -1294,8 +1012,13 @@ app.get('/api/stats/overview', (req: Request, res: Response) => {
   });
 });
 
-// Mount Vite or serve static assets
+// Mount Vite in local development or serve static assets in production
 async function startServer() {
+  // If running in Vercel Serverless environment, do not start local HTTP listener
+  if (process.env.VERCEL) {
+    return;
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -1304,7 +1027,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (req: Request, res: Response) => {
+    app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.resolve(__dirname, 'dist/index.html'));
     });
   }
@@ -1317,3 +1040,6 @@ async function startServer() {
 startServer().catch(err => {
   console.error('Failed to start server:', err);
 });
+
+export { app };
+export default app;
