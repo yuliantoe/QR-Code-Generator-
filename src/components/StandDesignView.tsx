@@ -9,12 +9,17 @@ import {
   Palette,
   Layers,
   Maximize2,
-  Square
+  Square,
+  CheckSquare,
+  ListFilter,
+  CheckCheck,
+  Eye
 } from 'lucide-react';
 import {
   renderGoogleReviewStandToCanvas,
   downloadStandCanvas,
   printStandSheet,
+  printMultipleStandSheets,
   STAND_TEMPLATES,
   getStandDimensions,
   isA6Template,
@@ -38,7 +43,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 }) => {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-  // Consolidate all selectable sources (QR Codes and NFC Tags)
+  // Consolidate selectable sources - prioritize QR Codes as requested ("Pilih Data Tautan pilihannya kode QR")
   const items = React.useMemo(() => {
     const list: Array<{
       id: string;
@@ -46,46 +51,56 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
       type: 'qr' | 'nfc';
       url: string;
       rawUrl: string;
+      code: string;
     }> = [];
 
-    // Add NFC tags first (they are natively for Google Review)
-    nfcTags.forEach(tag => {
-      list.push({
-        id: `nfc-${tag.id}`,
-        title: tag.placeName || `NFC Tag #${tag.id}`,
-        type: 'nfc',
-        url: `${origin}/nfc/${tag.id}`,
-        rawUrl: tag.googleReviewUrl
-      });
-    });
-
-    // Add QR codes
+    // Add QR codes first as primary choices (QR 001, QR 002, ...)
     qrcodes.forEach(qr => {
       list.push({
         id: `qr-${qr.id}`,
         title: qr.title || `QR #${qr.slug}`,
         type: 'qr',
         url: `${origin}/r/${qr.slug}`,
-        rawUrl: qr.targetUrl
+        rawUrl: qr.targetUrl,
+        code: qr.code || 'QR 001'
+      });
+    });
+
+    // Also include NFC tags if available
+    nfcTags.forEach(tag => {
+      list.push({
+        id: `nfc-${tag.id}`,
+        title: tag.placeName || `NFC Tag #${tag.id}`,
+        type: 'nfc',
+        url: `${origin}/nfc/${tag.id}`,
+        rawUrl: tag.googleReviewUrl,
+        code: `NFC-${tag.id.slice(0, 4).toUpperCase()}`
       });
     });
 
     return list;
   }, [qrcodes, nfcTags, origin]);
 
-  // Selected item state
+  // Selected item state (default to first QR code)
   const [selectedItemId, setSelectedItemId] = useState<string>(() => {
     if (initialSelectedId) {
       const match = items.find(i => i.id === initialSelectedId || i.id.endsWith(initialSelectedId));
       if (match) return match.id;
     }
+    const firstQR = items.find(i => i.type === 'qr');
+    if (firstQR) return firstQR.id;
     return items.length > 0 ? items[0].id : '';
   });
 
   // Keep selected item valid if list loads
   useEffect(() => {
-    if ((!selectedItemId || !items.some(i => i.id === selectedItemId)) && items.length > 0) {
-      setSelectedItemId(items[0].id);
+    if (!selectedItemId || !items.some(i => i.id === selectedItemId)) {
+      const firstQR = items.find(i => i.type === 'qr');
+      if (firstQR) {
+        setSelectedItemId(firstQR.id);
+      } else if (items.length > 0) {
+        setSelectedItemId(items[0].id);
+      }
     }
   }, [items, selectedItemId]);
 
@@ -132,6 +147,8 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
     ? (urlMode === 'dynamic' ? selectedItem.url : selectedItem.rawUrl)
     : `${origin}/r/review`;
 
+  const activeRegCode = selectedItem?.code || 'QR 001';
+
   // Render to canvas
   const renderCanvas = async () => {
     if (!previewCanvasRef.current) return;
@@ -142,6 +159,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
         templateId: selectedTemplate,
         formatSize,
         qrText: activeQRText,
+        registrationCode: activeRegCode,
         placeName: placeName.trim(),
         themeColor,
         showPlaceName,
@@ -157,7 +175,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   useEffect(() => {
     renderCanvas();
-  }, [selectedTemplate, formatSize, activeQRText, placeName, themeColor, showPlaceName]);
+  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName]);
 
   const handleDownloadHD = async (isPrintQuality: boolean = true) => {
     const offscreen = document.createElement('canvas');
@@ -167,6 +185,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
       templateId: selectedTemplate,
       formatSize,
       qrText: activeQRText,
+      registrationCode: activeRegCode,
       placeName: placeName.trim(),
       themeColor,
       showPlaceName,
@@ -181,13 +200,140 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
     downloadStandCanvas(offscreen, `${selectedTemplate}-${sizeSlug}-${safeTitle}-${dims.width}x${dims.height}px`);
   };
 
-  const handlePrint = () => {
+  // Selection Mode: 'single' (Pilihan Dropdown) vs 'checklist' (Pilihan Ceklis untuk Cetak Banyak Stand)
+  const [selectionMode, setSelectionMode] = useState<'single' | 'checklist'>('single');
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => {
+    const s = new Set<string>();
+    if (initialSelectedId) {
+      s.add(initialSelectedId);
+    } else if (items.length > 0) {
+      const firstQr = items.find(i => i.type === 'qr');
+      if (firstQr) s.add(firstQr.id);
+    }
+    return s;
+  });
+  const [checklistSearch, setChecklistSearch] = useState('');
+  const [isBatchPrinting, setIsBatchPrinting] = useState(false);
+  const [batchProgressText, setBatchProgressText] = useState('');
+
+  // Toggle single item in checklist
+  const toggleCheck = (id: string) => {
+    setCheckedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+    setSelectedItemId(id);
+  };
+
+  // Check all QR codes
+  const handleCheckAllQRs = () => {
+    const allQrIds = items.filter(i => i.type === 'qr').map(i => i.id);
+    setCheckedIds(new Set(allQrIds));
+  };
+
+  // Uncheck all
+  const handleUncheckAll = () => {
+    setCheckedIds(new Set());
+  };
+
+  const checkedItems = items.filter(i => checkedIds.has(i.id));
+
+  const handlePrint = async () => {
+    // If in checklist mode and multiple items checked:
+    if (selectionMode === 'checklist' && checkedItems.length > 1) {
+      setIsBatchPrinting(true);
+      setBatchProgressText(`Menyiapkan ${checkedItems.length} lembar stand cetak...`);
+      try {
+        const dims = getStandDimensions(formatSize, true);
+        const standsToPrint: Array<{ dataUrl: string; title: string; code: string }> = [];
+
+        for (let i = 0; i < checkedItems.length; i++) {
+          const item = checkedItems[i];
+          setBatchProgressText(`Membuat lembar ${i + 1} dari ${checkedItems.length} (${item.code})...`);
+          const tempCanvas = document.createElement('canvas');
+          const qrText = urlMode === 'dynamic' ? item.url : item.rawUrl;
+
+          await renderGoogleReviewStandToCanvas(tempCanvas, {
+            templateId: selectedTemplate,
+            formatSize,
+            qrText,
+            registrationCode: item.code,
+            placeName: showPlaceName ? placeName.trim() : item.title,
+            themeColor,
+            showPlaceName,
+            width: dims.width,
+            height: dims.height
+          });
+
+          standsToPrint.push({
+            dataUrl: tempCanvas.toDataURL('image/png', 0.95),
+            title: item.title,
+            code: item.code
+          });
+        }
+
+        printMultipleStandSheets(standsToPrint, formatSize);
+      } catch (err) {
+        console.error('Batch print error:', err);
+      } finally {
+        setIsBatchPrinting(false);
+        setBatchProgressText('');
+      }
+      return;
+    }
+
+    // Single stand print
     if (!previewCanvasRef.current) return;
     printStandSheet(
       previewCanvasRef.current,
-      `Stand Google Review (${selectedTemplate}) - ${placeName}`,
+      `Stand Google Review (${selectedTemplate}) - ${activeRegCode} ${placeName}`,
       formatSize
     );
+  };
+
+  const handleDownloadBatchChecked = async () => {
+    if (checkedItems.length === 0) return;
+    setIsBatchPrinting(true);
+    setBatchProgressText(`Mengunduh ${checkedItems.length} stand meja...`);
+    try {
+      const dims = getStandDimensions(formatSize, true);
+      for (let i = 0; i < checkedItems.length; i++) {
+        const item = checkedItems[i];
+        setBatchProgressText(`Mengunduh ${i + 1}/${checkedItems.length}: ${item.code}...`);
+        const tempCanvas = document.createElement('canvas');
+        const qrText = urlMode === 'dynamic' ? item.url : item.rawUrl;
+
+        await renderGoogleReviewStandToCanvas(tempCanvas, {
+          templateId: selectedTemplate,
+          formatSize,
+          qrText,
+          registrationCode: item.code,
+          placeName: showPlaceName ? placeName.trim() : item.title,
+          themeColor,
+          showPlaceName,
+          width: dims.width,
+          height: dims.height
+        });
+
+        const safeCode = item.code.replace(/\s+/g, '-');
+        const safeTitle = item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20);
+        downloadStandCanvas(tempCanvas, `stand-${safeCode}-${selectedTemplate}-${safeTitle}`);
+
+        if (i < checkedItems.length - 1) {
+          await new Promise(r => setTimeout(r, 450));
+        }
+      }
+    } catch (err) {
+      console.error('Batch download error:', err);
+    } finally {
+      setIsBatchPrinting(false);
+      setBatchProgressText('');
+    }
   };
 
   const handleCopy = () => {
@@ -225,20 +371,49 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 shrink-0 w-full sm:w-auto">
-            <button
-              onClick={() => handleDownloadHD(true)}
-              className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-            >
-              <Download className="w-4 h-4 text-[#104F38]" />
-              <span>Unduh Siap Cetak ({formatSize === 'a6' ? 'A6 300 DPI' : 'HD 2400px'})</span>
-            </button>
-            <button
-              onClick={handlePrint}
-              className="w-full sm:w-auto justify-center px-4 py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
-            >
-              <Printer className="w-4 h-4 text-[#FFE600]" />
-              <span>Cetak Stand {formatSize === 'a6' ? 'A6' : 'Kotak'}</span>
-            </button>
+            {selectionMode === 'checklist' && checkedItems.length > 1 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleDownloadBatchChecked}
+                  disabled={isBatchPrinting}
+                  className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-[#104F38]" />
+                  <span>Unduh Semua ({checkedItems.length} Stand HD)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  disabled={isBatchPrinting}
+                  className="w-full sm:w-auto justify-center px-4 py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4 text-[#FFE600]" />
+                  <span>Cetak {checkedItems.length} Stand Ceklis</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadHD(true)}
+                  disabled={isBatchPrinting}
+                  className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-[#104F38]" />
+                  <span>Unduh Siap Cetak ({formatSize === 'a6' ? 'A6 300 DPI' : 'HD 2400px'})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  disabled={isBatchPrinting}
+                  className="w-full sm:w-auto justify-center px-4 py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4 text-[#FFE600]" />
+                  <span>Cetak Stand {formatSize === 'a6' ? 'A6' : 'Kotak'}</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -440,57 +615,107 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
             </div>
           </div>
 
-          {/* Card 1: Pilih Sumber QR Code / NFC */}
+          {/* Card 1: Pilih Sumber QR Code / Mode Ceklis Cetak Banyak */}
           <div className="bg-white border border-[#104F38]/20 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-[#104F38]/10 pb-3">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#104F38]" />
                 <h3 className="text-sm font-bold text-[#104F38]">
-                  1. Pilih Data QR Code / NFC
+                  1. Pilih Data Tautan (Kode QR)
                 </h3>
               </div>
-              <span className="text-[10px] font-bold bg-[#F4FAF6] text-[#104F38] px-2 py-0.5 border border-[#104F38]/15">
-                {items.length} Data Tersedia
-              </span>
+              <div className="flex items-center gap-1.5">
+                {selectionMode === 'checklist' && (
+                  <span className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-0.5 border border-[#104F38]/20 font-mono">
+                    {checkedIds.size} Stand Terpilih
+                  </span>
+                )}
+                <span className="text-[10px] font-bold bg-[#F4FAF6] text-[#104F38] px-2 py-0.5 border border-[#104F38]/20 font-mono">
+                  {items.filter(i => i.type === 'qr').length} Kode QR
+                </span>
+              </div>
+            </div>
+
+            {/* Selection Mode Switcher: Single vs Checklist */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#F4FAF6] border border-[#104F38]/20">
+              <button
+                type="button"
+                onClick={() => setSelectionMode('single')}
+                className={`flex-1 py-1.5 px-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  selectionMode === 'single'
+                    ? 'bg-[#104F38] text-white shadow-xs'
+                    : 'text-[#104F38] hover:bg-white'
+                }`}
+              >
+                <span>Pilihan Tunggal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectionMode('checklist');
+                  if (checkedIds.size === 0) {
+                    handleCheckAllQRs();
+                  }
+                }}
+                className={`flex-1 py-1.5 px-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  selectionMode === 'checklist'
+                    ? 'bg-[#104F38] text-white shadow-xs'
+                    : 'text-[#104F38] hover:bg-white'
+                }`}
+              >
+                <CheckSquare className="w-3.5 h-3.5 text-[#FFE600]" />
+                <span>Pilihan Ceklis Cetak Banyak ({checkedIds.size})</span>
+              </button>
             </div>
 
             {items.length === 0 ? (
               <div className="p-4 bg-[#F4FAF6] border border-[#104F38]/20 text-xs text-[#104F38]/80 text-center">
-                Belum ada QR Code atau NFC Tag. Buat QR terlebih dahulu atau gunakan tautan simulasi.
+                Belum ada QR Code. Buat QR Code dinamis terlebih dahulu.
               </div>
-            ) : (
+            ) : selectionMode === 'single' ? (
+              /* SINGLE MODE DROPDOWN */
               <div className="space-y-3">
-                <label className="block text-xs font-bold text-[#104F38]">
-                  Pilih Data Tautan:
+                <label className="block text-xs font-bold text-[#104F38] flex items-center justify-between">
+                  <span>Pilih Data Tautan:</span>
+                  <span className="text-[10px] text-[#104F38]/70 font-normal">
+                    Pilihan Kode QR otomatis
+                  </span>
                 </label>
                 <select
                   value={selectedItemId}
                   onChange={(e) => setSelectedItemId(e.target.value)}
                   className="w-full p-2.5 text-xs bg-white border border-[#104F38]/20 rounded-none focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 font-semibold text-[#104F38] cursor-pointer"
                 >
-                  <optgroup label="Tag NFC Google Review (Rekomendasi)">
-                    {items.filter(i => i.type === 'nfc').map(item => (
-                      <option key={item.id} value={item.id}>
-                        [NFC] {item.title}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Daftar QRIS & QR Code">
+                  <optgroup label="Daftar Kode QR (QR 001, QR 002, ...)">
                     {items.filter(i => i.type === 'qr').map(item => (
                       <option key={item.id} value={item.id}>
-                        [QR] {item.title}
+                        {item.code} — {item.title}
                       </option>
                     ))}
                   </optgroup>
+                  {items.some(i => i.type === 'nfc') && (
+                    <optgroup label="Tag NFC Google Review (Opsional)">
+                      {items.filter(i => i.type === 'nfc').map(item => (
+                        <option key={item.id} value={item.id}>
+                          {item.code} — {item.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
 
                 {/* Selected item summary */}
                 {selectedItem && (
                   <div className="p-3 bg-[#F8FAF9] border border-[#104F38]/10 text-xs space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[#104F38]">{selectedItem.title}</span>
-                      <span className="text-[10px] uppercase font-bold text-[#104F38]/60">
-                        {selectedItem.type === 'nfc' ? 'Chip NFC Review' : 'QR Code'}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20">
+                          {selectedItem.code}
+                        </span>
+                        <span className="font-bold text-[#104F38] truncate">{selectedItem.title}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-[#104F38]/60 uppercase">
+                        {selectedItem.type === 'qr' ? 'Kode QR Dinamis' : 'Tag NFC'}
                       </span>
                     </div>
 
@@ -505,6 +730,124 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     </div>
                   </div>
                 )}
+
+                <div className="p-2.5 bg-[#FFFDEB] border border-[#FFE600]/60 text-[11px] text-[#104F38] flex items-center justify-between">
+                  <span>💡 Mau cetak 5, 10, atau 15 stand sekaligus?</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectionMode('checklist');
+                      handleCheckAllQRs();
+                    }}
+                    className="font-bold underline hover:text-black cursor-pointer text-xs"
+                  >
+                    Buka Pilihan Ceklis →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* CHECKLIST MODE (PILIHAN CEKLIS KODE DATA TAUTAN) */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#104F38] flex items-center gap-1.5">
+                    <CheckSquare className="w-3.5 h-3.5 text-[#104F38]" />
+                    <span>Ceklis Stand yang Ingin Dicetak:</span>
+                  </label>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={handleCheckAllQRs}
+                      className="px-2 py-0.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] cursor-pointer"
+                    >
+                      Pilih Semua
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUncheckAll}
+                      className="px-2 py-0.5 bg-white hover:bg-[#F8FAF9] text-[#104F38] border border-[#104F38]/20 font-medium text-[11px] cursor-pointer"
+                    >
+                      Kosongkan
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search filter inside checklist */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={checklistSearch}
+                    onChange={(e) => setChecklistSearch(e.target.value)}
+                    placeholder="Saring kode (contoh: QR 001) atau nama meja..."
+                    className="w-full pl-3 pr-3 py-1.5 text-xs bg-white border border-[#104F38]/20 focus:outline-none focus:ring-1 focus:ring-[#104F38] text-[#104F38]"
+                  />
+                </div>
+
+                {/* Scrollable Checkbox List */}
+                <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1 border border-[#104F38]/20 p-2 bg-[#F8FAF9]">
+                  {items
+                    .filter(item => {
+                      if (!checklistSearch.trim()) return true;
+                      const q = checklistSearch.toLowerCase();
+                      return (
+                        item.code.toLowerCase().includes(q) ||
+                        item.title.toLowerCase().includes(q) ||
+                        item.url.toLowerCase().includes(q)
+                      );
+                    })
+                    .map(item => {
+                      const isChecked = checkedIds.has(item.id);
+                      const isPreviewed = selectedItemId === item.id;
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between p-2 text-xs border transition-all ${
+                            isChecked
+                              ? 'bg-white border-[#104F38]/30 shadow-2xs'
+                              : 'bg-white/50 border-slate-200 text-slate-500'
+                          } ${isPreviewed ? 'ring-2 ring-[#0038CB] border-transparent' : ''}`}
+                        >
+                          <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0 mr-2">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleCheck(item.id)}
+                              className="w-4 h-4 text-[#104F38] rounded-none border-[#104F38]/40 focus:ring-0 cursor-pointer accent-[#104F38]"
+                            />
+                            <span className="font-mono font-black text-[10px] bg-[#FFE600] text-[#104F38] px-1.5 py-0.5 border border-[#104F38]/30 shrink-0">
+                              {item.code}
+                            </span>
+                            <span className="font-bold text-[#104F38] truncate">{item.title}</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedItemId(item.id)}
+                            className={`text-[10px] font-bold px-2 py-0.5 border transition-all cursor-pointer shrink-0 ${
+                              isPreviewed
+                                ? 'bg-[#0038CB] text-white border-[#0038CB]'
+                                : 'bg-white text-[#104F38] border-[#104F38]/20 hover:bg-[#FFE600]'
+                            }`}
+                            title="Tampilkan pada Pratinjau Kanvas"
+                          >
+                            {isPreviewed ? 'Pratinjau' : 'Lihat'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+
+                {/* Checked Summary Banner */}
+                <div className="p-2.5 bg-[#F4FAF6] border border-[#104F38]/20 text-xs text-[#104F38] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCheck className="w-4 h-4 text-[#104F38]" />
+                    <span className="font-bold">
+                      {checkedIds.size} Stand Meja Diceklis Siap Cetak
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20">
+                    Format {formatSize.toUpperCase()}
+                  </span>
+                </div>
               </div>
             )}
 
@@ -690,55 +1033,92 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               />
             </div>
 
-            {/* Download Buttons Bar */}
-            <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              
-              {/* Option 1: PNG Standar */}
-              <button
-                type="button"
-                onClick={() => handleDownloadHD(false)}
-                className="p-3 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer"
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span>PNG Standar</span>
-                  <Download className="w-3.5 h-3.5 text-[#104F38]/60" />
+            {/* Download & Print Buttons Bar */}
+            {isBatchPrinting ? (
+              <div className="p-4 bg-[#F4FAF6] border border-[#104F38]/30 text-center space-y-2 animate-in fade-in">
+                <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#104F38]">
+                  <span className="w-3.5 h-3.5 border-2 border-[#104F38] border-t-transparent rounded-full animate-spin" />
+                  <span>{batchProgressText || 'Sedang memproses stand meja...'}</span>
                 </div>
-                <span className="text-[10px] font-normal text-[#104F38]/60">
-                  {formatSize === 'a6' ? '1200 × 1692 px (Digital)' : '1200 × 1200 px (Digital)'}
-                </span>
-              </button>
-
-              {/* Option 2: PNG Super HD (Print Quality) */}
-              <button
-                type="button"
-                onClick={() => handleDownloadHD(true)}
-                className="p-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer shadow-xs"
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span>PNG Super HD (300 DPI)</span>
-                  <Download className="w-3.5 h-3.5 text-[#104F38]" />
+                <div className="w-full bg-[#104F38]/10 h-1.5 overflow-hidden">
+                  <div className="bg-[#104F38] h-full w-2/3 animate-pulse" />
                 </div>
-                <span className="text-[10px] font-bold text-[#104F38]/70">
-                  {formatSize === 'a6' ? '2400 × 3384 px (Siap Cetak A6)' : '2400 × 2400 px (Siap Cetak)'}
+                <span className="text-[10px] text-[#104F38]/70 block">
+                  Mohon tunggu sebentar, setiap stand meja sedang disiapkan dengan resolusi tinggi...
                 </span>
-              </button>
+              </div>
+            ) : (
+              <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                
+                {/* Option 1: PNG Standar */}
+                <button
+                  type="button"
+                  onClick={() => handleDownloadHD(false)}
+                  className="p-3 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer"
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span>PNG Standar</span>
+                    <Download className="w-3.5 h-3.5 text-[#104F38]/60" />
+                  </div>
+                  <span className="text-[10px] font-normal text-[#104F38]/60">
+                    {formatSize === 'a6' ? '1200 × 1692 px (Digital)' : '1200 × 1200 px (Digital)'}
+                  </span>
+                </button>
 
-              {/* Option 3: Print Sheet */}
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="p-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer shadow-xs"
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span>Cetak Lembar Stand</span>
-                  <Printer className="w-3.5 h-3.5 text-[#FFE600]" />
-                </div>
-                <span className="text-[10px] font-normal text-white/80">
-                  {formatSize === 'a6' ? 'A4 Format Cetak A6' : 'Langsung ke Printer / PDF'}
-                </span>
-              </button>
+                {/* Option 2: PNG Super HD / Batch Download */}
+                {selectionMode === 'checklist' && checkedItems.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={handleDownloadBatchChecked}
+                    className="p-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer shadow-xs"
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span>Unduh Semua ({checkedItems.length} Stand)</span>
+                      <Download className="w-3.5 h-3.5 text-[#104F38]" />
+                    </div>
+                    <span className="text-[10px] font-bold text-[#104F38]/70">
+                      Format PNG HD Tiap Meja ({formatSize.toUpperCase()})
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadHD(true)}
+                    className="p-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer shadow-xs"
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span>PNG Super HD (300 DPI)</span>
+                      <Download className="w-3.5 h-3.5 text-[#104F38]" />
+                    </div>
+                    <span className="text-[10px] font-bold text-[#104F38]/70">
+                      {formatSize === 'a6' ? '2400 × 3384 px (Siap Cetak A6)' : '2400 × 2400 px (Siap Cetak)'}
+                    </span>
+                  </button>
+                )}
 
-            </div>
+                {/* Option 3: Print Sheet */}
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="p-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold transition-all text-left flex flex-col justify-between cursor-pointer shadow-xs"
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span>
+                      {selectionMode === 'checklist' && checkedItems.length > 1
+                        ? `Cetak ${checkedItems.length} Stand (Ceklis)`
+                        : 'Cetak Lembar Stand'}
+                    </span>
+                    <Printer className="w-3.5 h-3.5 text-[#FFE600]" />
+                  </div>
+                  <span className="text-[10px] font-normal text-white/80">
+                    {selectionMode === 'checklist' && checkedItems.length > 1
+                      ? `${checkedItems.length} lembar berturut-turut`
+                      : formatSize === 'a6' ? 'A4 Format Cetak A6' : 'Langsung ke Printer / PDF'}
+                  </span>
+                </button>
+
+              </div>
+            )}
 
             {/* Instruction Notice */}
             <div className="p-3.5 bg-[#F4FAF6] border border-[#104F38]/15 text-xs text-[#104F38]/80 space-y-1">

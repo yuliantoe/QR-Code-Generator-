@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Radio, User, LogOut, Sparkles, QrCode } from 'lucide-react';
+import { Plus, Radio, User, LogOut, Sparkles, QrCode, KeyRound } from 'lucide-react';
 import type { AuthUser } from '../types.ts';
 
 interface NavbarProps {
@@ -11,6 +11,7 @@ interface NavbarProps {
   nfcCount: number;
   currentUser?: AuthUser | null;
   onLogout?: () => void;
+  onOpenChangeCredentials?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -21,7 +22,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeCount,
   nfcCount,
   currentUser,
-  onLogout
+  onLogout,
+  onOpenChangeCredentials
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#104F38]/10">
@@ -136,6 +138,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <User className="w-3 h-3 text-[#104F38]/70" />
                 <span className="max-w-[100px] truncate">{currentUser.username}</span>
               </div>
+              {onOpenChangeCredentials && (
+                <button
+                  onClick={onOpenChangeCredentials}
+                  className="px-2 py-1 text-[#104F38] hover:bg-[#FFE600] border border-[#104F38]/20 flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer"
+                  title="Ganti Username & Password"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-[#104F38]" />
+                  <span className="hidden sm:inline">Ganti Akun</span>
+                </button>
+              )}
               <button
                 onClick={onLogout}
                 className="p-1.5 sm:p-2 text-[#104F38]/70 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"

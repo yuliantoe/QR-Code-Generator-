@@ -9,6 +9,8 @@ import { NFCTagsView } from './components/NFCTagsView.tsx';
 import { ActivateNFCModal } from './components/ActivateNFCModal.tsx';
 import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
+import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
+import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
 import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles } from 'lucide-react';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
@@ -25,6 +27,8 @@ export default function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => {
     return localStorage.getItem('dinamis_auth_token') || null;
   });
+
+  const [isChangeCredentialsOpen, setIsChangeCredentialsOpen] = useState(false);
 
   // Navigation tab state ('qr' | 'nfc' | 'stand-design')
   const [currentTab, setCurrentTab] = useState<'qr' | 'nfc' | 'stand-design'>('qr');
@@ -62,7 +66,22 @@ export default function App() {
   // Modals state
   const [editingQR, setEditingQR] = useState<DynamicQRCode | null>(null);
   const [analyticsQR, setAnalyticsQR] = useState<DynamicQRCode | null>(null);
+  const [qrToDelete, setQrToDelete] = useState<DynamicQRCode | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createBatchMode, setCreateBatchMode] = useState(false);
+  const [createBatchCount, setCreateBatchCount] = useState(5);
+
+  const handleOpenCreateSingle = () => {
+    setCreateBatchMode(false);
+    setCreateBatchCount(5);
+    setIsCreateOpen(true);
+  };
+
+  const handleOpenCreateBatch = (count: number = 5) => {
+    setCreateBatchMode(true);
+    setCreateBatchCount(count);
+    setIsCreateOpen(true);
+  };
 
   // NFC Modals state
   const [isActivateNFCOpen, setIsActivateNFCOpen] = useState(false);
@@ -154,19 +173,25 @@ export default function App() {
     }
   };
 
-  const handleDeleteQR = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus QR Code ini? QR fisik yang sudah dicetak tidak akan dapat memuat tautan lagi.')) {
-      return;
-    }
+  const handleDeleteQR = (qr: DynamicQRCode) => {
+    setQrToDelete(qr);
+  };
 
+  const handleConfirmDelete = async (id: string): Promise<boolean> => {
     try {
       const res = await fetch(`/api/qrcodes/${id}`, { method: 'DELETE' });
       const json = await res.json();
       if (json.success) {
         setQrcodes(prev => prev.filter(q => q.id !== id));
+        if (analyticsQR?.id === id) setAnalyticsQR(null);
+        if (editingQR?.id === id) setEditingQR(null);
+        setQrToDelete(null);
+        return true;
       }
+      return false;
     } catch (e) {
-      console.error(e);
+      console.error('Gagal menghapus QR:', e);
+      return false;
     }
   };
 
@@ -243,6 +268,7 @@ export default function App() {
         nfcCount={nfcTags.length}
         currentUser={currentUser}
         onLogout={handleLogout}
+        onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
       />
 
       {/* Main Viewport Container */}
@@ -278,35 +304,63 @@ export default function App() {
                   {/* Decorative Wireframe Bracket Line */}
                   <div className="hidden sm:block absolute -left-3 top-2 bottom-3 w-8 border-l-2 border-b-2 border-[#104F38]/30 pointer-events-none" />
 
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pl-0 sm:pl-3 w-full">
-                    
-                    {/* Canary Yellow Button */}
-                    <button
-                      onClick={() => setIsCreateOpen(true)}
-                      className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
-                    >
-                      <Plus className="w-4 h-4 text-[#104F38] shrink-0" />
-                      <span>Buat QR Baru (Tunggal & Batch)</span>
-                    </button>
+                  <div className="space-y-2.5 w-full pl-0 sm:pl-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full">
+                      
+                      {/* Canary Yellow Button */}
+                      <button
+                        onClick={handleOpenCreateSingle}
+                        className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
+                      >
+                        <Plus className="w-4 h-4 text-[#104F38] shrink-0" />
+                        <span>Buat QR Baru (Tunggal & Batch)</span>
+                      </button>
 
-                    {/* Forest Green Button */}
-                    <button
-                      onClick={() => setIsActivateNFCOpen(true)}
-                      className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
-                    >
-                      <Radio className="w-4 h-4 text-[#FFE600] shrink-0" />
-                      <span>Aktivasi NFC Review</span>
-                    </button>
+                      {/* Forest Green Button */}
+                      <button
+                        onClick={() => setIsActivateNFCOpen(true)}
+                        className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
+                      >
+                        <Radio className="w-4 h-4 text-[#FFE600] shrink-0" />
+                        <span>Aktivasi NFC Review</span>
+                      </button>
 
-                    {/* Blue Stand Akrilik Design Button */}
-                    <button
-                      onClick={() => setCurrentTab('stand-design')}
-                      className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#0038CB] hover:bg-[#032ea0] text-white text-xs sm:text-sm font-bold tracking-tight rounded-none transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
-                    >
-                      <Sparkles className="w-4 h-4 text-[#FFE600] shrink-0" />
-                      <span>Desain Stand Meja A6 (9 Desain)</span>
-                    </button>
+                      {/* Blue Stand Akrilik Design Button */}
+                      <button
+                        onClick={() => setCurrentTab('stand-design')}
+                        className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#0038CB] hover:bg-[#032ea0] text-white text-xs sm:text-sm font-bold tracking-tight rounded-none transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
+                      >
+                        <Sparkles className="w-4 h-4 text-[#FFE600] shrink-0" />
+                        <span>Desain Stand Meja A6 (9 Desain)</span>
+                      </button>
 
+                    </div>
+
+                    {/* Quick Batch Generate Shortcut Buttons */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-[#104F38]">
+                      <span className="text-[11px] font-bold text-[#104F38]/70">Pintas Buat Sekaligus:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCreateBatch(5)}
+                        className="px-2.5 py-1 bg-white hover:bg-[#FFE600] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] rounded-none transition-all cursor-pointer shadow-2xs hover:border-[#104F38]"
+                      >
+                        ⚡ 5 QR Sekaligus
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCreateBatch(10)}
+                        className="px-2.5 py-1 bg-white hover:bg-[#FFE600] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] rounded-none transition-all cursor-pointer shadow-2xs hover:border-[#104F38]"
+                      >
+                        ⚡ 10 QR Sekaligus
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCreateBatch(15)}
+                        className="px-2.5 py-1 bg-white hover:bg-[#FFE600] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] rounded-none transition-all cursor-pointer shadow-2xs hover:border-[#104F38]"
+                      >
+                        ⚡ 15 QR Sekaligus
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -779,8 +833,15 @@ export default function App() {
             <span aria-hidden="true">·</span>
             <span className="font-serif-italic">Keunggulan QR Dinamis & Stand NFC Google Review</span>
           </div>
-          <div className="text-[11px] text-[#104F38]/60">
-            Masuk sebagai: <strong className="text-[#104F38]">{currentUser.username}</strong>
+          <div className="text-[11px] text-[#104F38]/70 flex items-center gap-2">
+            <span>Masuk sebagai: <strong className="text-[#104F38]">{currentUser.username}</strong></span>
+            <span>·</span>
+            <button
+              onClick={() => setIsChangeCredentialsOpen(true)}
+              className="text-[#104F38] underline hover:text-black font-bold cursor-pointer"
+            >
+              Ganti Username & Password
+            </button>
           </div>
         </div>
       </footer>
@@ -800,6 +861,8 @@ export default function App() {
         <CreateQRModal
           isOpen={isCreateOpen}
           existingCount={qrcodes.length}
+          defaultBatchMode={createBatchMode}
+          defaultBatchCount={createBatchCount}
           onClose={() => setIsCreateOpen(false)}
           onCreated={handleCreatedQR}
           onCreatedBatch={handleCreatedBatch}
@@ -842,6 +905,27 @@ export default function App() {
           isOpen={!!editingNFCTag}
           onClose={() => setEditingNFCTag(null)}
           onUpdated={handleUpdatedNFCTag}
+        />
+      )}
+
+      {/* Change Username & Password Modal */}
+      {isChangeCredentialsOpen && currentUser && authToken && (
+        <ChangeCredentialsModal
+          isOpen={isChangeCredentialsOpen}
+          onClose={() => setIsChangeCredentialsOpen(false)}
+          currentUser={currentUser}
+          authToken={authToken}
+          onCredentialsUpdated={(updated) => setCurrentUser(updated)}
+        />
+      )}
+
+      {/* Delete QR Code Confirmation Modal Popup */}
+      {qrToDelete && (
+        <DeleteQRConfirmModal
+          isOpen={!!qrToDelete}
+          qr={qrToDelete}
+          onClose={() => setQrToDelete(null)}
+          onConfirmDelete={handleConfirmDelete}
         />
       )}
 

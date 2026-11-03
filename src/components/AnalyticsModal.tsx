@@ -263,16 +263,25 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
               {/* QR Preview Column */}
               <div className="md:col-span-5 text-center">
                 <div
-                  className={`bg-slate-50 rounded-xl border border-slate-200 inline-block shadow-2xs ${
-                    isCompactView ? 'p-2.5' : 'p-4 rounded-2xl'
+                  className={`bg-[#F4FAF6] rounded-none border border-[#104F38]/20 inline-block shadow-2xs ${
+                    isCompactView ? 'p-3' : 'p-5'
                   }`}
                 >
                   <canvas
                     ref={canvasRef}
-                    className={`h-auto rounded-lg mx-auto shadow-xs ${
+                    className={`h-auto block mx-auto ${
                       isCompactView ? 'w-32 sm:w-36' : 'w-48'
                     }`}
                   />
+                  {/* Kode Registrasi below QR Code */}
+                  <div className="mt-3 pt-2.5 border-t border-[#104F38]/15 text-center">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#104F38]/70">
+                      Kode Registrasi
+                    </div>
+                    <div className="text-xs font-mono font-black text-[#104F38] bg-[#FFE600] px-2.5 py-0.5 border border-[#104F38]/25 inline-block mt-1 shadow-2xs">
+                      {qr.code || 'QR 001'}
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-1.5">
                   <button

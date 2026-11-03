@@ -1,6 +1,7 @@
 [
   {
     "id": "qr-menu-resto",
+    "code": "QR 001",
     "slug": "menu-resto",
     "title": "Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)",
     "targetUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop",
@@ -47,6 +48,7 @@
   },
   {
     "id": "qr-kemasan-kopi",
+    "code": "QR 002",
     "slug": "kopi-speciality",
     "title": "Stiker Kemasan Kopi Robusta 250gr (5.000 Pcs Cetak)",
     "targetUrl": "https://shopee.co.id",
@@ -88,6 +90,7 @@
   },
   {
     "id": "qr-kartu-nama",
+    "code": "QR 003",
     "slug": "budi-kartunama",
     "title": "Kartu Nama Bisnis CEO (Cetak Kartu PVC Eksklusif)",
     "targetUrl": "https://linkedin.com",

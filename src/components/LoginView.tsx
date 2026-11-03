@@ -7,8 +7,8 @@ interface LoginViewProps {
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,12 +46,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleUseDefault = () => {
-    setUsername('admin');
-    setPassword('admin123');
-    setErrorMessage(null);
-  };
-
   return (
     <div className="min-h-screen bg-white flex flex-col justify-center items-center p-4 relative overflow-hidden">
       
@@ -81,28 +75,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             Dinamis<span className="text-[#104F38]">QR</span>
           </h1>
           <p className="text-xs text-[#104F38]/70 mt-1.5 leading-relaxed font-medium">
-            Pitch Excellence: Katalog penerbitan QR Code dinamis & aktivasi tag NFC Google Review.
+            Pitch Excellence: Masuk ke panel generator QR Code dinamis & aktivasi NFC.
           </p>
-        </div>
-
-        {/* Quick Credentials Info Box */}
-        <div className="mb-6 p-3.5 bg-[#F4FAF6] border border-[#104F38]/20 rounded-none flex items-start justify-between gap-3 text-xs">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 font-bold text-[#104F38]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#104F38] shrink-0" />
-              <span>Akses Masuk Default:</span>
-            </div>
-            <div className="text-[#104F38]/80 font-mono text-[11px] pt-0.5">
-              User: <strong className="text-[#104F38]">admin</strong> · Pass: <strong className="text-[#104F38]">admin123</strong>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleUseDefault}
-            className="text-[11px] font-bold text-[#104F38] bg-[#FFE600] px-2.5 py-1 rounded-none border border-[#104F38]/20 shadow-2xs whitespace-nowrap cursor-pointer shrink-0 mt-0.5"
-          >
-            Isi Otomatis
-          </button>
         </div>
 
         {/* Error notification */}

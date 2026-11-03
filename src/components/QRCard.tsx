@@ -9,7 +9,7 @@ interface QRListItemProps {
   onOpenAnalytics: (qr: DynamicQRCode) => void;
   onOpenStandStudio?: (qr: DynamicQRCode) => void;
   onToggleStatus: (qr: DynamicQRCode) => void;
-  onDelete: (id: string) => void;
+  onDelete: (qr: DynamicQRCode) => void;
   viewMode?: 'normal' | 'compact';
 }
 
@@ -59,26 +59,31 @@ export const QRCard: React.FC<QRListItemProps> = ({
           
           {/* Left: Mini QR + Title + Slug & Status */}
           <div className="flex items-center gap-2.5 min-w-0 sm:w-[38%] shrink-0">
-            {/* Small QR Thumbnail */}
-            <div
-              onClick={() => onOpenAnalytics(qr)}
-              className="cursor-pointer bg-[#F4FAF6] p-1 rounded-none border border-[#104F38]/20 shrink-0 hover:bg-[#EAF5F0] transition-colors group relative"
-              title="Klik untuk detail & cetak"
-            >
-              <canvas
-                ref={canvasRef}
-                className="w-9 h-9 sm:w-10 sm:h-10 block"
-              />
-              <div className="absolute inset-0 bg-[#104F38]/20 rounded-none opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Download className="w-2.5 h-2.5 text-white" />
+            {/* Small QR Thumbnail with Kode Registrasi */}
+            <div className="flex flex-col items-center shrink-0">
+              <div
+                onClick={() => onOpenAnalytics(qr)}
+                className="cursor-pointer bg-[#F4FAF6] p-1 rounded-none border border-[#104F38]/20 shrink-0 hover:bg-[#EAF5F0] transition-colors group relative"
+                title="Klik untuk detail & cetak"
+              >
+                <canvas
+                  ref={canvasRef}
+                  className="w-9 h-9 sm:w-10 sm:h-10 block"
+                />
+                <div className="absolute inset-0 bg-[#104F38]/20 rounded-none opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Download className="w-2.5 h-2.5 text-white" />
+                </div>
               </div>
+              <span className="text-[8px] font-mono font-black text-[#104F38] text-center mt-0.5 leading-none">
+                {qr.code || 'QR 001'}
+              </span>
             </div>
 
             {/* Title & Slug */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 leading-none">
                 <span className="text-[9px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20 shrink-0">
-                  {qr.code || 'QR'}
+                  {qr.code || 'QR 001'}
                 </span>
                 <span className="text-[10px] font-mono text-[#104F38]/70 font-medium truncate">
                   /r/{qr.slug}
@@ -179,7 +184,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
             </button>
 
             <button
-              onClick={() => onDelete(qr.id)}
+              onClick={() => onDelete(qr)}
               className="p-1 text-[#104F38]/40 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors cursor-pointer border border-transparent hover:border-rose-200"
               title="Hapus QR Code"
             >
@@ -205,26 +210,34 @@ export const QRCard: React.FC<QRListItemProps> = ({
         
         {/* Left Section: Thumbnail + Title + Slug & Status */}
         <div className="flex items-center gap-3.5 min-w-0 lg:w-[32%] shrink-0">
-          {/* QR Thumbnail */}
-          <div
-            onClick={() => onOpenAnalytics(qr)}
-            className="cursor-pointer bg-[#F4FAF6] p-1.5 rounded-none border border-[#104F38]/20 shrink-0 hover:bg-[#EAF5F0] transition-colors group relative"
-            title="Klik untuk lihat pratinjau & unduh resolusi cetak"
-          >
-            <canvas
-              ref={canvasRef}
-              className="w-13 h-13 sm:w-14 sm:h-14 block"
-            />
-            <div className="absolute inset-0 bg-[#104F38]/20 rounded-none opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Download className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+          {/* QR Thumbnail with Registration Code below */}
+          <div className="flex flex-col items-center shrink-0">
+            <div
+              onClick={() => onOpenAnalytics(qr)}
+              className="cursor-pointer bg-[#F4FAF6] p-1.5 rounded-none border border-[#104F38]/20 shrink-0 hover:bg-[#EAF5F0] transition-colors group relative"
+              title="Klik untuk lihat pratinjau & unduh resolusi cetak"
+            >
+              <canvas
+                ref={canvasRef}
+                className="w-13 h-13 sm:w-14 sm:h-14 block"
+              />
+              <div className="absolute inset-0 bg-[#104F38]/20 rounded-none opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Download className="w-3.5 h-3.5 text-white drop-shadow-xs" />
+              </div>
             </div>
+            <div className="text-[9px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.2 border border-[#104F38]/20 mt-1 text-center w-full truncate shadow-2xs">
+              {qr.code || 'QR 001'}
+            </div>
+            <span className="text-[7.5px] font-bold text-[#104F38]/60 uppercase tracking-tighter mt-0.5 text-center">
+              Kode Registrasi
+            </span>
           </div>
 
           {/* Title & Short Permanent URL */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="text-xs font-mono font-black text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20 tracking-tight shrink-0">
-                {qr.code || 'QR'}
+                {qr.code || 'QR 001'}
               </span>
               <span className="text-xs font-mono text-[#104F38]/70 font-medium">/r/{qr.slug}</span>
               <button
@@ -344,7 +357,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
 
             {/* Delete button */}
             <button
-              onClick={() => onDelete(qr.id)}
+              onClick={() => onDelete(qr)}
               className="p-1.5 text-[#104F38]/40 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors cursor-pointer border border-transparent hover:border-rose-200"
               title="Hapus QR Code"
             >

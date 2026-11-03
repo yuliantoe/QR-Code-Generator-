@@ -146,8 +146,8 @@ function loadQRCodes(): DynamicQRCode[] {
       const items: DynamicQRCode[] = JSON.parse(content);
       let modified = false;
       items.forEach((item, idx) => {
-        if (!item.code) {
-          item.code = `QR-${(idx + 1).toString().padStart(3, '0')}`;
+        if (!item.code || item.code.startsWith('QR-')) {
+          item.code = `QR ${(idx + 1).toString().padStart(3, '0')}`;
           modified = true;
         }
       });
@@ -628,6 +628,51 @@ app.post('/api/auth/logout', (_req: Request, res: Response) => {
   res.json({ success: true, message: 'Berhasil keluar' });
 });
 
+// Authentication: Change Username and Password
+app.post('/api/auth/change-credentials', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
+  }
+
+  const { currentPassword, newUsername, newPassword } = req.body;
+  if (!currentPassword || !newUsername || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      error: 'Password saat ini, username baru, dan password baru wajib diisi.'
+    });
+  }
+
+  const trimmedUsername = newUsername.trim();
+  if (trimmedUsername.length < 3) {
+    return res.status(400).json({ success: false, error: 'Username baru minimal 3 karakter.' });
+  }
+
+  if (newPassword.length < 4) {
+    return res.status(400).json({ success: false, error: 'Password baru minimal 4 karakter.' });
+  }
+
+  const users = loadUsers();
+  const user = users[0];
+
+  if (!user || user.password !== currentPassword) {
+    return res.status(401).json({ success: false, error: 'Password saat ini tidak sesuai.' });
+  }
+
+  user.username = trimmedUsername;
+  user.password = newPassword;
+  saveUsers(users);
+
+  return res.json({
+    success: true,
+    message: 'Username dan password berhasil diperbarui.',
+    user: {
+      username: user.username,
+      name: user.name || 'Administrator'
+    }
+  });
+});
+
 // ==========================================
 // NFC TAGS REST API ROUTES
 // ==========================================
@@ -842,93 +887,123 @@ app.post('/api/nfc/:id/test-tap', (req: Request, res: Response) => {
 
 // Batch create QR codes (5, 10, or 15 at once)
 app.post('/api/qrcodes/batch', (req: Request, res: Response) => {
-  const { baseTitle, baseTargetUrl, count = 5, style, baseSlug, notes } = req.body;
+  try {
+    const { baseTitle, baseTargetUrl, count = 5, style, baseSlug, notes } = req.body;
 
-  if (!baseTitle || !baseTargetUrl) {
-    return res.status(400).json({ success: false, error: 'Nama dasar dan tautan tujuan wajib diisi' });
-  }
+    const batchCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), 30);
+    const qrcodes = loadQRCodes();
+    const now = new Date().toISOString();
 
-  const batchCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), 30);
-  const qrcodes = loadQRCodes();
-  const now = new Date().toISOString();
+    // Default title if empty
+    const safeTitle = (baseTitle && String(baseTitle).trim()) ? String(baseTitle).trim() : 'Meja Restoran';
 
-  let cleanBase = (baseSlug || baseTitle)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9_-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  if (!cleanBase || cleanBase.length < 2) {
-    cleanBase = 'qr-batch';
-  }
-
-  const createdItems: DynamicQRCode[] = [];
-
-  for (let i = 1; i <= batchCount; i++) {
-    const pad = i.toString().padStart(2, '0');
-    const itemTitle = `${baseTitle.trim()} #${pad}`;
-
-    // Unique slug
-    let itemSlug = `${cleanBase}-${pad}`;
-    let counter = 1;
-    while (
-      qrcodes.some(item => item.slug.toLowerCase() === itemSlug.toLowerCase()) ||
-      createdItems.some(item => item.slug.toLowerCase() === itemSlug.toLowerCase())
-    ) {
-      itemSlug = `${cleanBase}-${pad}-${counter}`;
-      counter++;
+    // Ensure valid targetUrl (fallback to default review/google URL if not provided)
+    let finalTarget = (baseTargetUrl && String(baseTargetUrl).trim()) ? String(baseTargetUrl).trim() : 'https://google.com';
+    if (!finalTarget.startsWith('http://') && !finalTarget.startsWith('https://')) {
+      finalTarget = 'https://' + finalTarget;
     }
 
-    const autoCode = `QR-${(qrcodes.length + i).toString().padStart(3, '0')}`;
-    const newQR: DynamicQRCode = {
-      id: 'qr-' + Date.now() + '-' + i + '-' + Math.random().toString(36).substring(2, 6),
-      code: autoCode,
-      slug: itemSlug,
-      title: itemTitle,
-      targetUrl: baseTargetUrl.trim(),
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
-      tags: [],
-      notes: notes || `Dibuat serentak dalam batch (${batchCount} item)`,
-      totalScans: 0,
-      lastScannedAt: null,
-      urlHistory: [
-        {
-          url: baseTargetUrl.trim(),
-          changedAt: now,
-          reason: 'Tautan Awal Dibuat (Batch)'
+    // Determine the starting sequence number from maximum existing QR code
+    let maxExistingNum = 0;
+    for (const q of qrcodes) {
+      if (q.code) {
+        const match = q.code.match(/QR\s*(\d+)/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxExistingNum) {
+            maxExistingNum = num;
+          }
         }
-      ],
-      style: style ? {
-        ...style,
-        frameText: style.frameText ? `${style.frameText} #${pad}` : undefined
-      } : {
-        fgColor: '#0f172a',
-        bgColor: '#ffffff',
-        dotStyle: 'rounded',
-        cornerStyle: 'rounded',
-        frameStyle: 'bottom-banner',
-        frameText: `PINDAI #${pad}`,
-        frameColor: '#0f172a',
-        frameTextColor: '#ffffff',
-        logoType: 'none'
       }
-    };
+    }
+    const startSeq = maxExistingNum + 1;
 
-    createdItems.push(newQR);
+    let cleanBase = (baseSlug || safeTitle)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    if (!cleanBase || cleanBase.length < 2) {
+      cleanBase = 'meja';
+    }
+
+    const createdItems: DynamicQRCode[] = [];
+
+    for (let i = 1; i <= batchCount; i++) {
+      const pad = i.toString().padStart(2, '0');
+      const itemTitle = `${safeTitle} #${pad}`;
+
+      // Unique slug
+      let itemSlug = `${cleanBase}-${pad}`;
+      let counter = 1;
+      while (
+        qrcodes.some(item => item.slug.toLowerCase() === itemSlug.toLowerCase()) ||
+        createdItems.some(item => item.slug.toLowerCase() === itemSlug.toLowerCase())
+      ) {
+        itemSlug = `${cleanBase}-${pad}-${counter}`;
+        counter++;
+      }
+
+      const seqNum = startSeq + (i - 1);
+      const autoCode = `QR ${seqNum.toString().padStart(3, '0')}`;
+
+      const newQR: DynamicQRCode = {
+        id: 'qr-' + Date.now() + '-' + i + '-' + Math.random().toString(36).substring(2, 6),
+        code: autoCode,
+        slug: itemSlug,
+        title: itemTitle,
+        targetUrl: finalTarget,
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+        tags: ['Batch', `Meja ${pad}`],
+        notes: notes || `Dibuat serentak dalam batch (${batchCount} item)`,
+        totalScans: 0,
+        lastScannedAt: null,
+        urlHistory: [
+          {
+            url: finalTarget,
+            changedAt: now,
+            reason: 'Tautan Awal Dibuat (Batch)'
+          }
+        ],
+        style: style ? {
+          ...style,
+          frameText: style.frameText ? `${style.frameText} #${pad}` : undefined
+        } : {
+          fgColor: '#104F38',
+          bgColor: '#ffffff',
+          dotStyle: 'rounded',
+          cornerStyle: 'rounded',
+          frameStyle: 'bottom-banner',
+          frameText: `PINDAI #${pad}`,
+          frameColor: '#104F38',
+          frameTextColor: '#ffffff',
+          logoType: 'none'
+        }
+      };
+
+      createdItems.push(newQR);
+    }
+
+    qrcodes.unshift(...createdItems);
+    saveQRCodes(qrcodes);
+
+    return res.status(201).json({
+      success: true,
+      count: createdItems.length,
+      data: createdItems,
+      message: `Berhasil membuat ${createdItems.length} QR Code dinamis sekaligus!`
+    });
+  } catch (err: any) {
+    console.error('Batch create error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal membuat QR Code secara batch: ' + (err?.message || 'Terjadi kesalahan sistem')
+    });
   }
-
-  qrcodes.unshift(...createdItems);
-  saveQRCodes(qrcodes);
-
-  res.status(201).json({
-    success: true,
-    count: createdItems.length,
-    data: createdItems,
-    message: `Berhasil membuat ${createdItems.length} QR Code dinamis sekaligus!`
-  });
 });
 
 // List all QR codes
@@ -957,7 +1032,7 @@ app.post('/api/qrcodes', (req: Request, res: Response) => {
   }
 
   const qrcodes = loadQRCodes();
-  const autoCode = code?.trim() || `QR-${(qrcodes.length + 1).toString().padStart(3, '0')}`;
+  const autoCode = code?.trim() || `QR ${(qrcodes.length + 1).toString().padStart(3, '0')}`;
 
   // Create clean unique slug
   let generatedSlug = (slug || autoCode || title)

@@ -132,6 +132,7 @@ export interface StandDesignOptions {
   placeName?: string;
   themeColor?: string;
   qrText: string;
+  registrationCode?: string;
   width?: number;
   height?: number;
   showPlaceName?: boolean;
@@ -227,6 +228,7 @@ function drawNfcPhoneSection(
     scale: number;
     color: string;
     customLabel?: string;
+    subLabel?: string;
     fillColor?: string;
   }
 ) {
@@ -296,17 +298,18 @@ function drawNfcPhoneSection(
   drawWaveArc(waveRadius2, false);
   drawWaveArc(waveRadius3, false);
 
-  // Label under phone
+  // Label under phone: ONLY "TAP UNTUK REVIEW" (tulisan di bawahnya telah dihapus sesuai permintaan)
   ctx.fillStyle = color;
   ctx.font = `800 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillText(customLabel, centerX, phoneY + phoneHeight + 66 * scale);
+
   ctx.restore();
 }
 
 /**
- * Draws the QR Code square container + rendered QR image + "SCAN QR UNTUK REVIEW" label
+ * Draws the QR Code square container + rendered QR image + "SCAN QR UNTUK REVIEW" + "QR 001" (Registration Code)
  */
 async function drawQrCodeSection(
   ctx: CanvasRenderingContext2D,
@@ -319,6 +322,7 @@ async function drawQrCodeSection(
     textColor: string;
     whitePadBackground?: boolean;
     customLabel?: string;
+    registrationCode?: string;
   }
 ) {
   const {
@@ -329,7 +333,8 @@ async function drawQrCodeSection(
     borderColor,
     textColor,
     whitePadBackground = true,
-    customLabel = 'SCAN QR UNTUK REVIEW'
+    customLabel = 'SCAN QR UNTUK REVIEW',
+    registrationCode = 'QR 001'
   } = options;
 
   const qrBoxSize = 380 * scale;
@@ -374,12 +379,23 @@ async function drawQrCodeSection(
     }
   }
 
-  // Label under QR Code box
+  // Label under QR Code box: "SCAN QR UNTUK REVIEW"
   ctx.fillStyle = textColor;
   ctx.font = `800 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillText(customLabel, centerX, qrBoxY + qrBoxSize + 66 * scale);
+
+  // Kode Registrasi di Bawah QR Code: berupa "QR 001", "QR 002", dan seterusnya
+  if (registrationCode) {
+    const cleanNum = registrationCode.replace(/^QR[- ]?/i, '').trim();
+    const formattedCode = cleanNum ? `QR ${cleanNum}` : registrationCode;
+
+    ctx.font = `900 ${26 * scale}px "Plus Jakarta Sans", monospace, sans-serif`;
+    ctx.fillStyle = textColor;
+    ctx.fillText(formattedCode, centerX, qrBoxY + qrBoxSize + 104 * scale);
+  }
+
   ctx.restore();
 }
 
@@ -499,7 +515,8 @@ async function renderA6BlueCutout(
     qrText,
     borderColor: '#000000',
     textColor: '#000000',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -581,7 +598,8 @@ async function renderA6OnyxDark(
     qrText,
     borderColor: '#ffffff',
     textColor: '#ffffff',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -708,7 +726,8 @@ async function renderA6BlueDome(
     qrText,
     borderColor: '#000000',
     textColor: '#000000',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -824,7 +843,8 @@ async function renderA6Pinwheel(
     qrText,
     borderColor: '#000000',
     textColor: '#000000',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -908,7 +928,8 @@ async function renderClassicBlue(
     qrText,
     borderColor: '#000000',
     textColor: '#000000',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -1037,7 +1058,8 @@ async function renderBlueArc(
     qrText,
     borderColor: '#000000',
     textColor: '#000000',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -1163,7 +1185,8 @@ async function renderPinwheel4Color(
     qrText,
     borderColor: '#ffffff',
     textColor: '#ffffff',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -1289,7 +1312,8 @@ async function renderBorder4Color(
     qrText,
     borderColor: '#000000',
     textColor: '#000000',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -1383,7 +1407,8 @@ async function renderOnyxBlack(
     qrText,
     borderColor: '#ffffff',
     textColor: '#ffffff',
-    whitePadBackground: true
+    whitePadBackground: true,
+    registrationCode: options.registrationCode
   });
 }
 
@@ -1520,6 +1545,78 @@ export function printStandSheet(
           <span>Garis lipat / batas akrilik meja ${sizeLabel} · DinamisQR Tap to Review</span>
         </div>
       </div>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+/**
+ * Opens browser print dialog formatted for multiple acrylic stand / table tent card sheets
+ */
+export function printMultipleStandSheets(
+  stands: Array<{
+    dataUrl: string;
+    title: string;
+    code: string;
+  }>,
+  formatSize: StandFormatSize = 'a6'
+): void {
+  if (!stands || stands.length === 0) return;
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  const isA6 = formatSize === 'a6';
+  const sizeLabel = isA6 ? 'Ukuran A6 (105 × 148 mm)' : 'Ukuran Persegi 1:1';
+
+  const itemsHtml = stands.map((item, idx) => `
+    <div class="sheet">
+      <div class="sheet-meta no-print">
+        <span class="badge-code">${item.code}</span>
+        <strong>${item.title}</strong>
+        <span style="color: #64748b; font-size: 11px;">(Lembar ${idx + 1} dari ${stands.length})</span>
+      </div>
+      <p class="guide-text no-print">Potong garis tepi untuk diselipkan ke stand meja akrilik ${sizeLabel}.</p>
+      <img class="stand-img" src="${item.dataUrl}" alt="${item.title}" />
+      <div class="cut-lines">
+        <span>Garis lipat / batas akrilik meja ${sizeLabel} · ${item.code} · DinamisQR</span>
+      </div>
+    </div>
+  `).join('\n');
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Cetak ${stands.length} Stand Akrilik Meja - ${sizeLabel}</title>
+      <style>
+        @page { size: A4 portrait; margin: 8mm; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; color: #000; margin: 0; padding: 10px; background: #f8fafc; }
+        .toolbar { position: sticky; top: 0; background: #ffffff; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; gap: 16px; z-index: 100; }
+        .sheet { max-width: ${isA6 ? '460px' : '520px'}; margin: 0 auto 24px auto; background: #ffffff; border: 2px dashed #94a3b8; padding: 16px; border-radius: 6px; page-break-after: always; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+        .sheet:last-child { page-break-after: avoid; margin-bottom: 0; }
+        .sheet-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+        .badge-code { background: #ffe600; color: #104f38; padding: 2px 8px; font-family: monospace; font-weight: 800; border: 1px solid rgba(16,79,56,0.3); }
+        .guide-text { font-size: 11px; color: #64748b; margin: 0 0 10px 0; font-weight: 500; }
+        .stand-img { width: 100%; height: auto; display: block; margin: 0 auto; }
+        .cut-lines { border-top: 1px dashed #cbd5e1; margin-top: 12px; padding-top: 6px; font-size: 11px; color: #94a3b8; }
+        @media print {
+          body { background: #ffffff; padding: 0; }
+          .no-print, .toolbar { display: none !important; }
+          .sheet { border: 1px dashed #cbd5e1; padding: 0; margin: 0 auto; box-shadow: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="toolbar no-print">
+        <button onclick="window.print()" style="padding: 10px 24px; background: #0038CB; color: white; border: none; border-radius: 6px; font-weight: 800; cursor: pointer; font-size: 14px; box-shadow: 0 2px 8px rgba(0,56,203,0.3);">
+          🖨️ Cetak Semua ${stands.length} Stand Meja (Ctrl + P)
+        </button>
+        <span style="font-size: 13px; font-weight: 600; color: #334155;">
+          ${stands.length} Stand Meja (${sizeLabel})
+        </span>
+      </div>
+      ${itemsHtml}
     </body>
     </html>
   `);
