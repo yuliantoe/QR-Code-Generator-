@@ -7,5 +7,23 @@
     "os": "Unknown OS",
     "browser": "Browser",
     "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1793931126261-6q958",
+    "qrId": "qr-auto-recovered",
+    "timestamp": "2026-11-06T02:12:06.260Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1793931205998-oeqhs",
+    "qrId": "qr-menu-resto",
+    "timestamp": "2026-11-06T02:13:25.998Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
   }
 ]

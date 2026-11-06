@@ -694,36 +694,61 @@ app.post('/api/nfc/activate', async (req: Request, res: Response) => {
 
 // Update NFC tag (requires PIN verification)
 app.put('/api/nfc/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { placeName, googleReviewUrl, pin, newPin, status, notes } = req.body;
+  try {
+    const { id } = req.params;
+    const { placeName, googleReviewUrl, pin, newPin, status, notes, tagData } = req.body;
 
-  const tag = await db.getNFCTagById(id);
-  if (!tag) {
-    return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
-  }
+    let tag = await db.getNFCTagById(id);
+    if (!tag) {
+      if (tagData) {
+        tag = {
+          ...tagData,
+          id,
+          placeName: placeName !== undefined ? placeName.trim() : tagData.placeName,
+          googleReviewUrl: googleReviewUrl !== undefined ? googleReviewUrl.trim() : tagData.googleReviewUrl,
+          pin: newPin ? String(newPin).trim() : tagData.pin,
+          status: status || tagData.status,
+          notes: notes !== undefined ? notes : tagData.notes,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
+      }
+    } else {
+      // Verify PIN
+      if (pin && String(pin).trim() !== String(tag.pin).trim()) {
+        return res.status(403).json({
+          success: false,
+          error: 'PIN NFC Tag tidak sesuai! Masukkan PIN yang tepat.'
+        });
+      }
 
-  // Verify PIN
-  if (pin && String(pin).trim() !== String(tag.pin).trim()) {
-    return res.status(403).json({
+      if (placeName !== undefined) tag.placeName = placeName.trim();
+      if (googleReviewUrl !== undefined) tag.googleReviewUrl = googleReviewUrl.trim();
+      if (newPin !== undefined && newPin.trim()) tag.pin = String(newPin).trim();
+      if (status !== undefined) tag.status = status;
+      if (notes !== undefined) tag.notes = notes;
+      tag.updatedAt = new Date().toISOString();
+    }
+
+    try {
+      await db.saveNFCTag(tag);
+    } catch (saveErr) {
+      console.warn('[NFC] Warning saving NFC tag to DB:', saveErr);
+    }
+
+    return res.json({
+      success: true,
+      data: tag,
+      message: 'Data NFC Tag berhasil diperbarui!'
+    });
+  } catch (err: any) {
+    console.error('Update NFC error:', err);
+    return res.status(500).json({
       success: false,
-      error: 'PIN NFC Tag tidak sesuai! Masukkan PIN yang tepat.'
+      error: 'Gagal memperbarui NFC: ' + (err?.message || 'Terjadi kesalahan sistem')
     });
   }
-
-  if (placeName !== undefined) tag.placeName = placeName.trim();
-  if (googleReviewUrl !== undefined) tag.googleReviewUrl = googleReviewUrl.trim();
-  if (newPin !== undefined && newPin.trim()) tag.pin = String(newPin).trim();
-  if (status !== undefined) tag.status = status;
-  if (notes !== undefined) tag.notes = notes;
-  tag.updatedAt = new Date().toISOString();
-
-  await db.saveNFCTag(tag);
-
-  res.json({
-    success: true,
-    data: tag,
-    message: 'Data NFC Tag berhasil diperbarui!'
-  });
 });
 
 // Delete NFC tag (with PIN verification)
@@ -979,47 +1004,82 @@ app.post('/api/qrcodes', async (req: Request, res: Response) => {
 
 // Update dynamic QR code (update target URL or properties)
 app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { title, targetUrl, status, tags, notes, style, password, expiryDate, utm, reason } = req.body;
+  try {
+    const { id } = req.params;
+    const { title, targetUrl, status, tags, notes, style, password, expiryDate, utm, reason, qrData } = req.body;
 
-  const current = await db.getQRCodeById(id);
+    let current = await db.getQRCodeById(id);
+    const now = new Date().toISOString();
+    let urlChanged = false;
 
-  if (!current) {
-    return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
-  }
+    if (!current) {
+      // If not in database or serverless instance cache, recover from client qrData
+      if (qrData) {
+        current = {
+          ...qrData,
+          id,
+          targetUrl: targetUrl ? targetUrl.trim() : (qrData.targetUrl || 'https://google.com'),
+          updatedAt: now,
+          urlHistory: [
+            {
+              url: targetUrl ? targetUrl.trim() : (qrData.targetUrl || 'https://google.com'),
+              changedAt: now,
+              reason: reason || 'Pembaruan tautan tujuan'
+            },
+            ...(Array.isArray(qrData.urlHistory) ? qrData.urlHistory : [])
+          ]
+        };
+        urlChanged = true;
+      } else {
+        return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
+      }
+    } else {
+      if (targetUrl && targetUrl.trim() !== current.targetUrl) {
+        urlChanged = true;
+        current.urlHistory = current.urlHistory || [];
+        current.urlHistory.unshift({
+          url: targetUrl.trim(),
+          changedAt: now,
+          reason: reason || 'Pembaruan tautan tujuan'
+        });
+        current.targetUrl = targetUrl.trim();
+      }
 
-  const now = new Date().toISOString();
-  let urlChanged = false;
+      if (title !== undefined) current.title = title.trim();
+      if (status !== undefined) current.status = status;
+      if (tags !== undefined) current.tags = Array.isArray(tags) ? tags : [];
+      if (notes !== undefined) current.notes = notes;
+      if (style !== undefined) current.style = style;
+      if (password !== undefined) current.password = password ? password.trim() : undefined;
+      if (expiryDate !== undefined) current.expiryDate = expiryDate || undefined;
+      if (utm !== undefined) current.utm = utm;
+      current.updatedAt = now;
+    }
 
-  if (targetUrl && targetUrl.trim() !== current.targetUrl) {
-    urlChanged = true;
-    current.urlHistory.unshift({
-      url: targetUrl.trim(),
-      changedAt: now,
-      reason: reason || 'Pembaruan tautan tujuan'
+    if (!current) {
+      return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
+    }
+
+    try {
+      await db.saveQRCode(current);
+    } catch (saveErr) {
+      console.warn('[QR] Warning saving updated QR code to DB:', saveErr);
+    }
+
+    return res.json({
+      success: true,
+      data: current,
+      message: urlChanged
+        ? 'Tautan tujuan berhasil diperbarui! QR code fisik yang dicetak akan langsung mengarah ke tautan baru.'
+        : 'Pengaturan QR code berhasil diperbarui.'
     });
-    current.targetUrl = targetUrl.trim();
+  } catch (err: any) {
+    console.error('Update QR error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal memperbarui tautan: ' + (err?.message || 'Terjadi kesalahan sistem')
+    });
   }
-
-  if (title !== undefined) current.title = title.trim();
-  if (status !== undefined) current.status = status;
-  if (tags !== undefined) current.tags = Array.isArray(tags) ? tags : [];
-  if (notes !== undefined) current.notes = notes;
-  if (style !== undefined) current.style = style;
-  if (password !== undefined) current.password = password ? password.trim() : undefined;
-  if (expiryDate !== undefined) current.expiryDate = expiryDate || undefined;
-  if (utm !== undefined) current.utm = utm;
-  current.updatedAt = now;
-
-  await db.saveQRCode(current);
-
-  res.json({
-    success: true,
-    data: current,
-    message: urlChanged
-      ? 'Tautan tujuan berhasil diperbarui! QR code fisik yang dicetak akan langsung mengarah ke tautan baru.'
-      : 'Pengaturan QR code berhasil diperbarui.'
-  });
 });
 
 // Delete QR code

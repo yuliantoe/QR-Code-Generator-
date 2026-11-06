@@ -1,5 +1,22 @@
 [
   {
+    "id": "qr-auto-recovered",
+    "code": "QR 088",
+    "slug": "recovery-slug",
+    "title": "Meja Auto Recovered",
+    "targetUrl": "https://wa.me/6281234567",
+    "updatedAt": "2026-11-06T02:11:59.224Z",
+    "urlHistory": [
+      {
+        "url": "https://wa.me/6281234567",
+        "changedAt": "2026-11-06T02:11:59.224Z",
+        "reason": "Recovery link update"
+      }
+    ],
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-06T02:12:06.260Z"
+  },
+  {
     "id": "qr-1793930265848-5-fmpw",
     "code": "QR 106",
     "slug": "meja-teras-05",
@@ -243,19 +260,29 @@
     "code": "QR 001",
     "slug": "menu-resto",
     "title": "Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)",
-    "targetUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop",
+    "targetUrl": "https://instagram.com/restokeren",
     "status": "active",
     "createdAt": "2026-09-28T10:11:47.903Z",
-    "updatedAt": "2026-10-28T07:11:47.903Z",
+    "updatedAt": "2026-11-06T02:13:19.729Z",
     "tags": [
       "Restoran",
       "Meja Cetak",
       "Buku Menu"
     ],
     "notes": "Dicetak di 25 stand akrilik meja. Saat pergantian musim atau promo baru, cukup ganti link tujuan di sini tanpa ganti akrilik.",
-    "totalScans": 842,
-    "lastScannedAt": "2026-10-28T09:53:47.903Z",
+    "totalScans": 843,
+    "lastScannedAt": "2026-11-06T02:13:25.998Z",
     "urlHistory": [
+      {
+        "url": "https://instagram.com/restokeren",
+        "changedAt": "2026-11-06T02:13:19.729Z",
+        "reason": "Alihkan ke Akun Instagram Promo"
+      },
+      {
+        "url": "https://menu-baru.kafe.com",
+        "changedAt": "2026-11-06T02:11:38.789Z",
+        "reason": "Update Menu Spesial Akhir Tahun"
+      },
       {
         "url": "https://example.com/menu-grand-opening-2026.pdf",
         "changedAt": "2026-09-28T10:11:47.903Z",
