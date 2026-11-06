@@ -348,7 +348,130 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     token,
     user: {
       username: user.username,
-      name: user.name || 'Administrator'
+      name: user.name || 'Pengguna',
+      email: user.email || '',
+      phone: user.phone || '',
+      plan: user.plan || 'trial',
+      trialExpiresAt: user.trialExpiresAt,
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      isWatermarkActive: user.isWatermarkActive !== undefined ? user.isWatermarkActive : (user.plan === 'trial')
+    }
+  });
+});
+
+// Authentication: Register New User (Trial 3 Hari)
+app.post('/api/auth/register', async (req: Request, res: Response) => {
+  const { username, password, name, fullName, phone, email } = req.body;
+  const userNameVal = (name || fullName || '').trim();
+
+  if (!username || !password || !userNameVal) {
+    return res.status(400).json({
+      success: false,
+      error: 'Nama lengkap, username, dan password wajib diisi.'
+    });
+  }
+
+  const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  if (cleanUsername.length < 3) {
+    return res.status(400).json({
+      success: false,
+      error: 'Username minimal 3 karakter huruf/angka tanpa spasi.'
+    });
+  }
+
+  if (password.length < 4) {
+    return res.status(400).json({
+      success: false,
+      error: 'Password minimal 4 karakter.'
+    });
+  }
+
+  const existing = await db.getUserByUsername(cleanUsername);
+  if (existing) {
+    return res.status(409).json({
+      success: false,
+      error: `Username "${cleanUsername}" sudah digunakan. Silakan gunakan username lain.`
+    });
+  }
+
+  // Calculate 3-day trial expiry
+  const now = new Date();
+  const trialDays = 3;
+  const trialExpiresAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const newUser = await db.createUser({
+    username: cleanUsername,
+    password: password,
+    name: userNameVal,
+    email: email?.trim() || '',
+    phone: phone?.trim() || '',
+    plan: 'trial',
+    trialExpiresAt,
+    subscriptionExpiresAt: null,
+    isWatermarkActive: true,
+    createdAt: now.toISOString()
+  });
+
+  const token = 'auth_' + Buffer.from(`${newUser.username}:${Date.now()}:${Math.random()}`).toString('base64');
+
+  return res.status(201).json({
+    success: true,
+    message: 'Selamat! Akun baru Anda dengan Trial 3 Hari Gratis telah berhasil dibuat.',
+    token,
+    user: {
+      username: newUser.username,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      plan: newUser.plan,
+      trialExpiresAt: newUser.trialExpiresAt,
+      subscriptionExpiresAt: newUser.subscriptionExpiresAt,
+      isWatermarkActive: newUser.isWatermarkActive
+    }
+  });
+});
+
+// Authentication: Upgrade Subscription Plan (Bulanan / Tahunan)
+app.post('/api/auth/upgrade-plan', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
+  }
+
+  const token = authHeader.substring(7);
+  let targetUsername = 'admin';
+  try {
+    const raw = Buffer.from(token.replace(/^auth_/, ''), 'base64').toString('ascii');
+    const parts = raw.split(':');
+    if (parts[0]) targetUsername = parts[0];
+  } catch {
+    // fallback
+  }
+
+  const { plan = 'monthly' } = req.body;
+  if (plan !== 'monthly' && plan !== 'yearly') {
+    return res.status(400).json({ success: false, error: 'Pilihan paket harus bulanan ("monthly") atau tahunan ("yearly").' });
+  }
+
+  const updatedUser = await db.updateUserPlan(targetUsername, plan);
+  if (!updatedUser) {
+    return res.status(404).json({ success: false, error: 'User tidak ditemukan' });
+  }
+
+  return res.json({
+    success: true,
+    message: plan === 'yearly'
+      ? 'Selamat! Akun Anda telah diupgrade ke Paket Bisnis Tahunan. Semua watermark pada QR dan Stand meja telah dihapus permanen!'
+      : 'Selamat! Akun Anda telah diupgrade ke Paket Pro Bulanan. Semua watermark pada QR dan Stand meja telah dihapus!',
+    user: {
+      username: updatedUser.username,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      plan: updatedUser.plan,
+      trialExpiresAt: updatedUser.trialExpiresAt,
+      subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
+      isWatermarkActive: false
     }
   });
 });
@@ -361,17 +484,34 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
   }
 
   const token = authHeader.substring(7);
-  if (!token.startsWith('auth_')) {
-    return res.status(401).json({ success: false, error: 'Token sesi tidak valid' });
+  let targetUsername = '';
+  try {
+    const raw = Buffer.from(token.replace(/^auth_/, ''), 'base64').toString('ascii');
+    const parts = raw.split(':');
+    if (parts[0]) targetUsername = parts[0];
+  } catch {
+    // ignore
   }
 
-  const users = await db.getUsers();
-  const defaultAdmin = users[0] || { username: 'admin', name: 'Administrator' };
+  const user = targetUsername ? await db.getUserByUsername(targetUsername) : null;
+  const currentUser = user || (await db.getUsers())[0] || {
+    username: 'admin',
+    name: 'Administrator',
+    plan: 'yearly',
+    isWatermarkActive: false
+  };
+
   return res.json({
     success: true,
     user: {
-      username: defaultAdmin.username,
-      name: defaultAdmin.name
+      username: currentUser.username,
+      name: currentUser.name,
+      email: currentUser.email || '',
+      phone: currentUser.phone || '',
+      plan: currentUser.plan || 'trial',
+      trialExpiresAt: currentUser.trialExpiresAt,
+      subscriptionExpiresAt: currentUser.subscriptionExpiresAt,
+      isWatermarkActive: currentUser.isWatermarkActive !== undefined ? currentUser.isWatermarkActive : (currentUser.plan === 'trial')
     }
   });
 });
@@ -756,73 +896,85 @@ app.get('/api/qrcodes/:id', async (req: Request, res: Response) => {
 
 // Create new dynamic QR code
 app.post('/api/qrcodes', async (req: Request, res: Response) => {
-  const { title, targetUrl, slug, code, tags, notes, style, password, expiryDate, utm } = req.body;
+  try {
+    const { title, targetUrl, slug, code, tags, notes, style, password, expiryDate, utm } = req.body;
 
-  if (!title || !targetUrl) {
-    return res.status(400).json({ success: false, error: 'Judul dan URL tujuan wajib diisi' });
+    if (!title || !targetUrl) {
+      return res.status(400).json({ success: false, error: 'Judul dan URL tujuan wajib diisi' });
+    }
+
+    const qrcodes = await db.getQRCodes().catch(() => []);
+    const autoCode = code?.trim() || `QR ${(qrcodes.length + 1).toString().padStart(3, '0')}`;
+
+    let generatedSlug = (slug || autoCode || title)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    if (!generatedSlug || generatedSlug.length < 3) {
+      generatedSlug = autoCode.toLowerCase().replace(/\s+/g, '-');
+    }
+
+    let finalSlug = generatedSlug;
+    let counter = 1;
+    while (qrcodes.some(item => item.slug.toLowerCase() === finalSlug.toLowerCase())) {
+      finalSlug = `${generatedSlug}-${counter}`;
+      counter++;
+    }
+
+    const now = new Date().toISOString();
+    const newQR: DynamicQRCode = {
+      id: 'qr-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      code: autoCode,
+      slug: finalSlug,
+      title: title.trim(),
+      targetUrl: targetUrl.trim(),
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+      tags: Array.isArray(tags) ? tags : [],
+      notes: notes || '',
+      totalScans: 0,
+      lastScannedAt: null,
+      urlHistory: [
+        {
+          url: targetUrl.trim(),
+          changedAt: now,
+          reason: 'Tautan Awal Dibuat'
+        }
+      ],
+      style: style || {
+        fgColor: '#104F38',
+        bgColor: '#ffffff',
+        dotStyle: 'rounded',
+        cornerStyle: 'rounded',
+        frameStyle: 'bottom-banner',
+        frameText: 'PINDAI SAYA',
+        frameColor: '#104F38',
+        frameTextColor: '#ffffff',
+        logoType: 'none'
+      },
+      password: password || undefined,
+      expiryDate: expiryDate || undefined,
+      utm: utm || undefined
+    };
+
+    try {
+      await db.saveQRCode(newQR);
+    } catch (saveErr) {
+      console.warn('[QR] Warning saving to persistent DB, returning item anyway:', saveErr);
+    }
+
+    return res.status(201).json({ success: true, data: newQR });
+  } catch (err: any) {
+    console.error('Create QR error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal membuat QR Code: ' + (err?.message || 'Terjadi kesalahan sistem')
+    });
   }
-
-  const qrcodes = await db.getQRCodes();
-  const autoCode = code?.trim() || `QR ${(qrcodes.length + 1).toString().padStart(3, '0')}`;
-
-  let generatedSlug = (slug || autoCode || title)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9_-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  if (!generatedSlug || generatedSlug.length < 3) {
-    generatedSlug = autoCode.toLowerCase().replace(/\s+/g, '-');
-  }
-
-  let finalSlug = generatedSlug;
-  let counter = 1;
-  while (qrcodes.some(item => item.slug.toLowerCase() === finalSlug.toLowerCase())) {
-    finalSlug = `${generatedSlug}-${counter}`;
-    counter++;
-  }
-
-  const now = new Date().toISOString();
-  const newQR: DynamicQRCode = {
-    id: 'qr-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-    code: autoCode,
-    slug: finalSlug,
-    title: title.trim(),
-    targetUrl: targetUrl.trim(),
-    status: 'active',
-    createdAt: now,
-    updatedAt: now,
-    tags: Array.isArray(tags) ? tags : [],
-    notes: notes || '',
-    totalScans: 0,
-    lastScannedAt: null,
-    urlHistory: [
-      {
-        url: targetUrl.trim(),
-        changedAt: now,
-        reason: 'Tautan Awal Dibuat'
-      }
-    ],
-    style: style || {
-      fgColor: '#0f172a',
-      bgColor: '#ffffff',
-      dotStyle: 'rounded',
-      cornerStyle: 'rounded',
-      frameStyle: 'bottom-banner',
-      frameText: 'PINDAI SAYA',
-      frameColor: '#0f172a',
-      frameTextColor: '#ffffff',
-      logoType: 'none'
-    },
-    password: password || undefined,
-    expiryDate: expiryDate || undefined,
-    utm: utm || undefined
-  };
-
-  await db.saveQRCode(newQR);
-
-  res.status(201).json({ success: true, data: newQR });
 });
 
 // Update dynamic QR code (update target URL or properties)

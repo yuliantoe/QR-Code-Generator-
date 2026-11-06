@@ -136,6 +136,7 @@ export interface StandDesignOptions {
   width?: number;
   height?: number;
   showPlaceName?: boolean;
+  watermark?: boolean;
 }
 
 /**
@@ -1483,6 +1484,38 @@ export async function renderGoogleReviewStandToCanvas(
     default:
       await renderClassicBlue(ctx, width, height, scale, options, gLogoImg);
       break;
+  }
+
+  // Render watermark for Trial 3 Hari
+  if (options.watermark) {
+    ctx.save();
+
+    // 1. Diagonal Watermark across the entire stand card
+    ctx.translate(width / 2, height / 2);
+    ctx.rotate(-Math.PI / 5);
+    ctx.font = `900 ${Math.round(42 * scale)}px "Plus Jakarta Sans", sans-serif`;
+    ctx.fillStyle = 'rgba(225, 29, 72, 0.25)'; // translucent rose-600
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DINAMISQR • TRIAL 3 HARI', 0, -110 * scale);
+    ctx.fillText('VERSI UJI COBA • WATERMARK AKTIF', 0, 0);
+    ctx.fillText('UPGRADE KE PRO BULANAN / TAHUNAN', 0, 110 * scale);
+    ctx.restore();
+
+    // 2. High-visibility warning bar at the bottom
+    const barHeight = Math.round(38 * scale);
+    ctx.fillStyle = 'rgba(225, 29, 72, 0.95)';
+    ctx.fillRect(0, height - barHeight, width, barHeight);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.round(13 * scale)}px "Plus Jakarta Sans", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+      '⚠️ DESAIN TRIAL 3 HARI — Upgrade ke Paket Bulanan / Tahunan untuk Cetak Bersih Tanpa Watermark',
+      width / 2,
+      height - barHeight / 2
+    );
   }
 }
 

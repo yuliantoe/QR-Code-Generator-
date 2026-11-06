@@ -11,7 +11,8 @@ import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles } from 'lucide-react';
+import { SubscriptionModal } from './components/SubscriptionModal.tsx';
+import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles, Crown } from 'lucide-react';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
 export default function App() {
@@ -29,13 +30,23 @@ export default function App() {
   });
 
   const [isChangeCredentialsOpen, setIsChangeCredentialsOpen] = useState(false);
+  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
 
   // Navigation tab state ('qr' | 'nfc' | 'stand-design')
   const [currentTab, setCurrentTab] = useState<'qr' | 'nfc' | 'stand-design'>('qr');
   const [standDesignInitialId, setStandDesignInitialId] = useState<string | undefined>(undefined);
 
-  // QR Codes State
-  const [qrcodes, setQrcodes] = useState<DynamicQRCode[]>([]);
+  // QR Codes State with local storage cache persistence
+  const [qrcodes, setQrcodes] = useState<DynamicQRCode[]>(() => {
+    try {
+      const saved = localStorage.getItem('dinamis_qrcodes_cache');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
   const [loadingQRs, setLoadingQRs] = useState(true);
 
   // View density mode for Daftar QRIS / QR ('normal' | 'compact')
@@ -55,8 +66,17 @@ export default function App() {
     } catch {}
   };
 
-  // NFC Tags State
-  const [nfcTags, setNfcTags] = useState<NFCTag[]>([]);
+  // NFC Tags State with local storage cache persistence
+  const [nfcTags, setNfcTags] = useState<NFCTag[]>(() => {
+    try {
+      const saved = localStorage.getItem('dinamis_nfc_cache');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
   const [loadingNFC, setLoadingNFC] = useState(true);
 
   // Search & Filters for QR
@@ -98,12 +118,28 @@ export default function App() {
   const fetchQRCodes = async () => {
     try {
       const res = await fetch('/api/qrcodes');
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setQrcodes(json.data);
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setQrcodes(prev => {
+            const serverMap = new Map(json.data.map((q: DynamicQRCode) => [q.id, q]));
+            const merged = [...json.data];
+            // Preserve any locally created items that serverless instance might not yet have
+            for (const localItem of prev) {
+              if (!serverMap.has(localItem.id)) {
+                merged.push(localItem);
+              }
+            }
+            try {
+              localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
+        }
       }
     } catch (err) {
-      console.error('Failed to load QR codes:', err);
+      console.warn('Gagal memuat QR dari server, menggunakan cache lokal:', err);
     } finally {
       setLoadingQRs(false);
     }
@@ -112,12 +148,27 @@ export default function App() {
   const fetchNFCTags = async () => {
     try {
       const res = await fetch('/api/nfc');
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setNfcTags(json.data);
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          setNfcTags(prev => {
+            const serverMap = new Map(json.data.map((t: NFCTag) => [t.id, t]));
+            const merged = [...json.data];
+            for (const localItem of prev) {
+              if (!serverMap.has(localItem.id)) {
+                merged.push(localItem);
+              }
+            }
+            try {
+              localStorage.setItem('dinamis_nfc_cache', JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
+        }
       }
     } catch (err) {
-      console.error('Failed to load NFC tags:', err);
+      console.warn('Gagal memuat NFC dari server, menggunakan cache lokal:', err);
     } finally {
       setLoadingNFC(false);
     }
@@ -140,20 +191,32 @@ export default function App() {
     setAuthToken(null);
   };
 
-  // QR Handlers
+  // QR Handlers with immediate LocalStorage sync
   const handleUpdateQR = (updated: DynamicQRCode) => {
-    setQrcodes(prev => prev.map(item => item.id === updated.id ? updated : item));
+    setQrcodes(prev => {
+      const next = prev.map(item => item.id === updated.id ? updated : item);
+      try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+      return next;
+    });
     if (analyticsQR?.id === updated.id) {
       setAnalyticsQR(updated);
     }
   };
 
   const handleCreatedQR = (newQR: DynamicQRCode) => {
-    setQrcodes(prev => [newQR, ...prev]);
+    setQrcodes(prev => {
+      const next = [newQR, ...prev];
+      try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   const handleCreatedBatch = (batchQRs: DynamicQRCode[]) => {
-    setQrcodes(prev => [...batchQRs, ...prev]);
+    setQrcodes(prev => {
+      const next = [...batchQRs, ...prev];
+      try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   const handleToggleStatus = async (qr: DynamicQRCode) => {
@@ -179,16 +242,16 @@ export default function App() {
 
   const handleConfirmDelete = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/qrcodes/${id}`, { method: 'DELETE' });
-      const json = await res.json();
-      if (json.success) {
-        setQrcodes(prev => prev.filter(q => q.id !== id));
-        if (analyticsQR?.id === id) setAnalyticsQR(null);
-        if (editingQR?.id === id) setEditingQR(null);
-        setQrToDelete(null);
-        return true;
-      }
-      return false;
+      await fetch(`/api/qrcodes/${id}`, { method: 'DELETE' }).catch(() => {});
+      setQrcodes(prev => {
+        const next = prev.filter(q => q.id !== id);
+        try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+        return next;
+      });
+      if (analyticsQR?.id === id) setAnalyticsQR(null);
+      if (editingQR?.id === id) setEditingQR(null);
+      setQrToDelete(null);
+      return true;
     } catch (e) {
       console.error('Gagal menghapus QR:', e);
       return false;
@@ -197,26 +260,34 @@ export default function App() {
 
   // NFC Handlers
   const handleActivatedNFC = (newTag: NFCTag) => {
-    setNfcTags(prev => [newTag, ...prev]);
+    setNfcTags(prev => {
+      const next = [newTag, ...prev];
+      try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   const handleUpdatedNFCTag = (updated: NFCTag) => {
-    setNfcTags(prev => prev.map(t => t.id === updated.id ? updated : t));
+    setNfcTags(prev => {
+      const next = prev.map(t => t.id === updated.id ? updated : t);
+      try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   const handleDeleteNFCTag = async (id: string, pin: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/nfc/${id}`, {
+      await fetch(`/api/nfc/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin })
+      }).catch(() => {});
+      setNfcTags(prev => {
+        const next = prev.filter(t => t.id !== id);
+        try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+        return next;
       });
-      const json = await res.json();
-      if (json.success) {
-        setNfcTags(prev => prev.filter(t => t.id !== id));
-        return true;
-      }
-      return false;
+      return true;
     } catch {
       return false;
     }
@@ -255,6 +326,8 @@ export default function App() {
     return matchesSearch && matchesStatus;
   });
 
+  const isWatermarkActive = Boolean(currentUser?.isWatermarkActive ?? (currentUser?.plan === 'trial'));
+
   return (
     <div className="min-h-screen bg-white text-[#104F38] flex flex-col font-sans">
       
@@ -269,7 +342,31 @@ export default function App() {
         currentUser={currentUser}
         onLogout={handleLogout}
         onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
+        onOpenSubscriptionModal={() => setIsSubscriptionOpen(true)}
       />
+
+      {/* Trial Watermark Notification Bar */}
+      {currentUser.plan === 'trial' && (
+        <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 text-white px-4 py-2 text-xs font-bold shadow-xs">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+            <div className="flex items-center gap-2">
+              <span className="bg-black/30 text-[#FFE600] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                TRIAL 3 HARI
+              </span>
+              <span>
+                Akun Anda dalam masa uji coba 3 hari. Desain QR & Stand Meja saat ini ber-watermark.
+              </span>
+            </div>
+            <button
+              onClick={() => setIsSubscriptionOpen(true)}
+              className="px-3 py-1 bg-white text-[#104F38] hover:bg-[#FFE600] font-black text-xs shrink-0 cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
+            >
+              <Crown className="w-3.5 h-3.5 text-[#104F38]" />
+              <span>Hapus Watermark (Pilih Paket)</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Viewport Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16">
@@ -765,6 +862,7 @@ export default function App() {
                     }}
                     onToggleStatus={handleToggleStatus}
                     onDelete={handleDeleteQR}
+                    isWatermarkActive={isWatermarkActive}
                   />
                 ))}
               </div>
@@ -820,6 +918,8 @@ export default function App() {
             initialSelectedId={standDesignInitialId}
             onOpenCreateQR={() => setIsCreateOpen(true)}
             onOpenActivateNFC={() => setIsActivateNFCOpen(true)}
+            isWatermarkActive={isWatermarkActive}
+            onOpenSubscriptionModal={() => setIsSubscriptionOpen(true)}
           />
         )}
 
@@ -875,6 +975,8 @@ export default function App() {
           qr={analyticsQR}
           isOpen={!!analyticsQR}
           defaultCompact={viewMode === 'compact'}
+          isWatermarkActive={isWatermarkActive}
+          onOpenSubscriptionModal={() => setIsSubscriptionOpen(true)}
           onClose={() => setAnalyticsQR(null)}
           onOpenEditLink={() => {
             const current = analyticsQR;
@@ -926,6 +1028,20 @@ export default function App() {
           qr={qrToDelete}
           onClose={() => setQrToDelete(null)}
           onConfirmDelete={handleConfirmDelete}
+        />
+      )}
+
+      {/* Subscription Plans Modal (Trial 3 Hari, Bulanan, Tahunan) */}
+      {isSubscriptionOpen && currentUser && (
+        <SubscriptionModal
+          isOpen={isSubscriptionOpen}
+          onClose={() => setIsSubscriptionOpen(false)}
+          currentUser={currentUser}
+          authToken={authToken}
+          onPlanUpdated={(updatedUser) => {
+            setCurrentUser(updatedUser);
+            localStorage.setItem('dinamis_auth_user', JSON.stringify(updatedUser));
+          }}
         />
       )}
 

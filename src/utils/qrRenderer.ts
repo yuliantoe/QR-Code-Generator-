@@ -26,7 +26,8 @@ export async function renderStyledQRToCanvas(
   canvas: HTMLCanvasElement,
   text: string,
   style: QRStyleConfig,
-  size: number = 600
+  size: number = 600,
+  watermark: boolean = false
 ): Promise<void> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -172,6 +173,32 @@ export async function renderStyledQRToCanvas(
       ctx.textBaseline = 'middle';
       ctx.fillText(textStr, size / 2, bannerY + frameHeight / 2);
     }
+  }
+
+  // Render watermark for Trial 3 Hari
+  if (watermark) {
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(-Math.PI / 6);
+    ctx.font = `800 ${Math.max(12, Math.round(size * 0.052))}px "Plus Jakarta Sans", sans-serif`;
+    ctx.fillStyle = 'rgba(225, 29, 72, 0.45)'; // semi-transparent rose-600
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('DINAMISQR • TRIAL 3 HARI', 0, 0);
+    ctx.restore();
+
+    // Top watermark pill
+    const pillW = Math.round(size * 0.38);
+    const pillH = Math.max(16, Math.round(size * 0.055));
+    const pillX = canvas.width - pillW - 6;
+    const pillY = 6;
+    ctx.fillStyle = 'rgba(225, 29, 72, 0.92)';
+    ctx.fillRect(pillX, pillY, pillW, pillH);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(8, Math.round(pillH * 0.65))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('TRIAL 3 HARI • WATERMARK', pillX + pillW / 2, pillY + pillH / 2);
   }
 }
 

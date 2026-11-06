@@ -17,6 +17,8 @@ interface AnalyticsModalProps {
   onOpenEditLink: () => void;
   onOpenStandStudio?: (qr: DynamicQRCode) => void;
   defaultCompact?: boolean;
+  isWatermarkActive?: boolean;
+  onOpenSubscriptionModal?: () => void;
 }
 
 export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
@@ -25,7 +27,9 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
   onClose,
   onOpenEditLink,
   onOpenStandStudio,
-  defaultCompact = false
+  defaultCompact = false,
+  isWatermarkActive = false,
+  onOpenSubscriptionModal
 }) => {
   const [activeTab, setActiveTab] = useState<'download' | 'analytics' | 'history'>('download');
   const [analytics, setAnalytics] = useState<QRAnalyticsSummary | null>(null);
@@ -55,9 +59,9 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   useEffect(() => {
     if (canvasRef.current && isOpen) {
-      renderStyledQRToCanvas(canvasRef.current, redirectUrl, qr.style, 480);
+      renderStyledQRToCanvas(canvasRef.current, redirectUrl, qr.style, 480, isWatermarkActive);
     }
-  }, [isOpen, qr, redirectUrl]);
+  }, [isOpen, qr, redirectUrl, isWatermarkActive]);
 
   const loadAnalyticsData = async () => {
     setLoadingAnalytics(true);
@@ -78,7 +82,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   const handleDownloadPNG = (resolution: number) => {
     const tempCanvas = document.createElement('canvas');
-    renderStyledQRToCanvas(tempCanvas, redirectUrl, qr.style, resolution).then(() => {
+    renderStyledQRToCanvas(tempCanvas, redirectUrl, qr.style, resolution, isWatermarkActive).then(() => {
       downloadCanvasAsPNG(tempCanvas, `qrcode-${qr.slug}-${resolution}px`);
     });
   };
@@ -109,7 +113,8 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
       themeColor: '#0038CB',
       width: resolution,
       height: resolution,
-      showPlaceName: false
+      showPlaceName: false,
+      watermark: isWatermarkActive
     });
     downloadStandCanvas(tempCanvas, `stand-google-review-${selectedStandTemplate}-${qr.slug}-${resolution}px`);
   };
@@ -123,7 +128,8 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
       themeColor: '#0038CB',
       width: 1200,
       height: 1200,
-      showPlaceName: false
+      showPlaceName: false,
+      watermark: isWatermarkActive
     });
     printStandSheet(tempCanvas, `Stand Google Review - ${qr.title}`);
   };
@@ -259,6 +265,30 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
         {/* Tab 1: Download & Print Formats */}
         {activeTab === 'download' && (
           <div className={isCompactView ? 'p-4 sm:p-5 space-y-4' : 'p-6 space-y-6'}>
+            
+            {/* Watermark Trial Alert Banner */}
+            {isWatermarkActive && (
+              <div className="p-3.5 bg-amber-50 border border-amber-300 text-xs text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="bg-rose-600 text-white font-black text-[10px] px-2 py-0.5 uppercase">
+                    Trial 3 Hari
+                  </span>
+                  <span className="font-semibold text-amber-900">
+                    File unduhan & cetak ber-watermark. Upgrade untuk cetak bersih tanpa watermark.
+                  </span>
+                </div>
+                {onOpenSubscriptionModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenSubscriptionModal}
+                    className="px-3 py-1 bg-[#104F38] text-white hover:bg-[#0c3c2b] text-[11px] font-bold shrink-0 cursor-pointer"
+                  >
+                    Hapus Watermark (Pilih Paket)
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-center">
               {/* QR Preview Column */}
               <div className="md:col-span-5 text-center">

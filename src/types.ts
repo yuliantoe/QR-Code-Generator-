@@ -69,9 +69,18 @@ export interface QRAnalyticsSummary {
   recentScans: ScanRecord[];
 }
 
+export type SubscriptionPlan = 'trial' | 'monthly' | 'yearly';
+
 export interface AuthUser {
   username: string;
   name: string;
+  email?: string;
+  phone?: string;
+  plan: SubscriptionPlan;
+  trialExpiresAt?: string | null;
+  subscriptionExpiresAt?: string | null;
+  isWatermarkActive: boolean;
+  createdAt?: string;
 }
 
 export interface NFCTag {

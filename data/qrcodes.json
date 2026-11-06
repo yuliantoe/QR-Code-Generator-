@@ -1,5 +1,244 @@
 [
   {
+    "id": "qr-1793930265848-5-fmpw",
+    "code": "QR 106",
+    "slug": "meja-teras-05",
+    "title": "Meja Teras #05",
+    "targetUrl": "https://menu.restoku.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:57:45.847Z",
+    "updatedAt": "2026-11-06T01:57:45.847Z",
+    "tags": [
+      "Batch Stand",
+      "Meja Teras"
+    ],
+    "notes": "Dibuat serentak batch 5 pcs stand meja.",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://menu.restoku.com",
+        "changedAt": "2026-11-06T01:57:45.847Z",
+        "reason": "Batch generate 5 item"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI #05",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-1793930265848-4-7jp1",
+    "code": "QR 105",
+    "slug": "meja-teras-04",
+    "title": "Meja Teras #04",
+    "targetUrl": "https://menu.restoku.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:57:45.847Z",
+    "updatedAt": "2026-11-06T01:57:45.847Z",
+    "tags": [
+      "Batch Stand",
+      "Meja Teras"
+    ],
+    "notes": "Dibuat serentak batch 5 pcs stand meja.",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://menu.restoku.com",
+        "changedAt": "2026-11-06T01:57:45.847Z",
+        "reason": "Batch generate 5 item"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI #04",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-1793930265848-3-5v20",
+    "code": "QR 104",
+    "slug": "meja-teras-03",
+    "title": "Meja Teras #03",
+    "targetUrl": "https://menu.restoku.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:57:45.847Z",
+    "updatedAt": "2026-11-06T01:57:45.847Z",
+    "tags": [
+      "Batch Stand",
+      "Meja Teras"
+    ],
+    "notes": "Dibuat serentak batch 5 pcs stand meja.",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://menu.restoku.com",
+        "changedAt": "2026-11-06T01:57:45.847Z",
+        "reason": "Batch generate 5 item"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI #03",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-1793930265848-2-d376",
+    "code": "QR 103",
+    "slug": "meja-teras-02",
+    "title": "Meja Teras #02",
+    "targetUrl": "https://menu.restoku.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:57:45.847Z",
+    "updatedAt": "2026-11-06T01:57:45.847Z",
+    "tags": [
+      "Batch Stand",
+      "Meja Teras"
+    ],
+    "notes": "Dibuat serentak batch 5 pcs stand meja.",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://menu.restoku.com",
+        "changedAt": "2026-11-06T01:57:45.847Z",
+        "reason": "Batch generate 5 item"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI #02",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-1793930265848-1-0gdg",
+    "code": "QR 102",
+    "slug": "meja-teras-01",
+    "title": "Meja Teras #01",
+    "targetUrl": "https://menu.restoku.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:57:45.847Z",
+    "updatedAt": "2026-11-06T01:57:45.847Z",
+    "tags": [
+      "Batch Stand",
+      "Meja Teras"
+    ],
+    "notes": "Dibuat serentak batch 5 pcs stand meja.",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://menu.restoku.com",
+        "changedAt": "2026-11-06T01:57:45.847Z",
+        "reason": "Batch generate 5 item"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI #01",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-1793930258556-lvkp",
+    "code": "QR 101",
+    "slug": "qr-101",
+    "title": "Meja VIP 01",
+    "targetUrl": "https://menu.restoku.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:57:38.556Z",
+    "updatedAt": "2026-11-06T01:57:38.556Z",
+    "tags": [],
+    "notes": "",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://menu.restoku.com",
+        "changedAt": "2026-11-06T01:57:38.556Z",
+        "reason": "Tautan Awal Dibuat"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-1793930016808-cbjl",
+    "code": "QR 099",
+    "slug": "test-qr-vercel",
+    "title": "Test QR Vercel",
+    "targetUrl": "https://google.com",
+    "status": "active",
+    "createdAt": "2026-11-06T01:53:36.808Z",
+    "updatedAt": "2026-11-06T01:53:36.808Z",
+    "tags": [],
+    "notes": "",
+    "totalScans": 0,
+    "lastScannedAt": null,
+    "urlHistory": [
+      {
+        "url": "https://google.com",
+        "changedAt": "2026-11-06T01:53:36.808Z",
+        "reason": "Tautan Awal Dibuat"
+      }
+    ],
+    "style": {
+      "fgColor": "#0f172a",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#0f172a",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
     "id": "qr-menu-resto",
     "code": "QR 001",
     "slug": "menu-resto",

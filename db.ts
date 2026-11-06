@@ -26,12 +26,33 @@ const SCANS_FILE = path.resolve(DATA_DIR, 'scans.json');
 const USERS_FILE = path.resolve(DATA_DIR, 'users.json');
 const NFC_FILE = path.resolve(DATA_DIR, 'nfc_tags.json');
 
+export interface UserRecord {
+  username: string;
+  password?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  plan: 'trial' | 'monthly' | 'yearly';
+  trialExpiresAt?: string | null;
+  subscriptionExpiresAt?: string | null;
+  isWatermarkActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Default initial data
-const initialUsers = [
+const initialUsers: UserRecord[] = [
   {
     username: process.env.ADMIN_USERNAME || 'admin',
     password: process.env.ADMIN_PASSWORD || 'admin123',
-    name: 'Administrator'
+    name: 'Administrator',
+    email: 'admin@dinamisqr.com',
+    phone: '',
+    plan: 'yearly',
+    trialExpiresAt: null,
+    subscriptionExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString(),
+    isWatermarkActive: false,
+    createdAt: new Date().toISOString()
   }
 ];
 
@@ -163,32 +184,108 @@ const initialNFCTags = [
   }
 ];
 
-// Check PostgreSQL connection string from Vercel Postgres or other cloud providers
-const postgresConnectionString =
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.POSTGRES_URL_NON_POOLING;
+// Validate and sanitize PostgreSQL connection string to prevent invalid strings (like "database", "base", etc.)
+function parseAndValidatePostgresUrl(): { url: string | null; invalidReason: string | null; rawFound: string | null } {
+  const rawCandidates = [
+    { key: 'POSTGRES_URL', val: process.env.POSTGRES_URL },
+    { key: 'DATABASE_URL', val: process.env.DATABASE_URL },
+    { key: 'POSTGRES_PRISMA_URL', val: process.env.POSTGRES_PRISMA_URL },
+    { key: 'POSTGRES_URL_NON_POOLING', val: process.env.POSTGRES_URL_NON_POOLING }
+  ];
+
+  let rawFound: string | null = null;
+
+  for (const { key, val } of rawCandidates) {
+    if (!val || typeof val !== 'string') continue;
+    const trimmed = val.trim();
+    if (!trimmed) continue;
+
+    rawFound = `${key}=${trimmed.length > 20 ? trimmed.substring(0, 15) + '...' : trimmed}`;
+
+    // Common user mistakes when setting environment variables
+    if (
+      trimmed.toLowerCase() === 'database' ||
+      trimmed.toLowerCase() === 'base' ||
+      trimmed.toLowerCase() === 'undefined' ||
+      trimmed.toLowerCase() === 'null' ||
+      trimmed.includes('ep-example') ||
+      trimmed.includes('MY_APP_URL') ||
+      trimmed.includes('user:password@host')
+    ) {
+      const reason = `Variabel ${key} berisi teks placeholder ("${trimmed}"). Di Vercel, sambungkan Vercel Postgres melalui tab Storage > Connect Project agar mendapatkan Connection String resmi.`;
+      console.warn(`[DB] Mengabaikan ${key}="${trimmed}": ${reason}`);
+      return { url: null, invalidReason: reason, rawFound };
+    }
+
+    if (!trimmed.startsWith('postgres://') && !trimmed.startsWith('postgresql://')) {
+      const reason = `Variabel ${key} harus diawali dengan "postgres://" atau "postgresql://", bukan "${trimmed.substring(0, 12)}...".`;
+      console.warn(`[DB] ${reason}`);
+      return { url: null, invalidReason: reason, rawFound };
+    }
+
+    try {
+      const parsed = new URL(trimmed);
+      const host = parsed.hostname;
+      if (!host || host === 'base' || host === 'database') {
+        const reason = `Host database tidak valid ("${host}"). Harap periksa format URL PostgreSQL Anda.`;
+        console.warn(`[DB] ${reason}`);
+        return { url: null, invalidReason: reason, rawFound };
+      }
+      return { url: trimmed, invalidReason: null, rawFound };
+    } catch {
+      const reason = `Gagal mem-parse URL pada variabel ${key}. Format URI tidak valid.`;
+      console.warn(`[DB] ${reason}`);
+      return { url: null, invalidReason: reason, rawFound };
+    }
+  }
+
+  // Check individual Vercel Postgres variables if full URL is not set
+  if (process.env.POSTGRES_HOST && process.env.POSTGRES_USER && process.env.POSTGRES_DATABASE) {
+    const host = process.env.POSTGRES_HOST.trim();
+    if (host && host !== 'base' && host !== 'database') {
+      const user = encodeURIComponent(process.env.POSTGRES_USER.trim());
+      const pass = process.env.POSTGRES_PASSWORD ? encodeURIComponent(process.env.POSTGRES_PASSWORD.trim()) : '';
+      const dbName = encodeURIComponent(process.env.POSTGRES_DATABASE.trim());
+      const port = process.env.POSTGRES_PORT ? process.env.POSTGRES_PORT.trim() : '5432';
+      const constructed = `postgres://${user}:${pass}@${host}:${port}/${dbName}?sslmode=require`;
+      return { url: constructed, invalidReason: null, rawFound: 'POSTGRES_HOST config' };
+    }
+  }
+
+  return { url: null, invalidReason: null, rawFound: null };
+}
+
+const { url: postgresConnectionString, invalidReason: postgresConfigInvalidReason, rawFound: rawEnvDetected } = parseAndValidatePostgresUrl();
 
 let pool: pg.Pool | null = null;
 let isPostgresReady = false;
 let postgresInitPromise: Promise<boolean> | null = null;
+let lastPostgresError: string | null = null;
+let lastInitAttemptTime = 0;
 
 if (postgresConnectionString) {
   try {
     pool = new Pool({
       connectionString: postgresConnectionString,
-      ssl: process.env.NODE_ENV === 'development' && !postgresConnectionString.includes('vercel-storage.com') && !postgresConnectionString.includes('neon.tech')
+      ssl: process.env.NODE_ENV === 'development' && !postgresConnectionString.includes('vercel-storage.com') && !postgresConnectionString.includes('neon.tech') && !postgresConnectionString.includes('supabase.co')
         ? undefined
         : { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000
+      connectionTimeoutMillis: 4000
     });
+
+    pool.on('error', (err) => {
+      console.warn('[DB] PostgreSQL pool background warning:', err?.message || err);
+    });
+
     console.log('[DB] Menginisialisasi koneksi ke Database Vercel Postgres / PostgreSQL...');
-  } catch (err) {
+  } catch (err: any) {
+    lastPostgresError = err?.message || String(err);
     console.error('[DB] Gagal membuat pool PostgreSQL:', err);
   }
+} else if (postgresConfigInvalidReason) {
+  console.log(`[DB] Menggunakan mode fallback aman: ${postgresConfigInvalidReason}`);
 }
 
 async function initPostgresTables(): Promise<boolean> {
@@ -198,14 +295,32 @@ async function initPostgresTables(): Promise<boolean> {
   try {
     const client = await pool.connect();
     try {
-      // Create users table
+      // Create users table with subscription plan and trial columns
       await client.query(`
         CREATE TABLE IF NOT EXISTS dinamis_users (
           username VARCHAR(100) PRIMARY KEY,
           password VARCHAR(255) NOT NULL,
           name VARCHAR(255),
+          email VARCHAR(255),
+          phone VARCHAR(50),
+          plan VARCHAR(50) DEFAULT 'trial',
+          trial_expires_at TIMESTAMP WITH TIME ZONE,
+          subscription_expires_at TIMESTAMP WITH TIME ZONE,
+          is_watermark_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
+      `);
+
+      // Ensure new columns exist for existing tables
+      await client.query(`
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS plan VARCHAR(50) DEFAULT 'trial';
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS trial_expires_at TIMESTAMP WITH TIME ZONE;
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP WITH TIME ZONE;
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS is_watermark_active BOOLEAN DEFAULT true;
+        ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
       `);
 
       // Create qrcodes table
@@ -221,6 +336,7 @@ async function initPostgresTables(): Promise<boolean> {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
         );
+        ALTER TABLE dinamis_qrcodes ADD COLUMN IF NOT EXISTS code VARCHAR(50);
       `);
 
       // Create scans table
@@ -288,13 +404,16 @@ async function initPostgresTables(): Promise<boolean> {
       }
 
       isPostgresReady = true;
+      lastPostgresError = null;
       console.log('[DB] Vercel Postgres / PostgreSQL siap digunakan!');
       return true;
     } finally {
       client.release();
     }
-  } catch (err) {
-    console.error('[DB] Gagal menginisialisasi tabel PostgreSQL:', err);
+  } catch (err: any) {
+    lastPostgresError = err?.message || String(err);
+    isPostgresReady = false;
+    console.warn('[DB] Peringatan koneksi PostgreSQL:', lastPostgresError);
     return false;
   }
 }
@@ -302,8 +421,19 @@ async function initPostgresTables(): Promise<boolean> {
 function ensurePostgres(): Promise<boolean> {
   if (!pool) return Promise.resolve(false);
   if (isPostgresReady) return Promise.resolve(true);
+
+  // If previous connection attempt failed recently, avoid blocking user requests with slow timeouts
+  const now = Date.now();
+  if (lastPostgresError && (now - lastInitAttemptTime < 15000)) {
+    return Promise.resolve(false);
+  }
+
   if (!postgresInitPromise) {
-    postgresInitPromise = initPostgresTables();
+    lastInitAttemptTime = now;
+    postgresInitPromise = initPostgresTables().then(ready => {
+      postgresInitPromise = null;
+      return ready;
+    });
   }
   return postgresInitPromise;
 }
@@ -341,7 +471,7 @@ function writeJsonFile<T>(filePath: string, data: T): void {
 // ----------------------------------------------------
 export const db = {
   async getStatus() {
-    const isPgAvailable = Boolean(pool);
+    const isPgConfigured = Boolean(pool);
     let pgConnected = false;
     let message = 'Menggunakan penyimpanan file lokal/memori.';
 
@@ -350,39 +480,147 @@ export const db = {
         pgConnected = await ensurePostgres();
         if (pgConnected) {
           message = 'Terhubung ke Database Vercel Postgres / PostgreSQL.';
+        } else if (lastPostgresError) {
+          message = `Koneksi PostgreSQL gagal (${lastPostgresError}). Menggunakan penyimpanan cadangan.`;
         } else {
-          message = 'Koneksi PostgreSQL gagal, menggunakan penyimpanan fallback.';
+          message = 'Koneksi PostgreSQL belum siap, menggunakan penyimpanan cadangan.';
         }
       } catch (e: any) {
         message = `Error database: ${e?.message || 'Unknown'}`;
       }
+    } else if (postgresConfigInvalidReason) {
+      message = postgresConfigInvalidReason;
     }
 
     return {
-      connected: isPgAvailable && pgConnected,
+      connected: isPgConfigured && pgConnected,
       type: pgConnected ? 'vercel-postgres' : (isServerless ? 'serverless-cache' : 'local-file'),
       message,
-      configuredConnectionString: Boolean(postgresConnectionString)
+      configuredConnectionString: Boolean(postgresConnectionString),
+      invalidReason: postgresConfigInvalidReason || null,
+      rawEnvDetected: rawEnvDetected || null,
+      lastError: lastPostgresError || null
     };
   },
 
   // USERS
-  async getUsers(): Promise<Array<{ username: string; password: string; name: string }>> {
+  async getUsers(): Promise<UserRecord[]> {
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        const res = await pool.query('SELECT username, password, name FROM dinamis_users');
+        const res = await pool.query(
+          'SELECT username, password, name, email, phone, plan, trial_expires_at as "trialExpiresAt", subscription_expires_at as "subscriptionExpiresAt", is_watermark_active as "isWatermarkActive", created_at as "createdAt" FROM dinamis_users'
+        );
         if (res.rows.length > 0) {
-          return res.rows;
+          return res.rows.map(r => ({
+            ...r,
+            plan: r.plan || 'trial',
+            isWatermarkActive: r.isWatermarkActive !== undefined ? r.isWatermarkActive : (r.plan === 'trial')
+          }));
         }
       } catch (err) {
         console.error('[DB] getUsers error:', err);
       }
     }
 
-    const loaded = readJsonFile(USERS_FILE, memoryUsers);
+    const loaded = readJsonFile<UserRecord[]>(USERS_FILE, memoryUsers);
     memoryUsers = loaded.length ? loaded : initialUsers;
     return memoryUsers;
+  },
+
+  async getUserByUsername(username: string): Promise<UserRecord | null> {
+    const users = await this.getUsers();
+    return users.find(u => u.username.toLowerCase() === username.toLowerCase().trim()) || null;
+  },
+
+  async createUser(newUser: UserRecord): Promise<UserRecord> {
+    const ok = await ensurePostgres();
+    if (ok && pool) {
+      try {
+        await pool.query(
+          `INSERT INTO dinamis_users (username, password, name, email, phone, plan, trial_expires_at, subscription_expires_at, is_watermark_active, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (username) DO UPDATE
+           SET password = EXCLUDED.password,
+               name = EXCLUDED.name,
+               email = EXCLUDED.email,
+               phone = EXCLUDED.phone,
+               plan = EXCLUDED.plan,
+               trial_expires_at = EXCLUDED.trial_expires_at,
+               subscription_expires_at = EXCLUDED.subscription_expires_at,
+               is_watermark_active = EXCLUDED.is_watermark_active,
+               updated_at = NOW()`,
+          [
+            newUser.username.toLowerCase().trim(),
+            newUser.password || 'admin123',
+            newUser.name,
+            newUser.email || null,
+            newUser.phone || null,
+            newUser.plan || 'trial',
+            newUser.trialExpiresAt || null,
+            newUser.subscriptionExpiresAt || null,
+            newUser.isWatermarkActive !== undefined ? newUser.isWatermarkActive : true,
+            newUser.createdAt || new Date().toISOString(),
+            new Date().toISOString()
+          ]
+        );
+      } catch (err) {
+        console.error('[DB] createUser error:', err);
+      }
+    }
+
+    const users = await this.getUsers();
+    const idx = users.findIndex(u => u.username.toLowerCase() === newUser.username.toLowerCase());
+    if (idx !== -1) {
+      users[idx] = newUser;
+    } else {
+      users.push(newUser);
+    }
+    memoryUsers = users;
+    writeJsonFile(USERS_FILE, users);
+    return newUser;
+  },
+
+  async updateUserPlan(username: string, plan: 'monthly' | 'yearly'): Promise<UserRecord | null> {
+    const durationDays = plan === 'yearly' ? 365 : 30;
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const ok = await ensurePostgres();
+    if (ok && pool) {
+      try {
+        const res = await pool.query(
+          `UPDATE dinamis_users 
+           SET plan = $1, 
+               subscription_expires_at = $2, 
+               is_watermark_active = false, 
+               updated_at = NOW() 
+           WHERE LOWER(username) = LOWER($3)
+           RETURNING username, name, email, phone, plan, trial_expires_at as "trialExpiresAt", subscription_expires_at as "subscriptionExpiresAt", is_watermark_active as "isWatermarkActive"`,
+          [plan, expiresAt, username.trim()]
+        );
+        if (res.rows[0]) {
+          return {
+            ...res.rows[0],
+            isWatermarkActive: false
+          };
+        }
+      } catch (err) {
+        console.error('[DB] updateUserPlan error:', err);
+      }
+    }
+
+    const users = await this.getUsers();
+    const idx = users.findIndex(u => u.username.toLowerCase() === username.toLowerCase().trim());
+    if (idx !== -1) {
+      users[idx].plan = plan;
+      users[idx].subscriptionExpiresAt = expiresAt;
+      users[idx].isWatermarkActive = false;
+      users[idx].updatedAt = new Date().toISOString();
+      memoryUsers = users;
+      writeJsonFile(USERS_FILE, users);
+      return users[idx];
+    }
+    return null;
   },
 
   async updateUser(username: string, newPassword?: string, newUsername?: string, name?: string): Promise<boolean> {

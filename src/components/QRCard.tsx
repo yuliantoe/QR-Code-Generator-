@@ -11,6 +11,7 @@ interface QRListItemProps {
   onToggleStatus: (qr: DynamicQRCode) => void;
   onDelete: (qr: DynamicQRCode) => void;
   viewMode?: 'normal' | 'compact';
+  isWatermarkActive?: boolean;
 }
 
 export const QRCard: React.FC<QRListItemProps> = ({
@@ -20,7 +21,8 @@ export const QRCard: React.FC<QRListItemProps> = ({
   onOpenStandStudio,
   onToggleStatus,
   onDelete,
-  viewMode = 'normal'
+  viewMode = 'normal',
+  isWatermarkActive = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -33,9 +35,9 @@ export const QRCard: React.FC<QRListItemProps> = ({
 
   useEffect(() => {
     if (canvasRef.current) {
-      renderStyledQRToCanvas(canvasRef.current, redirectUrl, qr.style, canvasSize);
+      renderStyledQRToCanvas(canvasRef.current, redirectUrl, qr.style, canvasSize, isWatermarkActive);
     }
-  }, [qr, redirectUrl, canvasSize]);
+  }, [qr, redirectUrl, canvasSize, isWatermarkActive]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(redirectUrl);
