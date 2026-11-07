@@ -97,8 +97,15 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
     return items.length > 0 ? items[0].id : '';
   });
 
-  // Keep selected item valid if list loads
+  // Keep selected item valid if list loads, or sync when initialSelectedId changes
   useEffect(() => {
+    if (initialSelectedId) {
+      const match = items.find(i => i.id === initialSelectedId || i.id.endsWith(initialSelectedId));
+      if (match) {
+        setSelectedItemId(match.id);
+        return;
+      }
+    }
     if (!selectedItemId || !items.some(i => i.id === selectedItemId)) {
       const firstQR = items.find(i => i.type === 'qr');
       if (firstQR) {
@@ -107,7 +114,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
         setSelectedItemId(items[0].id);
       }
     }
-  }, [items, selectedItemId]);
+  }, [items, selectedItemId, initialSelectedId]);
 
   const selectedItem = items.find(i => i.id === selectedItemId) || items[0];
 
@@ -130,7 +137,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Sync place name when selected item changes
+  // Sync place name when selected item changes or when title/targetUrl is edited
   useEffect(() => {
     if (selectedItem) {
       setPlaceName(selectedItem.title);
@@ -181,7 +188,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   useEffect(() => {
     renderCanvas();
-  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, isWatermarkActive]);
+  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, isWatermarkActive, selectedItem?.rawUrl, selectedItem?.url]);
 
   const handleDownloadHD = async (isPrintQuality: boolean = true) => {
     const offscreen = document.createElement('canvas');
@@ -745,7 +752,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
                 {/* Selected item summary */}
                 {selectedItem && (
-                  <div className="p-3 bg-[#F8FAF9] border border-[#104F38]/10 text-xs space-y-1.5">
+                  <div className="p-3 bg-[#F8FAF9] border border-[#104F38]/15 text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20">
@@ -758,14 +765,33 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                       </span>
                     </div>
 
-                    <div className="font-mono text-[11px] text-[#104F38] truncate flex items-center justify-between gap-2 pt-1 border-t border-[#104F38]/10">
-                      <span className="truncate">{activeQRText}</span>
-                      <button
-                        onClick={handleCopy}
-                        className="text-[10px] font-bold text-[#104F38] bg-white px-2 py-0.5 border border-[#104F38]/20 hover:bg-[#FFE600] shrink-0 cursor-pointer"
-                      >
-                        {copiedLink ? 'Tersalin' : 'Salin'}
-                      </button>
+                    <div className="pt-1.5 border-t border-[#104F38]/10 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-[#104F38]/70 font-semibold">Tautan Cetak Fisik:</span>
+                        <div className="font-mono text-[#104F38] flex items-center gap-1.5">
+                          <span className="font-bold truncate max-w-[180px] sm:max-w-[240px]">{activeQRText}</span>
+                          <button
+                            onClick={handleCopy}
+                            className="text-[10px] font-bold text-[#104F38] bg-white px-2 py-0.5 border border-[#104F38]/20 hover:bg-[#FFE600] shrink-0 cursor-pointer"
+                          >
+                            {copiedLink ? 'Tersalin' : 'Salin'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <div className="truncate mr-2">
+                          <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wider">
+                            Tautan Tujuan Aktif (Ketika Discan):
+                          </span>
+                          <span className="font-mono text-[11px] text-emerald-900 font-extrabold truncate block">
+                            {selectedItem.rawUrl}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5 border border-[#104F38] self-start sm:self-center shrink-0">
+                          ✓ Terupdate & Aktif
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}

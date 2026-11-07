@@ -115,6 +115,22 @@ export default function App() {
     }
   }, [currentUser, authToken]);
 
+  const syncQRToServer = async (qr: DynamicQRCode) => {
+    try {
+      await fetch(`/api/qrcodes/${qr.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUrl: qr.targetUrl,
+          title: qr.title,
+          status: qr.status,
+          style: qr.style,
+          qrData: qr
+        })
+      });
+    } catch {}
+  };
+
   const fetchQRCodes = async () => {
     try {
       const res = await fetch('/api/qrcodes');
@@ -123,30 +139,33 @@ export default function App() {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           setQrcodes(prev => {
-            const localMap = new Map(prev.map((q: DynamicQRCode) => [q.id, q]));
-            const serverIds = new Set(json.data.map((q: DynamicQRCode) => q.id));
+            const localMap = new Map(prev.map(q => [q.id, q]));
+            const mergedMap = new Map<string, DynamicQRCode>();
 
-            // Merge server items, but if local item has a more recent update or user edited it, keep local!
-            const merged = json.data.map((serverItem: DynamicQRCode) => {
-              const localItem = localMap.get(serverItem.id);
-              if (localItem) {
-                const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
+            // 1. Add all existing local cached items first
+            for (const local of prev) {
+              mergedMap.set(local.id, local);
+            }
+
+            // 2. Process server items: only replace if server item is genuinely newer
+            for (const serverItem of json.data) {
+              const local = localMap.get(serverItem.id);
+              if (!local) {
+                mergedMap.set(serverItem.id, serverItem);
+              } else {
+                const localTime = new Date(local.updatedAt || local.createdAt || 0).getTime();
                 const serverTime = new Date(serverItem.updatedAt || serverItem.createdAt || 0).getTime();
-                // If local item was updated more recently or equal, keep local!
-                if (localTime >= serverTime) {
-                  return localItem;
+                if (serverTime > localTime) {
+                  mergedMap.set(serverItem.id, serverItem);
+                } else if (localTime > serverTime) {
+                  // Local edit is newer! Retain local and sync to serverless instance
+                  mergedMap.set(serverItem.id, local);
+                  syncQRToServer(local);
                 }
-              }
-              return serverItem;
-            });
-
-            // Preserve any locally created items that serverless instance might not yet have
-            for (const localItem of prev) {
-              if (!serverIds.has(localItem.id)) {
-                merged.push(localItem);
               }
             }
 
+            const merged = Array.from(mergedMap.values());
             try {
               localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(merged));
             } catch {}
@@ -169,27 +188,13 @@ export default function App() {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
           setNfcTags(prev => {
-            const localMap = new Map(prev.map((t: NFCTag) => [t.id, t]));
-            const serverIds = new Set(json.data.map((t: NFCTag) => t.id));
-
-            const merged = json.data.map((serverItem: NFCTag) => {
-              const localItem = localMap.get(serverItem.id);
-              if (localItem) {
-                const localTime = new Date(localItem.updatedAt || localItem.createdAt || 0).getTime();
-                const serverTime = new Date(serverItem.updatedAt || serverItem.createdAt || 0).getTime();
-                if (localTime >= serverTime) {
-                  return localItem;
-                }
-              }
-              return serverItem;
-            });
-
+            const serverMap = new Map(json.data.map((t: NFCTag) => [t.id, t]));
+            const merged = [...json.data];
             for (const localItem of prev) {
-              if (!serverIds.has(localItem.id)) {
+              if (!serverMap.has(localItem.id)) {
                 merged.push(localItem);
               }
             }
-
             try {
               localStorage.setItem('dinamis_nfc_cache', JSON.stringify(merged));
             } catch {}
@@ -881,7 +886,7 @@ export default function App() {
               <div className={viewMode === 'compact' ? 'space-y-1.5' : 'space-y-3'}>
                 {filteredQRCodes.map(qr => (
                   <QRCard
-                    key={`${qr.id}-${qr.updatedAt || qr.targetUrl}`}
+                    key={qr.id}
                     qr={qr}
                     viewMode={viewMode}
                     onOpenEditLink={(item) => setEditingQR(item)}

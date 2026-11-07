@@ -467,6 +467,69 @@ function writeJsonFile<T>(filePath: string, data: T): void {
 }
 
 // ----------------------------------------------------
+// SERVERLESS CLOUD SYNC FOR DYNAMIC QR REDIRECTIONS
+// ----------------------------------------------------
+const CLOUD_SYNC_OBJECT_ID = 'ff808181a09d98f701a1b392719d5825';
+
+async function syncSlugToCloud(slug: string, targetUrl: string): Promise<void> {
+  if (!slug || !targetUrl) return;
+  try {
+    const cleanSlug = slug.toLowerCase().trim();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const getRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    let currentMap: Record<string, string> = {};
+    if (getRes.ok) {
+      const obj = await getRes.json();
+      currentMap = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
+    }
+    currentMap[cleanSlug] = targetUrl.trim();
+
+    const putController = new AbortController();
+    const putTimeout = setTimeout(() => putController.abort(), 3000);
+    await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'dinamis_qr',
+        data: currentMap
+      }),
+      signal: putController.signal
+    });
+    clearTimeout(putTimeout);
+  } catch (err) {
+    // Non-blocking fallback
+  }
+}
+
+async function getCloudUrlForSlug(slug: string): Promise<string | null> {
+  if (!slug) return null;
+  try {
+    const cleanSlug = slug.toLowerCase().trim();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.data && typeof json.data[cleanSlug] === 'string' && json.data[cleanSlug].trim()) {
+        return json.data[cleanSlug].trim();
+      }
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+  return null;
+}
+
+// ----------------------------------------------------
 // DATABASE API EXPORT
 // ----------------------------------------------------
 export const db = {
@@ -703,10 +766,55 @@ export const db = {
     }
 
     const all = await this.getQRCodes();
-    return all.find(q => q.slug.toLowerCase() === slug.toLowerCase()) || null;
+    let found = all.find(q => q.slug.toLowerCase() === slug.toLowerCase()) || null;
+
+    // Check cloud sync store (fallback for serverless instances like Vercel without persistent Postgres)
+    try {
+      const cloudUrl = await getCloudUrlForSlug(slug.toLowerCase());
+      if (cloudUrl) {
+        if (found) {
+          found = {
+            ...found,
+            targetUrl: cloudUrl
+          };
+        } else {
+          found = {
+            id: 'qr-' + slug.toLowerCase(),
+            code: 'QR-' + slug.toUpperCase(),
+            slug: slug.toLowerCase(),
+            title: `QR Code #${slug}`,
+            targetUrl: cloudUrl,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            tags: ['Cloud Synced'],
+            notes: 'Tautan disinkronkan otomatis dari cloud sync.',
+            totalScans: 0,
+            lastScannedAt: null,
+            urlHistory: [{ url: cloudUrl, changedAt: new Date().toISOString(), reason: 'Cloud Sync Serverless' }],
+            style: {
+              fgColor: '#104F38',
+              bgColor: '#ffffff',
+              dotStyle: 'rounded',
+              cornerStyle: 'rounded',
+              frameStyle: 'bottom-banner',
+              frameText: 'PINDAI SAYA',
+              frameColor: '#104F38',
+              frameTextColor: '#ffffff',
+              logoType: 'none'
+            }
+          };
+        }
+      }
+    } catch {}
+
+    return found;
   },
 
   async saveQRCode(qr: DynamicQRCode): Promise<void> {
+    // Asynchronously push slug -> targetUrl mapping to cloud sync store
+    syncSlugToCloud(qr.slug, qr.targetUrl).catch(() => {});
+
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
