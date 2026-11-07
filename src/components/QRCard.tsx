@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Edit3, BarChart2, Download, Copy, Check, Pause, Play, Trash2, Sparkles } from 'lucide-react';
-import { renderStyledQRToCanvas } from '../utils/qrRenderer.ts';
+import { renderStyledQRToCanvas, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import type { DynamicQRCode } from '../types.ts';
 
 interface QRListItemProps {
@@ -35,7 +35,8 @@ export const QRCard: React.FC<QRListItemProps> = ({
 
   useEffect(() => {
     if (canvasRef.current) {
-      renderStyledQRToCanvas(canvasRef.current, redirectUrl, qr.style, canvasSize, isWatermarkActive);
+      const safeStyle = qr.style || DEFAULT_QR_STYLE;
+      renderStyledQRToCanvas(canvasRef.current, redirectUrl, safeStyle, canvasSize, isWatermarkActive);
     }
   }, [qr, redirectUrl, canvasSize, isWatermarkActive]);
 

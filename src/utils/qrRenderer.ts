@@ -1,11 +1,23 @@
 import QRCode from 'qrcode';
 import type { QRStyleConfig } from '../types.ts';
 
+export const DEFAULT_QR_STYLE: QRStyleConfig = {
+  fgColor: '#104F38',
+  bgColor: '#ffffff',
+  dotStyle: 'rounded',
+  cornerStyle: 'rounded',
+  frameStyle: 'bottom-banner',
+  frameText: 'PINDAI SAYA',
+  frameColor: '#104F38',
+  frameTextColor: '#ffffff',
+  logoType: 'none'
+};
+
 /**
  * Generates an SVG string of the QR code
  */
-export async function generateQRSVG(text: string, style?: Partial<QRStyleConfig>): Promise<string> {
-  const fg = style?.fgColor || '#0f172a';
+export async function generateQRSVG(text: string, style?: Partial<QRStyleConfig> | null): Promise<string> {
+  const fg = style?.fgColor || '#104F38';
   const bg = style?.bgColor || '#ffffff';
 
   return QRCode.toString(text, {
@@ -25,14 +37,20 @@ export async function generateQRSVG(text: string, style?: Partial<QRStyleConfig>
 export async function renderStyledQRToCanvas(
   canvas: HTMLCanvasElement,
   text: string,
-  style: QRStyleConfig,
+  rawStyle?: Partial<QRStyleConfig> | null,
   size: number = 600,
   watermark: boolean = false
 ): Promise<void> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const hasFrame = style.frameStyle && style.frameStyle !== 'none' && style.frameText;
+  // Fully guaranteed safe style with fallbacks - NEVER throws undefined error
+  const style: QRStyleConfig = {
+    ...DEFAULT_QR_STYLE,
+    ...(rawStyle || {})
+  };
+
+  const hasFrame = Boolean(style.frameStyle && style.frameStyle !== 'none' && style.frameText);
   const frameHeight = hasFrame ? Math.round(size * 0.18) : 0;
   
   canvas.width = size;

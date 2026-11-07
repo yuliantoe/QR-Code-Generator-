@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, Check, History, Sparkles, AlertCircle, ArrowRight, Tag } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import type { DynamicQRCode } from '../types.ts';
 
 interface EditLinkModalProps {
@@ -44,10 +45,13 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    // Construct local updated QR item immediately
+    const safeStyle = qr.style || DEFAULT_QR_STYLE;
+
+    // Construct local updated QR item immediately with guaranteed safe style
     const localUpdatedQR: DynamicQRCode = {
       ...qr,
       targetUrl: formattedUrl,
+      style: safeStyle,
       updatedAt: new Date().toISOString(),
       urlHistory: [
         {
@@ -75,7 +79,10 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
           medium: utmMedium.trim(),
           campaign: utmCampaign.trim()
         } : undefined,
-        qrData: qr
+        qrData: {
+          ...qr,
+          style: safeStyle
+        }
       };
 
       const res = await fetch(`/api/qrcodes/${qr.id}`, {
@@ -88,7 +95,10 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       if (res.ok && contentType.includes('application/json')) {
         const json = await res.json();
         if (json.success && json.data) {
-          finalQR = json.data;
+          finalQR = {
+            ...json.data,
+            style: json.data.style || safeStyle
+          };
         }
       }
     } catch (err) {

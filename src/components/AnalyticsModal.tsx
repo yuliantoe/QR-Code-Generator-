@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Printer, BarChart3, History, Smartphone, Globe, Calendar, RefreshCw, FileText, Check, Minimize2, Maximize2 } from 'lucide-react';
-import { renderStyledQRToCanvas, downloadCanvasAsPNG, generateQRSVG, printFlyerSheet } from '../utils/qrRenderer.ts';
+import { renderStyledQRToCanvas, downloadCanvasAsPNG, generateQRSVG, printFlyerSheet, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import {
   renderGoogleReviewStandToCanvas,
   downloadStandCanvas,
@@ -59,7 +59,8 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   useEffect(() => {
     if (canvasRef.current && isOpen) {
-      renderStyledQRToCanvas(canvasRef.current, redirectUrl, qr.style, 480, isWatermarkActive);
+      const safeStyle = qr.style || DEFAULT_QR_STYLE;
+      renderStyledQRToCanvas(canvasRef.current, redirectUrl, safeStyle, 480, isWatermarkActive);
     }
   }, [isOpen, qr, redirectUrl, isWatermarkActive]);
 
@@ -82,7 +83,8 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   const handleDownloadPNG = (resolution: number) => {
     const tempCanvas = document.createElement('canvas');
-    renderStyledQRToCanvas(tempCanvas, redirectUrl, qr.style, resolution, isWatermarkActive).then(() => {
+    const safeStyle = qr.style || DEFAULT_QR_STYLE;
+    renderStyledQRToCanvas(tempCanvas, redirectUrl, safeStyle, resolution, isWatermarkActive).then(() => {
       downloadCanvasAsPNG(tempCanvas, `qrcode-${qr.slug}-${resolution}px`);
     });
   };

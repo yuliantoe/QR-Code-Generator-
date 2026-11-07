@@ -1,20 +1,20 @@
 [
   {
-    "id": "qr-auto-recovered",
-    "code": "QR 088",
-    "slug": "recovery-slug",
-    "title": "Meja Auto Recovered",
-    "targetUrl": "https://wa.me/6281234567",
-    "updatedAt": "2026-11-06T02:11:59.224Z",
+    "id": "qr-dummy-test",
+    "code": "QR 999",
+    "slug": "dummy-test",
+    "title": "Dummy Test",
+    "targetUrl": "https://contoh-vercel-test.com",
+    "status": "active",
+    "totalScans": 0,
+    "updatedAt": "2026-11-07T00:46:47.939Z",
     "urlHistory": [
       {
-        "url": "https://wa.me/6281234567",
-        "changedAt": "2026-11-06T02:11:59.224Z",
-        "reason": "Recovery link update"
+        "url": "https://contoh-vercel-test.com",
+        "changedAt": "2026-11-07T00:46:47.939Z",
+        "reason": "Pembaruan tautan tujuan"
       }
-    ],
-    "totalScans": 1,
-    "lastScannedAt": "2026-11-06T02:12:06.260Z"
+    ]
   },
   {
     "id": "qr-1793930265848-5-fmpw",
@@ -260,10 +260,10 @@
     "code": "QR 001",
     "slug": "menu-resto",
     "title": "Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)",
-    "targetUrl": "https://instagram.com/restokeren",
+    "targetUrl": "https://contoh-menu-baru.com",
     "status": "active",
     "createdAt": "2026-09-28T10:11:47.903Z",
-    "updatedAt": "2026-11-06T02:13:19.729Z",
+    "updatedAt": "2026-11-07T00:46:43.104Z",
     "tags": [
       "Restoran",
       "Meja Cetak",
@@ -273,6 +273,11 @@
     "totalScans": 843,
     "lastScannedAt": "2026-11-06T02:13:25.998Z",
     "urlHistory": [
+      {
+        "url": "https://contoh-menu-baru.com",
+        "changedAt": "2026-11-07T00:46:43.104Z",
+        "reason": "Pembaruan tautan tujuan"
+      },
       {
         "url": "https://instagram.com/restokeren",
         "changedAt": "2026-11-06T02:13:19.729Z",
