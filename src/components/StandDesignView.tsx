@@ -135,7 +135,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
     if (selectedItem) {
       setPlaceName(selectedItem.title);
     }
-  }, [selectedItem?.id]);
+  }, [selectedItem?.id, selectedItem?.title]);
 
   // Auto-sync formatSize when a template is selected
   const handleSelectTemplate = (tmplId: StandTemplateId) => {

@@ -260,19 +260,24 @@
     "code": "QR 001",
     "slug": "menu-resto",
     "title": "Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)",
-    "targetUrl": "https://contoh-menu-baru.com",
+    "targetUrl": "https://menu-baru-spesial.com/daftar",
     "status": "active",
     "createdAt": "2026-09-28T10:11:47.903Z",
-    "updatedAt": "2026-11-07T00:46:43.104Z",
+    "updatedAt": "2026-11-07T01:04:03.021Z",
     "tags": [
       "Restoran",
       "Meja Cetak",
       "Buku Menu"
     ],
     "notes": "Dicetak di 25 stand akrilik meja. Saat pergantian musim atau promo baru, cukup ganti link tujuan di sini tanpa ganti akrilik.",
-    "totalScans": 843,
-    "lastScannedAt": "2026-11-06T02:13:25.998Z",
+    "totalScans": 845,
+    "lastScannedAt": "2026-11-07T01:04:07.486Z",
     "urlHistory": [
+      {
+        "url": "https://menu-baru-spesial.com/daftar",
+        "changedAt": "2026-11-07T01:04:03.021Z",
+        "reason": "Pembaruan tautan tujuan"
+      },
       {
         "url": "https://contoh-menu-baru.com",
         "changedAt": "2026-11-07T00:46:43.104Z",
@@ -300,12 +305,12 @@
       }
     ],
     "style": {
-      "fgColor": "#1e293b",
+      "fgColor": "#104F38",
       "bgColor": "#ffffff",
       "dotStyle": "rounded",
       "cornerStyle": "rounded",
       "frameStyle": "bottom-banner",
-      "frameText": "PINDAI UNTUK DAFTAR MENU",
+      "frameText": "MENU BARU 2026",
       "frameColor": "#0f172a",
       "frameTextColor": "#ffffff",
       "logoType": "preset",

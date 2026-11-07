@@ -62,7 +62,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
       const safeStyle = qr.style || DEFAULT_QR_STYLE;
       renderStyledQRToCanvas(canvasRef.current, redirectUrl, safeStyle, 480, isWatermarkActive);
     }
-  }, [isOpen, qr, redirectUrl, isWatermarkActive]);
+  }, [isOpen, qr.id, qr.targetUrl, qr.updatedAt, qr.style, redirectUrl, isWatermarkActive]);
 
   const loadAnalyticsData = async () => {
     setLoadingAnalytics(true);
@@ -344,7 +344,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                       onClick={onOpenEditLink}
                       className="text-[11px] text-sky-700 hover:text-sky-900 underline font-semibold cursor-pointer"
                     >
-                      Ubah Tautan Ini
+                      Ubah Tautan & Desain QR
                     </button>
                   </div>
                   <p className="font-mono truncate text-sky-800">{qr.targetUrl}</p>

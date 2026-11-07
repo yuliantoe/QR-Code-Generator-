@@ -1049,10 +1049,10 @@ app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
       if (status !== undefined) current.status = status;
       if (tags !== undefined) current.tags = Array.isArray(tags) ? tags : [];
       if (notes !== undefined) current.notes = notes;
-      if (style !== undefined) current.style = style;
+      if (style !== undefined) current.style = { ...(current.style || {}), ...style };
       if (password !== undefined) current.password = password ? password.trim() : undefined;
       if (expiryDate !== undefined) current.expiryDate = expiryDate || undefined;
-      if (utm !== undefined) current.utm = utm;
+      if (utm !== undefined) current.utm = utm || undefined;
       current.updatedAt = now;
     }
 
