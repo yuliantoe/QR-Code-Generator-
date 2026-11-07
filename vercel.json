@@ -6,8 +6,16 @@
       "destination": "/api/index.ts"
     },
     {
+      "source": "/r/:slug",
+      "destination": "/api/index.ts?slug=:slug"
+    },
+    {
       "source": "/r/(.*)",
       "destination": "/api/index.ts"
+    },
+    {
+      "source": "/nfc/:id",
+      "destination": "/api/index.ts?nfcId=:id"
     },
     {
       "source": "/nfc/(.*)",

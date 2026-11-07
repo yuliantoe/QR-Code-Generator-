@@ -107,6 +107,23 @@ export default function App() {
   const [isActivateNFCOpen, setIsActivateNFCOpen] = useState(false);
   const [editingNFCTag, setEditingNFCTag] = useState<NFCTag | null>(null);
 
+  // Instant client-side redirect fallback if phone visits /r/:slug and SPA index.html is served
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/r/')) {
+      const pathSlug = window.location.pathname.replace(/^\/r\//, '').split('/')[0].split('?')[0];
+      if (pathSlug) {
+        fetch(`/api/qrcodes/slug/${pathSlug}`)
+          .then(res => res.json())
+          .then(json => {
+            if (json.success && json.data?.targetUrl) {
+              window.location.replace(json.data.targetUrl);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, []);
+
   // Load initial data
   useEffect(() => {
     if (currentUser && authToken) {

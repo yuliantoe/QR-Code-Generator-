@@ -48,8 +48,10 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const [downloadMode, setDownloadMode] = useState<'direct' | 'dynamic'>('direct');
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const redirectUrl = `${origin}/r/${qr.slug}`;
+  const effectiveQRUrl = downloadMode === 'direct' ? (qr.targetUrl || redirectUrl) : redirectUrl;
 
   useEffect(() => {
     if (isOpen) {
@@ -60,9 +62,9 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
   useEffect(() => {
     if (canvasRef.current && isOpen) {
       const safeStyle = qr.style || DEFAULT_QR_STYLE;
-      renderStyledQRToCanvas(canvasRef.current, redirectUrl, safeStyle, 480, isWatermarkActive);
+      renderStyledQRToCanvas(canvasRef.current, effectiveQRUrl, safeStyle, 480, isWatermarkActive);
     }
-  }, [isOpen, qr.id, qr.targetUrl, qr.updatedAt, qr.style, redirectUrl, isWatermarkActive]);
+  }, [isOpen, qr.id, qr.targetUrl, qr.updatedAt, qr.style, effectiveQRUrl, isWatermarkActive]);
 
   const loadAnalyticsData = async () => {
     setLoadingAnalytics(true);
@@ -84,13 +86,13 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
   const handleDownloadPNG = (resolution: number) => {
     const tempCanvas = document.createElement('canvas');
     const safeStyle = qr.style || DEFAULT_QR_STYLE;
-    renderStyledQRToCanvas(tempCanvas, redirectUrl, safeStyle, resolution, isWatermarkActive).then(() => {
+    renderStyledQRToCanvas(tempCanvas, effectiveQRUrl, safeStyle, resolution, isWatermarkActive).then(() => {
       downloadCanvasAsPNG(tempCanvas, `qrcode-${qr.slug}-${resolution}px`);
     });
   };
 
   const handleDownloadSVG = async () => {
-    const svgStr = await generateQRSVG(redirectUrl, qr.style);
+    const svgStr = await generateQRSVG(effectiveQRUrl, qr.style);
     const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -102,7 +104,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   const handlePrintSheet = () => {
     if (canvasRef.current) {
-      printFlyerSheet(canvasRef.current, qr.title, qr.slug, qr.targetUrl);
+      printFlyerSheet(canvasRef.current, qr.title, qr.slug, effectiveQRUrl);
     }
   };
 
@@ -110,7 +112,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
     const tempCanvas = document.createElement('canvas');
     await renderGoogleReviewStandToCanvas(tempCanvas, {
       templateId: selectedStandTemplate,
-      qrText: redirectUrl,
+      qrText: effectiveQRUrl,
       placeName: qr.title,
       themeColor: '#0038CB',
       width: resolution,
@@ -348,6 +350,62 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                     </button>
                   </div>
                   <p className="font-mono truncate text-sky-800">{qr.targetUrl}</p>
+                </div>
+
+                {/* Pilihan Format Link yang Dimasukkan ke QR */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span>Format Link yang Dimasukkan ke Berkas Cetak:</span>
+                    <span className="text-[10px] font-mono bg-[#FFE600] text-[#104F38] px-2 py-0.5 border border-[#104F38]/20">
+                      {downloadMode === 'direct' ? 'Tautan Baru Langsung' : 'Tautan Dinamis /r/...'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setDownloadMode('direct')}
+                      className={`p-2.5 text-left rounded-lg border transition-all cursor-pointer ${
+                        downloadMode === 'direct'
+                          ? 'border-[#104F38] bg-[#FFE600] text-[#104F38] font-black shadow-xs ring-2 ring-[#104F38]'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-extrabold flex items-center justify-between">
+                        <span>1. Tautan Baru Langsung</span>
+                        {downloadMode === 'direct' && <span className="text-[9px] bg-[#104F38] text-white px-1 py-0.2">Aktif</span>}
+                      </div>
+                      <p className="text-[10px] text-[#104F38]/80 font-normal mt-0.5 leading-snug">
+                        QR fisik langsung membuka URL tujuan baru seketika.
+                      </p>
+                      <div className="text-[9.5px] font-mono font-bold truncate mt-1 bg-white/80 px-1 py-0.5 border border-[#104F38]/20">
+                        {qr.targetUrl}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDownloadMode('dynamic')}
+                      className={`p-2.5 text-left rounded-lg border transition-all cursor-pointer ${
+                        downloadMode === 'dynamic'
+                          ? 'border-[#104F38] bg-[#104F38] text-white font-black shadow-xs ring-2 ring-[#FFE600]'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-extrabold flex items-center justify-between">
+                        <span>2. Tautan Dinamis Cloud</span>
+                        {downloadMode === 'dynamic' && <span className="text-[9px] bg-[#FFE600] text-[#104F38] px-1 py-0.2">Aktif</span>}
+                      </div>
+                      <p className={`text-[10px] font-normal mt-0.5 leading-snug ${downloadMode === 'dynamic' ? 'text-white/80' : 'text-slate-500'}`}>
+                        QR fisik memuat URL pendek awan (/r/...).
+                      </p>
+                      <div className={`text-[9.5px] font-mono font-bold truncate mt-1 px-1 py-0.5 border ${
+                        downloadMode === 'dynamic' ? 'bg-white/10 text-[#FFE600] border-white/20' : 'bg-white text-slate-700 border-slate-200'
+                      }`}>
+                        /r/{qr.slug}
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

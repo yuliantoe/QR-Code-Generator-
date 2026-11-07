@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -43,11 +43,18 @@ function parseUserAgent(uaString: string | undefined): { device: 'mobile' | 'des
 }
 
 // ==========================================
-// DYNAMIC REDIRECT HANDLER: GET /r/:slug
+// DYNAMIC REDIRECT HANDLER: GET /r/:slug & Vercel rewrites
 // This is what physical printed QR codes point to!
 // ==========================================
-app.get('/r/:slug', async (req: Request, res: Response) => {
-  const { slug } = req.params;
+app.get(['/r/:slug', '/r', '/api/index.ts', '/api'], async (req: Request, res: Response, next: NextFunction) => {
+  const rawSlug = req.params.slug ||
+    (req.query.slug as string) ||
+    (req.url.includes('/r/') ? req.url.split('/r/')[1]?.split('?')[0] : null);
+
+  if (!rawSlug) {
+    return next();
+  }
+  const slug = rawSlug.trim().toLowerCase();
   const qr = await db.getQRCodeBySlug(slug);
 
   if (!qr) {
@@ -915,6 +922,16 @@ app.get('/api/qrcodes/:id', async (req: Request, res: Response) => {
   const qr = await db.getQRCodeById(id);
   if (!qr) {
     return res.status(404).json({ success: false, error: 'QR Code not found' });
+  }
+  res.json({ success: true, data: qr });
+});
+
+// Get QR code by slug
+app.get('/api/qrcodes/slug/:slug', async (req: Request, res: Response) => {
+  const { slug } = req.params;
+  const qr = await db.getQRCodeBySlug(slug);
+  if (!qr) {
+    return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
   }
   res.json({ success: true, data: qr });
 });

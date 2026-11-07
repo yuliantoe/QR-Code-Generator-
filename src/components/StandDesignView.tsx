@@ -750,9 +750,71 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                   )}
                 </select>
 
+                {/* PILIHAN FORMAT LINK YANG DICETAK KE FISIK QR */}
+                <div className="p-3 bg-white border border-[#104F38]/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-[#104F38]">
+                      Pilih Format Link yang Dicetak ke Fisik QR Code:
+                    </span>
+                    <span className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-0.5 border border-[#104F38]/20">
+                      {urlMode === 'direct' ? '1. Tautan Baru Langsung' : '2. Tautan Dinamis Cloud'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setUrlMode('direct')}
+                      className={`p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                        urlMode === 'direct'
+                          ? 'border-[#104F38] bg-[#FFE600] text-[#104F38] font-black shadow-xs ring-2 ring-[#104F38]'
+                          : 'border-[#104F38]/20 bg-[#F4FAF6] text-[#104F38] hover:bg-white'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-extrabold flex items-center justify-between">
+                          <span>1. Tautan Baru Langsung</span>
+                          {urlMode === 'direct' && <span className="text-[9px] bg-[#104F38] text-white px-1.5 py-0.2">Aktif Dipilih</span>}
+                        </div>
+                        <div className="text-[10px] text-[#104F38]/80 font-normal mt-0.5 leading-snug">
+                          QR fisik langsung memuat link baru Anda. Ketika discan HP, langsung membuka URL tujuan baru.
+                        </div>
+                      </div>
+                      <div className="text-[9.5px] font-mono font-bold truncate mt-1.5 bg-white/80 px-1.5 py-0.5 border border-[#104F38]/20">
+                        {selectedItem?.rawUrl}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setUrlMode('dynamic')}
+                      className={`p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                        urlMode === 'dynamic'
+                          ? 'border-[#104F38] bg-[#104F38] text-white font-black shadow-xs ring-2 ring-[#FFE600]'
+                          : 'border-[#104F38]/20 bg-[#F4FAF6] text-[#104F38] hover:bg-white'
+                      }`}
+                    >
+                      <div>
+                        <div className="font-extrabold flex items-center justify-between">
+                          <span>2. Tautan Dinamis Cloud</span>
+                          {urlMode === 'dynamic' && <span className="text-[9px] bg-[#FFE600] text-[#104F38] px-1.5 py-0.2">Aktif Dipilih</span>}
+                        </div>
+                        <div className={`text-[10px] font-normal mt-0.5 leading-snug ${urlMode === 'dynamic' ? 'text-white/80' : 'text-[#104F38]/80'}`}>
+                          QR fisik memuat URL pendek awan (/r/...). Bisa ganti link berkali-kali tanpa cetak ulang akrilik.
+                        </div>
+                      </div>
+                      <div className={`text-[9.5px] font-mono font-bold truncate mt-1.5 px-1.5 py-0.5 border ${
+                        urlMode === 'dynamic' ? 'bg-white/10 text-[#FFE600] border-white/20' : 'bg-white/80 text-[#104F38] border-[#104F38]/20'
+                      }`}>
+                        {selectedItem?.url}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Selected item summary */}
                 {selectedItem && (
-                  <div className="p-3 bg-[#F8FAF9] border border-[#104F38]/15 text-xs space-y-2">
+                  <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20">
@@ -760,38 +822,53 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                         </span>
                         <span className="font-bold text-[#104F38] truncate">{selectedItem.title}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-[#104F38]/60 uppercase">
-                        {selectedItem.type === 'qr' ? 'Kode QR Dinamis' : 'Tag NFC'}
+                      <span className="text-[10px] font-bold text-[#104F38]/70 uppercase">
+                        {urlMode === 'direct' ? 'Cetak Tautan Baru Langsung' : 'Cetak Tautan Dinamis Cloud'}
                       </span>
                     </div>
 
-                    <div className="pt-1.5 border-t border-[#104F38]/10 space-y-1.5">
+                    <div className="p-2.5 bg-white border border-[#104F38]/15 space-y-1">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-[#104F38]/70 font-semibold">Tautan Cetak Fisik:</span>
-                        <div className="font-mono text-[#104F38] flex items-center gap-1.5">
-                          <span className="font-bold truncate max-w-[180px] sm:max-w-[240px]">{activeQRText}</span>
-                          <button
-                            onClick={handleCopy}
-                            className="text-[10px] font-bold text-[#104F38] bg-white px-2 py-0.5 border border-[#104F38]/20 hover:bg-[#FFE600] shrink-0 cursor-pointer"
-                          >
-                            {copiedLink ? 'Tersalin' : 'Salin'}
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                        <div className="truncate mr-2">
-                          <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wider">
-                            Tautan Tujuan Aktif (Ketika Discan):
-                          </span>
-                          <span className="font-mono text-[11px] text-emerald-900 font-extrabold truncate block">
-                            {selectedItem.rawUrl}
-                          </span>
-                        </div>
-                        <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5 border border-[#104F38] self-start sm:self-center shrink-0">
-                          ✓ Terupdate & Aktif
+                        <span className="font-bold text-[#104F38]">
+                          {urlMode === 'direct' ? 'Tautan yang Dicetak ke QR (URL Baru):' : 'Tautan yang Dicetak ke QR (Dinamis /r/...):'}
+                        </span>
+                        <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5">
+                          ✓ Sedang Aktif di Kanvas
                         </span>
                       </div>
+                      <div className="font-mono text-[11.5px] font-black text-[#104F38] truncate flex items-center justify-between gap-2">
+                        <span className="truncate">{activeQRText}</span>
+                        <button
+                          onClick={handleCopy}
+                          className="text-[10px] font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/30 hover:bg-[#F2DA00] shrink-0 cursor-pointer"
+                        >
+                          {copiedLink ? 'Tersalin' : 'Salin'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
+                      <div className="truncate mr-2">
+                        <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wider">
+                          Tautan Tujuan Baru:
+                        </span>
+                        <span className="font-mono text-emerald-900 font-black truncate block">
+                          {selectedItem.rawUrl}
+                        </span>
+                      </div>
+                      {urlMode === 'dynamic' ? (
+                        <button
+                          type="button"
+                          onClick={() => setUrlMode('direct')}
+                          className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-1 border border-[#104F38]/20 hover:bg-[#F2DA00] shrink-0 cursor-pointer shadow-2xs"
+                        >
+                          ⚡ Gunakan Tautan Baru Ini Langsung ke QR
+                        </button>
+                      ) : (
+                        <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5 shrink-0">
+                          ✓ Terpasang Langsung ke QR
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -915,45 +992,6 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Mode URL */}
-            <div className="pt-2 border-t border-[#104F38]/10 space-y-2">
-              <label className="block text-xs font-bold text-[#104F38]">
-                Jenis URL yang Dicetak ke QR:
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setUrlMode('dynamic')}
-                  className={`p-2.5 text-left border transition-all cursor-pointer ${
-                    urlMode === 'dynamic'
-                      ? 'border-[#104F38] bg-[#F4FAF6] font-bold text-[#104F38]'
-                      : 'border-[#104F38]/20 bg-white text-[#104F38]/70 hover:bg-[#F8FAF9]'
-                  }`}
-                >
-                  <div className="font-bold">Dinamis (Rekomendasi)</div>
-                  <div className="text-[10px] text-[#104F38]/60 font-normal mt-0.5">
-                    Bisa ganti link kapan saja tanpa cetak ulang
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setUrlMode('direct')}
-                  className={`p-2.5 text-left border transition-all cursor-pointer ${
-                    urlMode === 'direct'
-                      ? 'border-[#104F38] bg-[#F4FAF6] font-bold text-[#104F38]'
-                      : 'border-[#104F38]/20 bg-white text-[#104F38]/70 hover:bg-[#F8FAF9]'
-                  }`}
-                >
-                  <div className="font-bold">Langsung Google</div>
-                  <div className="text-[10px] text-[#104F38]/60 font-normal mt-0.5">
-                    Langsung ke URL Google Maps / Review
-                  </div>
-                </button>
-              </div>
-            </div>
-
           </div>
 
           {/* Card 2: Pengaturan Desain & Nama Usaha */}
