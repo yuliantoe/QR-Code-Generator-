@@ -134,7 +134,26 @@ export const QRCard: React.FC<QRListItemProps> = ({
                 {qr.targetUrl}
               </a>
             </div>
-            <ExternalLink className="w-3 h-3 text-[#104F38]/40 shrink-0" />
+            <div className="flex items-center gap-1 shrink-0">
+              <a
+                href={redirectUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[9px] font-bold bg-[#FFE600] text-[#104F38] hover:bg-[#F2DA00] px-1.5 py-0.5 border border-[#104F38]/20 whitespace-nowrap shadow-2xs"
+                title="Tes hasil scan fisik /r/..."
+              >
+                ⚡ Tes Scan
+              </a>
+              <a
+                href={qr.targetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#104F38]/40 hover:text-[#104F38] p-0.5"
+                title="Buka link tujuan asli"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
           </div>
 
           {/* Scans Count */}
@@ -275,31 +294,54 @@ export const QRCard: React.FC<QRListItemProps> = ({
         </div>
 
         {/* Middle Section: Destination Target URL */}
-        <div className="flex-1 min-w-0 bg-[#F8FAF9] rounded-none py-2 px-3 sm:px-4 border border-[#104F38]/10 flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#104F38]/60 mb-0.5">
-              <span>Tujuan Saat Ini (Dapat Diganti Kapan Saja)</span>
+        <div className="flex-1 min-w-0 bg-[#F8FAF9] rounded-none py-2 px-3 sm:px-4 border border-[#104F38]/10 flex flex-col justify-between gap-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#104F38]">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block" />
+              <span>Link Tujuan (Bisa Diganti Kapan Saja Setelah Dicetak)</span>
             </div>
+            <span className="text-[9px] font-bold text-[#104F38]/60 font-mono hidden sm:inline">
+              Fisik: /r/{qr.slug}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
             <a
               href={qr.targetUrl}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-xs text-[#104F38] hover:text-[#0C3B2A] truncate block font-semibold hover:underline"
+              className="font-mono text-xs text-[#104F38] hover:text-[#0C3B2A] truncate block font-bold hover:underline min-w-0 flex-1"
               title={qr.targetUrl}
             >
               {qr.targetUrl}
             </a>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <a
+                href={redirectUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-2.5 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
+                title="Buka /r/... untuk mengetes pengalihan otomatis seperti saat scan fisik di HP"
+              >
+                <span>⚡ Tes Scan (/r/{qr.slug})</span>
+              </a>
+
+              <a
+                href={qr.targetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="p-1 text-[#104F38]/50 hover:text-[#104F38] hover:bg-white rounded transition-colors"
+                title="Buka link tujuan asli langsung"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
-          <a
-            href={qr.targetUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="p-1.5 text-[#104F38]/60 hover:text-[#104F38] hover:bg-white rounded transition-colors shrink-0"
-            title="Buka URL tujuan di tab baru"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="text-[10px] text-[#104F38]/70 flex items-center gap-1">
+            <span>✨ QR fisik di akrilik/kertas otomatis membuka link di atas tanpa perlu cetak ulang.</span>
+          </div>
         </div>
 
         {/* Right Section: Scans Metric & Primary Actions */}

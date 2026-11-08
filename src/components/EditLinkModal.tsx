@@ -238,15 +238,15 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
           <div className="md:col-span-7 p-4 sm:p-6 space-y-4">
             
             {/* Highlight Banner */}
-            <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-start gap-2.5">
-              <div className="p-1.5 bg-emerald-600 text-white rounded-lg shrink-0 mt-0.5">
-                <Sparkles className="w-3.5 h-3.5" />
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-none flex items-start gap-2.5">
+              <div className="p-1.5 bg-[#104F38] text-[#FFE600] rounded-none shrink-0 mt-0.5 font-bold">
+                <Sparkles className="w-4 h-4" />
               </div>
               <div className="text-xs text-emerald-950 leading-relaxed">
-                <strong className="font-semibold block text-emerald-950">
-                  QR Code Fisik yang Sudah Dicetak Tetap Aktif!
+                <strong className="font-bold block text-[#104F38] text-[13px]">
+                  ✓ Ketika Dicetak, Link Tujuan Bisa Diganti Kapan Saja Bebas!
                 </strong>
-                Stiker atau stand akrilik yang sudah Anda pasang akan langsung membuka link baru ini seketika saat dipindai.
+                QR Code fisik yang sudah Anda cetak di meja, stand akrilik, atau stiker <strong>TIDAK PERLU dicetak ulang</strong>. Begitu Anda menyimpan link tujuan baru di sini, semua orang yang memindai QR fisik di lapangan otomatis dialihkan ke link baru ini seketika.
               </div>
             </div>
 
@@ -623,15 +623,27 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                 </div>
               </div>
 
-              <div className="mt-3 bg-white p-2.5 rounded-xl border border-slate-200 text-left text-xs space-y-1">
-                <div className="text-[10px] font-bold uppercase text-slate-400">Target URL Sekarang:</div>
+              <div className="mt-3 bg-white p-2.5 rounded-none border border-[#104F38]/20 text-left text-xs space-y-1.5">
+                <div className="text-[10px] font-bold uppercase text-[#104F38]/60">Target URL Sekarang:</div>
                 <div className="font-mono text-[11px] text-[#104F38] font-bold truncate">
                   {newUrl || qr.targetUrl}
+                </div>
+                <div className="pt-1.5 border-t border-[#104F38]/10 flex items-center justify-between">
+                  <span className="text-[10px] text-[#104F38]/70">URL Fisik: /r/{qr.slug}</span>
+                  <a
+                    href={`/r/${qr.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/30 hover:bg-[#F2DA00] flex items-center gap-1"
+                    title="Uji buka tautan pengalihan fisik"
+                  >
+                    <span>⚡ Uji Pengalihan</span>
+                  </a>
                 </div>
               </div>
 
               <p className="text-[11px] text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
-                Desain dan tautan baru ini langsung disinkronkan ke seluruh sistem dan QR fisik.
+                Desain dan tautan baru ini langsung disinkronkan ke seluruh sistem dan QR fisik tanpa perlu cetak ulang.
               </p>
             </div>
 
