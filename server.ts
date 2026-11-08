@@ -9,7 +9,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+// The dev server in AI Studio must run on port 3000 because Nginx runs on port 8080 proxying to 3000.
+function resolvePort(): number {
+  const portArgIndex = process.argv.indexOf('--port');
+  if (portArgIndex !== -1 && process.argv[portArgIndex + 1]) {
+    const parsed = parseInt(process.argv[portArgIndex + 1], 10);
+    if (!isNaN(parsed)) return parsed;
+  }
+  // In the container environment, process.env.PORT is 8080 (used by Nginx). The applet must listen on 3000.
+  if (process.env.PORT && process.env.PORT !== '8080') {
+    const parsed = parseInt(process.env.PORT, 10);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return 3000;
+}
+const PORT = resolvePort();
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -1261,8 +1276,11 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`DinamisQR server running on http://0.0.0.0:${PORT}`);
+  });
+  server.on('error', (err: any) => {
+    console.error(`DinamisQR server error on port ${PORT}:`, err);
   });
 }
 
