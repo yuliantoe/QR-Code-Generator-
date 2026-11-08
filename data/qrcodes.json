@@ -260,19 +260,24 @@
     "code": "QR 001",
     "slug": "menu-resto",
     "title": "Daftar Menu Restoran & Kafe (Meja Akrilik 01-25)",
-    "targetUrl": "https://restoran-nusantara-2026.com/menu",
+    "targetUrl": "https://restoran-nusantara-2026.com/menu-spesial-chef",
     "status": "active",
     "createdAt": "2026-09-28T10:11:47.903Z",
-    "updatedAt": "2026-11-07T01:17:56.214Z",
+    "updatedAt": "2026-11-08T10:13:10.970Z",
     "tags": [
       "Restoran",
       "Meja Cetak",
       "Buku Menu"
     ],
     "notes": "Dicetak di 25 stand akrilik meja. Saat pergantian musim atau promo baru, cukup ganti link tujuan di sini tanpa ganti akrilik.",
-    "totalScans": 847,
-    "lastScannedAt": "2026-11-08T00:34:26.697Z",
+    "totalScans": 848,
+    "lastScannedAt": "2026-11-08T10:13:20.252Z",
     "urlHistory": [
+      {
+        "url": "https://restoran-nusantara-2026.com/menu-spesial-chef",
+        "changedAt": "2026-11-08T10:13:10.970Z",
+        "reason": "Pembaruan tautan tujuan"
+      },
       {
         "url": "https://restoran-nusantara-2026.com/menu",
         "changedAt": "2026-11-07T01:17:56.214Z",

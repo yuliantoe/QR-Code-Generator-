@@ -471,27 +471,50 @@ function writeJsonFile<T>(filePath: string, data: T): void {
 // ----------------------------------------------------
 const CLOUD_SYNC_OBJECT_ID = 'ff808181a09d98f701a1b392719d5825';
 
-async function syncSlugToCloud(slug: string, targetUrl: string): Promise<void> {
-  if (!slug || !targetUrl) return;
+const BASE_SLUG_MAP: Record<string, string> = {
+  'menu-resto': 'https://restoran-nusantara-2026.com/menu',
+  'qr-001': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
+  'kopi-speciality': 'https://shopee.co.id',
+  'kartu-nama-ceo': 'https://wa.me/6281234567890',
+  'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM'
+};
+
+const localSlugCache: Record<string, string> = {};
+
+async function syncSlugToCloud(slug: string, targetUrl: string): Promise<boolean> {
+  if (!slug || !targetUrl) return false;
+  const cleanSlug = slug.toLowerCase().trim();
+  const trimmedUrl = targetUrl.trim();
+
+  localSlugCache[cleanSlug] = trimmedUrl;
+
   try {
-    const cleanSlug = slug.toLowerCase().trim();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timeout = setTimeout(() => controller.abort(), 2500);
     const getRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
       signal: controller.signal
     });
     clearTimeout(timeout);
 
-    let currentMap: Record<string, string> = {};
+    let currentMap: Record<string, string> = { ...BASE_SLUG_MAP, ...localSlugCache };
     if (getRes.ok) {
       const obj = await getRes.json();
-      currentMap = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
+      if (obj && obj.data && typeof obj.data === 'object') {
+        currentMap = { ...currentMap, ...obj.data };
+      }
     }
-    currentMap[cleanSlug] = targetUrl.trim();
+
+    // Preserve memory and initial slugs so they are never wiped
+    for (const q of memoryQRCodes) {
+      if (q.slug && q.targetUrl) {
+        currentMap[q.slug.toLowerCase().trim()] = q.targetUrl.trim();
+      }
+    }
+    currentMap[cleanSlug] = trimmedUrl;
 
     const putController = new AbortController();
-    const putTimeout = setTimeout(() => putController.abort(), 3000);
-    await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
+    const putTimeout = setTimeout(() => putController.abort(), 3500);
+    const putRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -501,15 +524,22 @@ async function syncSlugToCloud(slug: string, targetUrl: string): Promise<void> {
       signal: putController.signal
     });
     clearTimeout(putTimeout);
+    return putRes.ok;
   } catch (err) {
-    // Non-blocking fallback
+    console.warn('[CloudSync] Warning syncing slug to cloud:', err);
+    return false;
   }
 }
 
 async function getCloudUrlForSlug(slug: string): Promise<string | null> {
   if (!slug) return null;
+  const cleanSlug = slug.toLowerCase().trim();
+
+  if (localSlugCache[cleanSlug]) {
+    return localSlugCache[cleanSlug];
+  }
+
   try {
-    const cleanSlug = slug.toLowerCase().trim();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2000);
     const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
@@ -520,13 +550,15 @@ async function getCloudUrlForSlug(slug: string): Promise<string | null> {
     if (res.ok) {
       const json = await res.json();
       if (json && json.data && typeof json.data[cleanSlug] === 'string' && json.data[cleanSlug].trim()) {
-        return json.data[cleanSlug].trim();
+        const url = json.data[cleanSlug].trim();
+        localSlugCache[cleanSlug] = url;
+        return url;
       }
     }
   } catch {
     // Non-blocking fallback
   }
-  return null;
+  return BASE_SLUG_MAP[cleanSlug] || null;
 }
 
 // ----------------------------------------------------
@@ -812,8 +844,10 @@ export const db = {
   },
 
   async saveQRCode(qr: DynamicQRCode): Promise<void> {
-    // Asynchronously push slug -> targetUrl mapping to cloud sync store
-    syncSlugToCloud(qr.slug, qr.targetUrl).catch(() => {});
+    // Await cloud sync so serverless lambda does not terminate before HTTP PUT finishes
+    try {
+      await syncSlugToCloud(qr.slug, qr.targetUrl);
+    } catch {}
 
     const ok = await ensurePostgres();
     if (ok && pool) {

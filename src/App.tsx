@@ -107,16 +107,63 @@ export default function App() {
   const [isActivateNFCOpen, setIsActivateNFCOpen] = useState(false);
   const [editingNFCTag, setEditingNFCTag] = useState<NFCTag | null>(null);
 
-  // Instant client-side redirect fallback if phone visits /r/:slug and SPA index.html is served
+  // Instant client-side redirect fallback if phone visits /r/:slug or /nfc/:id and SPA index.html is served
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/r/')) {
-      const pathSlug = window.location.pathname.replace(/^\/r\//, '').split('/')[0].split('?')[0];
+    if (typeof window === 'undefined') return;
+    const pathname = window.location.pathname;
+
+    if (pathname.startsWith('/r/')) {
+      const pathSlug = pathname.replace(/^\/r\//, '').split('/')[0].split('?')[0].toLowerCase().trim();
       if (pathSlug) {
+        // 1. Try local cache
+        try {
+          const cached = localStorage.getItem('dinamis_qrcodes_cache');
+          if (cached) {
+            const list = JSON.parse(cached);
+            const found = list.find((q: any) => q.slug?.toLowerCase() === pathSlug);
+            if (found?.targetUrl) {
+              window.location.replace(found.targetUrl);
+              return;
+            }
+          }
+        } catch {}
+
+        // 2. Try API endpoint
         fetch(`/api/qrcodes/slug/${pathSlug}`)
           .then(res => res.json())
           .then(json => {
             if (json.success && json.data?.targetUrl) {
               window.location.replace(json.data.targetUrl);
+            } else {
+              // 3. Fallback to direct cloud sync object
+              return fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825')
+                .then(r => r.json())
+                .then(obj => {
+                  if (obj?.data?.[pathSlug]) {
+                    window.location.replace(obj.data[pathSlug]);
+                  }
+                });
+            }
+          })
+          .catch(() => {
+            fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825')
+              .then(r => r.json())
+              .then(obj => {
+                if (obj?.data?.[pathSlug]) {
+                  window.location.replace(obj.data[pathSlug]);
+                }
+              })
+              .catch(() => {});
+          });
+      }
+    } else if (pathname.startsWith('/nfc/') || pathname.startsWith('/n/')) {
+      const nfcId = pathname.replace(/^\/(nfc|n)\//, '').split('/')[0].split('?')[0].trim();
+      if (nfcId) {
+        fetch(`/api/nfc/${nfcId}/test-tap`, { method: 'POST' })
+          .then(res => res.json())
+          .then(json => {
+            if (json.success && json.targetUrl) {
+              window.location.replace(json.targetUrl);
             }
           })
           .catch(() => {});
@@ -358,6 +405,25 @@ export default function App() {
     }
     return null;
   };
+
+  // If user opened a physical QR redirect (/r/:slug) or NFC (/nfc/:id), show redirect screen immediately without prompting login
+  const isRedirectPath = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/r/') ||
+    window.location.pathname.startsWith('/nfc/') ||
+    window.location.pathname.startsWith('/n/')
+  );
+
+  if (isRedirectPath) {
+    return (
+      <div className="min-h-screen bg-[#F4FAF6] flex flex-col items-center justify-center p-4 text-center font-sans">
+        <div className="bg-white p-8 border border-[#104F38]/20 max-w-sm w-full shadow-lg space-y-4">
+          <div className="w-12 h-12 border-4 border-[#104F38] border-t-[#FFE600] rounded-full animate-spin mx-auto" />
+          <h2 className="text-base font-bold text-[#104F38]">Mengarahkan ke Tautan Tujuan...</h2>
+          <p className="text-xs text-[#104F38]/70">Mohon tunggu sebentar, Anda sedang dialihkan secara otomatis.</p>
+        </div>
+      </div>
+    );
+  }
 
   // If not logged in, render dedicated secure Login Screen
   if (!currentUser || !authToken) {

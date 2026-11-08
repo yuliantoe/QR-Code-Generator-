@@ -3,10 +3,14 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/[...all].ts"
     },
     {
       "source": "/r/:slug",
+      "destination": "/api/index.ts?slug=:slug"
+    },
+    {
+      "source": "/r/:slug/",
       "destination": "/api/index.ts?slug=:slug"
     },
     {

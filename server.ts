@@ -29,6 +29,17 @@ const PORT = resolvePort();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Restore original path if Vercel rewritten URL to /api/index.ts or /api/[...all].ts
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  const matchedPath = (req.headers['x-matched-path'] || req.headers['x-vercel-matched-path'] || req.headers['x-forwarded-url']) as string;
+  if (matchedPath && (req.url === '/api/index.ts' || req.url === '/api' || req.url.startsWith('/api/index.ts?') || req.url.startsWith('/api/[...all].ts'))) {
+    const queryIdx = req.url.indexOf('?');
+    const queryString = queryIdx !== -1 ? req.url.substring(queryIdx) : '';
+    req.url = matchedPath + (matchedPath.includes('?') ? '' : queryString);
+  }
+  next();
+});
+
 // Helper: Parse user agent for device and browser stats
 function parseUserAgent(uaString: string | undefined): { device: 'mobile' | 'desktop' | 'tablet' | 'unknown'; os: string; browser: string } {
   const ua = uaString || '';
@@ -238,11 +249,13 @@ app.get(['/r/:slug', '/r', '/api/index.ts', '/api'], async (req: Request, res: R
     }
   }
 
-  // Send no-cache headers so browsers and QR scanner apps always perform fresh redirect
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  // Send no-cache headers so browsers, edge CDNs (Vercel/Cloudflare) and QR scanner apps always perform fresh redirect
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   res.setHeader('Surrogate-Control', 'no-store');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
 
   return res.redirect(302, destinationUrl);
 });

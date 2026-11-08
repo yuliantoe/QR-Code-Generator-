@@ -157,6 +157,23 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
         qrData: localUpdatedQR
       };
 
+      // Direct browser cloud sync as dual-safety layer for Vercel Serverless
+      if (qr.slug) {
+        const cleanSlug = qr.slug.toLowerCase().trim();
+        fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`)
+          .then(r => r.json())
+          .then(obj => {
+            const currentData = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
+            currentData[cleanSlug] = formattedUrl;
+            return fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: 'dinamis_qr', data: currentData })
+            });
+          })
+          .catch(() => {});
+      }
+
       const res = await fetch(`/api/qrcodes/${qr.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
