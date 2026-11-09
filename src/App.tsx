@@ -244,6 +244,37 @@ export default function App() {
     }
   };
 
+  // Auto sync all loaded QR slugs to cloud sync store for Vercel
+  useEffect(() => {
+    if (qrcodes.length > 0) {
+      const slugMap: Record<string, string> = {};
+      for (const q of qrcodes) {
+        if (q.slug && q.targetUrl) {
+          slugMap[q.slug.toLowerCase().trim()] = q.targetUrl.trim();
+        }
+      }
+      fetch('/api/qrcodes/sync-cloud', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugMap })
+      }).catch(() => {});
+
+      // Direct client push as well
+      fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`)
+        .then(r => r.json())
+        .then(obj => {
+          const current = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
+          const merged = { ...current, ...slugMap };
+          return fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'dinamis_qr', data: merged })
+          });
+        })
+        .catch(() => {});
+    }
+  }, [qrcodes.length]);
+
   const fetchNFCTags = async () => {
     try {
       const res = await fetch('/api/nfc');

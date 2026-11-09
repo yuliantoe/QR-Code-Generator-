@@ -1,5 +1,73 @@
 [
   {
+    "id": "qr-qr-001",
+    "code": "QR-QR-001",
+    "slug": "qr-001",
+    "title": "QR Code #qr-001",
+    "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJ_8pMXbpfZS4Rlo0DNUQ77ro",
+    "status": "active",
+    "createdAt": "2026-11-09T09:19:57.589Z",
+    "updatedAt": "2026-11-09T09:19:57.589Z",
+    "tags": [
+      "Cloud Synced"
+    ],
+    "notes": "Tautan disinkronkan otomatis dari cloud sync.",
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-09T09:19:57.589Z",
+    "urlHistory": [
+      {
+        "url": "https://search.google.com/local/writereview?placeid=ChIJ_8pMXbpfZS4Rlo0DNUQ77ro",
+        "changedAt": "2026-11-09T09:19:57.589Z",
+        "reason": "Cloud Sync Serverless"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-review",
+    "code": "QR-REVIEW",
+    "slug": "review",
+    "title": "QR Code #review",
+    "targetUrl": "https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM",
+    "status": "active",
+    "createdAt": "2026-11-09T09:19:51.383Z",
+    "updatedAt": "2026-11-09T09:19:51.383Z",
+    "tags": [
+      "Cloud Synced"
+    ],
+    "notes": "Tautan disinkronkan otomatis dari cloud sync.",
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-09T09:19:51.383Z",
+    "urlHistory": [
+      {
+        "url": "https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM",
+        "changedAt": "2026-11-09T09:19:51.383Z",
+        "reason": "Cloud Sync Serverless"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
     "id": "qr-dummy-test",
     "code": "QR 999",
     "slug": "dummy-test",
@@ -270,8 +338,8 @@
       "Buku Menu"
     ],
     "notes": "Dicetak di 25 stand akrilik meja. Saat pergantian musim atau promo baru, cukup ganti link tujuan di sini tanpa ganti akrilik.",
-    "totalScans": 848,
-    "lastScannedAt": "2026-11-08T10:13:20.252Z",
+    "totalScans": 849,
+    "lastScannedAt": "2026-11-09T09:18:34.808Z",
     "urlHistory": [
       {
         "url": "https://restoran-nusantara-2026.com/menu-spesial-chef",
@@ -342,8 +410,8 @@
       "Shopee"
     ],
     "notes": "Stiker fisik sudah dicetak 5.000 pouch aluminium. Link tujuan diarahkan ke promo Shopee bulan ini.",
-    "totalScans": 1394,
-    "lastScannedAt": "2026-10-28T09:26:47.903Z",
+    "totalScans": 1395,
+    "lastScannedAt": "2026-11-09T09:20:03.116Z",
     "urlHistory": [
       {
         "url": "https://tokopedia.com",

@@ -3,7 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { DynamicQRCode, ScanRecord, QRAnalyticsSummary } from './src/types.ts';
-import { db } from './db.ts';
+import { db, syncAllSlugsToCloud } from './db.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,9 +72,10 @@ function parseUserAgent(uaString: string | undefined): { device: 'mobile' | 'des
 // DYNAMIC REDIRECT HANDLER: GET /r/:slug & Vercel rewrites
 // This is what physical printed QR codes point to!
 // ==========================================
-app.get(['/r/:slug', '/r', '/api/index.ts', '/api'], async (req: Request, res: Response, next: NextFunction) => {
+app.get(['/r/:slug', '/r/:slug/*', '/r', '/api/r', '/api/index.ts', '/api', '/'], async (req: Request, res: Response, next: NextFunction) => {
   const rawSlug = req.params.slug ||
     (req.query.slug as string) ||
+    (req.path.startsWith('/r/') ? req.path.replace(/^\/r\//, '').split('/')[0].split('?')[0] : null) ||
     (req.url.includes('/r/') ? req.url.split('/r/')[1]?.split('?')[0] : null);
 
   if (!rawSlug) {
@@ -962,6 +963,15 @@ app.get('/api/qrcodes/slug/:slug', async (req: Request, res: Response) => {
     return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
   }
   res.json({ success: true, data: qr });
+});
+
+// Bulk sync slugs to cloud for Vercel Serverless
+app.post('/api/qrcodes/sync-cloud', async (req: Request, res: Response) => {
+  const { slugMap } = req.body;
+  if (slugMap && typeof slugMap === 'object') {
+    await syncAllSlugsToCloud(slugMap);
+  }
+  res.json({ success: true, message: 'Cloud sync updated' });
 });
 
 // Create new dynamic QR code

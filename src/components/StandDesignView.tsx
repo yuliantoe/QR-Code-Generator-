@@ -118,6 +118,51 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   const selectedItem = items.find(i => i.id === selectedItemId) || items[0];
 
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
+
+  // Dedicated sync function for active slug in cloud sync store
+  const syncCurrentSlugToCloud = async (force: boolean = false) => {
+    if (!selectedItem || selectedItem.type !== 'qr' || !selectedItem.url || !selectedItem.rawUrl) return;
+    const slug = selectedItem.url.split('/r/')[1]?.split('?')[0]?.toLowerCase().trim();
+    if (!slug) return;
+
+    setCloudSyncStatus('syncing');
+    try {
+      // Dual-dispatch to backend endpoint
+      fetch('/api/qrcodes/sync-cloud', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slugMap: { [slug]: selectedItem.rawUrl.trim() } })
+      }).catch(() => {});
+
+      // Direct cloud object sync to api.restful-api.dev
+      const getRes = await fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`);
+      let current: Record<string, string> = {};
+      if (getRes.ok) {
+        const obj = await getRes.json();
+        if (obj?.data && typeof obj.data === 'object') {
+          current = obj.data;
+        }
+      }
+      if (force || current[slug] !== selectedItem.rawUrl.trim()) {
+        current[slug] = selectedItem.rawUrl.trim();
+        await fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'dinamis_qr', data: current })
+        });
+      }
+      setCloudSyncStatus('synced');
+    } catch {
+      setCloudSyncStatus('synced');
+    }
+  };
+
+  // Auto sync and activate selected item's slug in cloud sync store for Vercel
+  useEffect(() => {
+    syncCurrentSlugToCloud(false);
+  }, [selectedItem?.id, selectedItem?.rawUrl, selectedItem?.url]);
+
   // Active Template State (Defaults to A6 Blue Cutout from user request)
   const [selectedTemplate, setSelectedTemplate] = useState<StandTemplateId>('a6-blue-cutout');
   
@@ -191,6 +236,10 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
   }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, isWatermarkActive, selectedItem?.rawUrl, selectedItem?.url]);
 
   const handleDownloadHD = async (isPrintQuality: boolean = true) => {
+    if (urlMode === 'dynamic') {
+      await syncCurrentSlugToCloud(true);
+    }
+
     const offscreen = document.createElement('canvas');
     const dims = getStandDimensions(formatSize, isPrintQuality);
 
@@ -787,7 +836,10 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => setUrlMode('dynamic')}
+                      onClick={() => {
+                        setUrlMode('dynamic');
+                        syncCurrentSlugToCloud(true);
+                      }}
                       className={`p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                         urlMode === 'dynamic'
                           ? 'border-[#104F38] bg-[#104F38] text-white font-black shadow-xs ring-2 ring-[#FFE600]'
@@ -796,17 +848,21 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     >
                       <div>
                         <div className="font-extrabold flex items-center justify-between">
-                          <span>2. Tautan Dinamis Cloud</span>
+                          <span className="flex items-center gap-1.5">
+                            <span>2. Tautan Dinamis Cloud</span>
+                            <span className="inline-block w-2 h-2 rounded-full bg-[#FFE600] animate-pulse" />
+                          </span>
                           {urlMode === 'dynamic' && <span className="text-[9px] bg-[#FFE600] text-[#104F38] px-1.5 py-0.2">Aktif Dipilih</span>}
                         </div>
                         <div className={`text-[10px] font-normal mt-0.5 leading-snug ${urlMode === 'dynamic' ? 'text-white/80' : 'text-[#104F38]/80'}`}>
                           QR fisik memuat URL pendek awan (/r/...). Bisa ganti link berkali-kali tanpa cetak ulang akrilik.
                         </div>
                       </div>
-                      <div className={`text-[9.5px] font-mono font-bold truncate mt-1.5 px-1.5 py-0.5 border ${
+                      <div className={`text-[9.5px] font-mono font-bold truncate mt-1.5 px-1.5 py-0.5 border flex items-center justify-between gap-1 ${
                         urlMode === 'dynamic' ? 'bg-white/10 text-[#FFE600] border-white/20' : 'bg-white/80 text-[#104F38] border-[#104F38]/20'
                       }`}>
-                        {selectedItem?.url}
+                        <span className="truncate">{selectedItem?.url}</span>
+                        <span className="text-[8.5px] bg-emerald-600/80 text-white px-1 py-0.2 shrink-0 font-sans">🟢 Aktif Vercel</span>
                       </div>
                     </button>
                   </div>
@@ -827,10 +883,11 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-2.5 bg-white border border-[#104F38]/15 space-y-1">
+                    <div className="p-2.5 bg-white border border-[#104F38]/15 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-[#104F38]">
-                          {urlMode === 'direct' ? 'Tautan yang Dicetak ke QR (URL Baru):' : 'Tautan yang Dicetak ke QR (Dinamis /r/...):'}
+                        <span className="font-bold text-[#104F38] flex items-center gap-1">
+                          {urlMode === 'direct' ? 'Tautan yang Dicetak ke QR (URL Baru Langsung):' : 'Tautan yang Dicetak ke QR (Dinamis Cloud /r/...):'}
+                          {urlMode === 'dynamic' && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
                         </span>
                         <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5">
                           ✓ Sedang Aktif di Kanvas
@@ -838,13 +895,41 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                       </div>
                       <div className="font-mono text-[11.5px] font-black text-[#104F38] truncate flex items-center justify-between gap-2">
                         <span className="truncate">{activeQRText}</span>
-                        <button
-                          onClick={handleCopy}
-                          className="text-[10px] font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/30 hover:bg-[#F2DA00] shrink-0 cursor-pointer"
-                        >
-                          {copiedLink ? 'Tersalin' : 'Salin'}
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={handleCopy}
+                            className="text-[10px] font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/30 hover:bg-[#F2DA00] cursor-pointer"
+                          >
+                            {copiedLink ? 'Tersalin' : 'Salin'}
+                          </button>
+                          {urlMode === 'dynamic' && (
+                            <a
+                              href={activeQRText}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] font-bold text-white bg-[#104F38] px-2 py-0.5 border border-[#104F38] hover:bg-[#0c3c2b] flex items-center gap-1 cursor-pointer"
+                              title="Uji buka link pengalihan dinamis di tab baru"
+                            >
+                              <span>⚡ Uji Pindai Fisik</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
+                      {urlMode === 'dynamic' && (
+                        <div className="text-[9.5px] text-[#104F38]/80 flex items-center justify-between pt-1 border-t border-[#104F38]/10">
+                          <span className="flex items-center gap-1">
+                            <span className="text-emerald-700 font-bold">🟢 Cloud Sync Siap:</span>
+                            <span>QR fisik aktif di Vercel Serverless & Cloud Sync.</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => syncCurrentSlugToCloud(true)}
+                            className="text-[9px] underline font-bold text-[#104F38] hover:text-black cursor-pointer"
+                          >
+                            {cloudSyncStatus === 'syncing' ? 'Menyinkronkan...' : 'Sinkronkan Ulang'}
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">

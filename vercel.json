@@ -2,31 +2,35 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/[...all].ts"
-    },
-    {
       "source": "/r/:slug",
-      "destination": "/api/index.ts?slug=:slug"
+      "destination": "/api/r?slug=:slug"
     },
     {
       "source": "/r/:slug/",
-      "destination": "/api/index.ts?slug=:slug"
+      "destination": "/api/r?slug=:slug"
     },
     {
       "source": "/r/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/r"
+    },
+    {
+      "source": "/r",
+      "destination": "/api/r"
     },
     {
       "source": "/nfc/:id",
-      "destination": "/api/index.ts?nfcId=:id"
+      "destination": "/api/nfc?id=:id"
     },
     {
       "source": "/nfc/(.*)",
+      "destination": "/api/nfc"
+    },
+    {
+      "source": "/api/(.*)",
       "destination": "/api/index.ts"
     },
     {
-      "source": "/((?!api/|r/|nfc/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

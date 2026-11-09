@@ -70,5 +70,41 @@
     "os": "Unknown OS",
     "browser": "Browser",
     "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794215915237-u7ltp",
+    "qrId": "qr-menu-resto",
+    "timestamp": "2026-11-09T09:18:34.808Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794215991769-pr24s",
+    "qrId": "qr-review",
+    "timestamp": "2026-11-09T09:19:51.383Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794215997969-fay0g",
+    "qrId": "qr-qr-001",
+    "timestamp": "2026-11-09T09:19:57.589Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794216003539-xdta6",
+    "qrId": "qr-kemasan-kopi",
+    "timestamp": "2026-11-09T09:20:03.116Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
   }
 ]

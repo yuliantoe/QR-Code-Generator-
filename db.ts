@@ -474,6 +474,8 @@ const CLOUD_SYNC_OBJECT_ID = 'ff808181a09d98f701a1b392719d5825';
 const BASE_SLUG_MAP: Record<string, string> = {
   'menu-resto': 'https://restoran-nusantara-2026.com/menu',
   'qr-001': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
+  'review': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
+  'google-review': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
   'kopi-speciality': 'https://shopee.co.id',
   'kartu-nama-ceo': 'https://wa.me/6281234567890',
   'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM'
@@ -531,6 +533,49 @@ async function syncSlugToCloud(slug: string, targetUrl: string): Promise<boolean
   }
 }
 
+async function syncAllSlugsToCloud(slugMap: Record<string, string>): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const getRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    let currentMap: Record<string, string> = { ...BASE_SLUG_MAP, ...localSlugCache };
+    if (getRes.ok) {
+      const obj = await getRes.json();
+      if (obj && obj.data && typeof obj.data === 'object') {
+        currentMap = { ...currentMap, ...obj.data };
+      }
+    }
+
+    for (const [k, v] of Object.entries(slugMap)) {
+      if (k && v && typeof v === 'string') {
+        const clean = k.toLowerCase().trim();
+        currentMap[clean] = v.trim();
+        localSlugCache[clean] = v.trim();
+      }
+    }
+
+    const putController = new AbortController();
+    const putTimeout = setTimeout(() => putController.abort(), 4000);
+    const putRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'dinamis_qr',
+        data: currentMap
+      }),
+      signal: putController.signal
+    });
+    clearTimeout(putTimeout);
+    return putRes.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function getCloudUrlForSlug(slug: string): Promise<string | null> {
   if (!slug) return null;
   const cleanSlug = slug.toLowerCase().trim();
@@ -549,10 +594,24 @@ async function getCloudUrlForSlug(slug: string): Promise<string | null> {
 
     if (res.ok) {
       const json = await res.json();
-      if (json && json.data && typeof json.data[cleanSlug] === 'string' && json.data[cleanSlug].trim()) {
-        const url = json.data[cleanSlug].trim();
-        localSlugCache[cleanSlug] = url;
-        return url;
+      if (json && json.data && typeof json.data === 'object') {
+        if (json.data[cleanSlug] && typeof json.data[cleanSlug] === 'string') {
+          const url = json.data[cleanSlug].trim();
+          localSlugCache[cleanSlug] = url;
+          return url;
+        }
+        // Normalized / dash-tolerant search
+        const strippedTarget = cleanSlug.replace(/[^a-z0-9]/g, '');
+        for (const [k, v] of Object.entries(json.data)) {
+          if (typeof v === 'string' && v.trim()) {
+            const strippedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (strippedK === strippedTarget && strippedTarget.length >= 2) {
+              const url = v.trim();
+              localSlugCache[cleanSlug] = url;
+              return url;
+            }
+          }
+        }
       }
     }
   } catch {
@@ -787,18 +846,23 @@ export const db = {
   },
 
   async getQRCodeBySlug(slug: string): Promise<DynamicQRCode | null> {
+    const cleanSlug = (slug || '').trim().toLowerCase();
+    if (!cleanSlug) return null;
+
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        const res = await pool.query('SELECT data FROM dinamis_qrcodes WHERE LOWER(slug) = LOWER($1)', [slug]);
-        return res.rows[0]?.data || null;
+        const res = await pool.query('SELECT data FROM dinamis_qrcodes WHERE LOWER(slug) = LOWER($1)', [cleanSlug]);
+        if (res.rows[0]?.data) {
+          return res.rows[0].data;
+        }
       } catch (err) {
         console.error('[DB] getQRCodeBySlug error:', err);
       }
     }
 
     const all = await this.getQRCodes();
-    let found = all.find(q => q.slug.toLowerCase() === slug.toLowerCase()) || null;
+    let found = all.find(q => q.slug.toLowerCase() === cleanSlug) || null;
 
     // Check cloud sync store (fallback for serverless instances like Vercel without persistent Postgres)
     try {
@@ -839,6 +903,36 @@ export const db = {
         }
       }
     } catch {}
+
+    if (!found && (cleanSlug.includes('review') || cleanSlug.includes('google'))) {
+      const reviewUrl = 'https://search.google.com/local/writereview?placeid=ChIJ_8pMXbpfZS4Rlo0DNUQ77ro';
+      return {
+        id: 'qr-review',
+        code: 'QR-REVIEW',
+        slug: cleanSlug,
+        title: 'Google Review Stand',
+        targetUrl: reviewUrl,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        tags: ['Google Review'],
+        notes: 'Fallback review URL',
+        totalScans: 0,
+        lastScannedAt: null,
+        urlHistory: [],
+        style: {
+          fgColor: '#104F38',
+          bgColor: '#ffffff',
+          dotStyle: 'rounded',
+          cornerStyle: 'rounded',
+          frameStyle: 'bottom-banner',
+          frameText: 'ULAS KAMI DI GOOGLE',
+          frameColor: '#104F38',
+          frameTextColor: '#ffffff',
+          logoType: 'none'
+        }
+      };
+    }
 
     return found;
   },
@@ -1041,3 +1135,6 @@ export const db = {
     return true;
   }
 };
+
+export { syncSlugToCloud, syncAllSlugsToCloud, getCloudUrlForSlug };
+
