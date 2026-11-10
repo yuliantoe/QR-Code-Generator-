@@ -498,9 +498,7 @@ app.post('/api/auth/upgrade-plan', async (req: Request, res: Response) => {
 
   return res.json({
     success: true,
-    message: plan === 'yearly'
-      ? 'Selamat! Akun Anda telah diupgrade ke Paket Bisnis Tahunan. Semua watermark pada QR dan Stand meja telah dihapus permanen!'
-      : 'Selamat! Akun Anda telah diupgrade ke Paket Pro Bulanan. Semua watermark pada QR dan Stand meja telah dihapus!',
+    message: 'Selamat! Akun Anda telah diupgrade ke Paket Pro Bulanan. Semua watermark pada QR dan Stand meja telah dihapus!',
     user: {
       username: updatedUser.username,
       name: updatedUser.name,

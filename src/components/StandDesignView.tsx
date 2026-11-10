@@ -35,16 +35,12 @@ interface StandDesignViewProps {
   initialSelectedId?: string;
   onOpenCreateQR?: () => void;
   onOpenActivateNFC?: () => void;
-  isWatermarkActive?: boolean;
-  onOpenSubscriptionModal?: () => void;
 }
 
 export const StandDesignView: React.FC<StandDesignViewProps> = ({
   qrcodes,
   nfcTags,
-  initialSelectedId,
-  isWatermarkActive = false,
-  onOpenSubscriptionModal
+  initialSelectedId
 }) => {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -223,7 +219,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
         showPlaceName,
         width: dims.width,
         height: dims.height,
-        watermark: isWatermarkActive
+        watermark: false
       });
     } catch (e) {
       console.error(e);
@@ -234,7 +230,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   useEffect(() => {
     renderCanvas();
-  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, isWatermarkActive, selectedItem?.rawUrl, selectedItem?.url]);
+  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, selectedItem?.rawUrl, selectedItem?.url]);
 
   const handleDownloadHD = async (isPrintQuality: boolean = true) => {
     if (urlMode === 'dynamic') {
@@ -254,7 +250,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
       showPlaceName,
       width: dims.width,
       height: dims.height,
-      watermark: isWatermarkActive
+      watermark: false
     });
 
     const safeTitle = (placeName || 'stand-google-review')
@@ -332,7 +328,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
             showPlaceName,
             width: dims.width,
             height: dims.height,
-            watermark: isWatermarkActive
+            watermark: false
           });
 
           standsToPrint.push({
@@ -383,7 +379,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
           showPlaceName,
           width: dims.width,
           height: dims.height,
-          watermark: isWatermarkActive
+          watermark: false
         });
 
         const safeCode = item.code.replace(/\s+/g, '-');
@@ -484,36 +480,6 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Trial Watermark Notice Banner */}
-      {isWatermarkActive && (
-        <div className="bg-amber-50 border-2 border-amber-400 p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-start gap-2.5">
-            <span className="text-rose-600 font-black text-xs bg-rose-100 border border-rose-300 px-2 py-0.5 mt-0.5 shrink-0">
-              WATERMARK AKTIF (TRIAL)
-            </span>
-            <div>
-              <h4 className="text-xs sm:text-sm font-extrabold text-amber-950">
-                Desain Stand Meja & QR Code Anda saat ini memiliki Watermark "Trial 3 Hari"
-              </h4>
-              <p className="text-[11px] text-amber-800 mt-0.5">
-                Tingkatkan ke <strong>Paket Pro Bulanan (Rp 49.000)</strong> atau <strong>Paket Bisnis Tahunan (Rp 399.000)</strong> untuk langsung mencetak bersih tanpa watermark selamanya.
-              </p>
-            </div>
-          </div>
-
-          {onOpenSubscriptionModal && (
-            <button
-              type="button"
-              onClick={onOpenSubscriptionModal}
-              className="px-4 py-2 bg-[#104F38] hover:bg-[#0c3c2b] text-white text-xs font-black flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
-            >
-              <Crown className="w-4 h-4 text-[#FFE600]" />
-              <span>Hapus Watermark (Pilih Paket)</span>
-            </button>
-          )}
-        </div>
-      )}
 
       {/* TOP SECTION: FORMAT SIZE & TEMPLATE PICKER */}
       <div className="bg-white border border-[#104F38]/20 p-4 sm:p-5 space-y-4">

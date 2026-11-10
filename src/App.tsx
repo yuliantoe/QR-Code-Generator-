@@ -11,7 +11,6 @@ import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { SubscriptionModal } from './components/SubscriptionModal.tsx';
 import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles, Crown } from 'lucide-react';
 import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
@@ -31,7 +30,6 @@ export default function App() {
   });
 
   const [isChangeCredentialsOpen, setIsChangeCredentialsOpen] = useState(false);
-  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
 
   // Navigation tab state ('qr' | 'nfc' | 'stand-design')
   const [currentTab, setCurrentTab] = useState<'qr' | 'nfc' | 'stand-design'>('qr');
@@ -488,8 +486,6 @@ export default function App() {
     return matchesSearch && matchesStatus;
   });
 
-  const isWatermarkActive = Boolean(currentUser?.isWatermarkActive ?? (currentUser?.plan === 'trial'));
-
   return (
     <div className="min-h-screen bg-white text-[#104F38] flex flex-col font-sans">
       
@@ -504,31 +500,7 @@ export default function App() {
         currentUser={currentUser}
         onLogout={handleLogout}
         onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
-        onOpenSubscriptionModal={() => setIsSubscriptionOpen(true)}
       />
-
-      {/* Trial Watermark Notification Bar */}
-      {currentUser.plan === 'trial' && (
-        <div className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 text-white px-4 py-2 text-xs font-bold shadow-xs">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-            <div className="flex items-center gap-2">
-              <span className="bg-black/30 text-[#FFE600] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                TRIAL 3 HARI
-              </span>
-              <span>
-                Akun Anda dalam masa uji coba 3 hari. Desain QR & Stand Meja saat ini ber-watermark.
-              </span>
-            </div>
-            <button
-              onClick={() => setIsSubscriptionOpen(true)}
-              className="px-3 py-1 bg-white text-[#104F38] hover:bg-[#FFE600] font-black text-xs shrink-0 cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
-            >
-              <Crown className="w-3.5 h-3.5 text-[#104F38]" />
-              <span>Hapus Watermark (Pilih Paket)</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Main Viewport Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16">
@@ -1024,7 +996,6 @@ export default function App() {
                     }}
                     onToggleStatus={handleToggleStatus}
                     onDelete={handleDeleteQR}
-                    isWatermarkActive={isWatermarkActive}
                   />
                 ))}
               </div>
@@ -1080,8 +1051,6 @@ export default function App() {
             initialSelectedId={standDesignInitialId}
             onOpenCreateQR={() => setIsCreateOpen(true)}
             onOpenActivateNFC={() => setIsActivateNFCOpen(true)}
-            isWatermarkActive={isWatermarkActive}
-            onOpenSubscriptionModal={() => setIsSubscriptionOpen(true)}
           />
         )}
 
@@ -1137,8 +1106,6 @@ export default function App() {
           qr={analyticsQR}
           isOpen={!!analyticsQR}
           defaultCompact={viewMode === 'compact'}
-          isWatermarkActive={isWatermarkActive}
-          onOpenSubscriptionModal={() => setIsSubscriptionOpen(true)}
           onClose={() => setAnalyticsQR(null)}
           onOpenEditLink={() => {
             const current = analyticsQR;
@@ -1190,20 +1157,6 @@ export default function App() {
           qr={qrToDelete}
           onClose={() => setQrToDelete(null)}
           onConfirmDelete={handleConfirmDelete}
-        />
-      )}
-
-      {/* Subscription Plans Modal (Trial 3 Hari, Bulanan, Tahunan) */}
-      {isSubscriptionOpen && currentUser && (
-        <SubscriptionModal
-          isOpen={isSubscriptionOpen}
-          onClose={() => setIsSubscriptionOpen(false)}
-          currentUser={currentUser}
-          authToken={authToken}
-          onPlanUpdated={(updatedUser) => {
-            setCurrentUser(updatedUser);
-            localStorage.setItem('dinamis_auth_user', JSON.stringify(updatedUser));
-          }}
         />
       )}
 

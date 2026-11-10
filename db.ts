@@ -48,9 +48,9 @@ const initialUsers: UserRecord[] = [
     name: 'Administrator',
     email: 'admin@dinamisqr.com',
     phone: '',
-    plan: 'yearly',
+    plan: 'monthly',
     trialExpiresAt: null,
-    subscriptionExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString(),
+    subscriptionExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
     isWatermarkActive: false,
     createdAt: new Date().toISOString()
   }

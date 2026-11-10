@@ -12,7 +12,6 @@ interface NavbarProps {
   currentUser?: AuthUser | null;
   onLogout?: () => void;
   onOpenChangeCredentials?: () => void;
-  onOpenSubscriptionModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -24,8 +23,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   nfcCount,
   currentUser,
   onLogout,
-  onOpenChangeCredentials,
-  onOpenSubscriptionModal
+  onOpenChangeCredentials
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#104F38]/10">
@@ -132,35 +130,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Buat QR</span>
               <span className="hidden xs:inline">Baru</span>
             </button>
-          )}
-
-          {/* Subscription Plan Badge / Upgrade Button */}
-          {currentUser && onOpenSubscriptionModal && (
-            currentUser.plan === 'trial' ? (
-              <button
-                type="button"
-                onClick={onOpenSubscriptionModal}
-                className="px-2 sm:px-2.5 py-1.5 text-xs font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-none flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                title="Akun Trial 3 Hari Aktif - Klik untuk Hapus Watermark & Upgrade"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
-                <span className="hidden sm:inline">Trial 3 Hari</span>
-                <span className="bg-[#FFE600] text-[#104F38] px-1.5 py-0.2 text-[10px] font-black uppercase">
-                  Upgrade
-                </span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onOpenSubscriptionModal}
-                className="px-2 sm:px-2.5 py-1.5 text-xs font-bold text-[#104F38] bg-[#F4FAF6] hover:bg-[#FFE600] border border-[#104F38]/20 rounded-none flex items-center gap-1.5 transition-all cursor-pointer"
-                title="Paket Aktif - Bebas Watermark"
-              >
-                <Crown className="w-3.5 h-3.5 text-amber-600" />
-                <span className="hidden sm:inline">{currentUser.plan === 'yearly' ? 'Bisnis Tahunan' : 'Pro Bulanan'}</span>
-                <span className="text-[10px] text-emerald-700 font-bold hidden md:inline">✓ Bebas Watermark</span>
-              </button>
-            )
           )}
 
           {currentUser && onLogout && (

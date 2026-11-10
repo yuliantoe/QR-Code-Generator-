@@ -11,7 +11,6 @@ interface QRListItemProps {
   onToggleStatus: (qr: DynamicQRCode) => void;
   onDelete: (qr: DynamicQRCode) => void;
   viewMode?: 'normal' | 'compact';
-  isWatermarkActive?: boolean;
 }
 
 export const QRCard: React.FC<QRListItemProps> = ({
@@ -21,8 +20,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
   onOpenStandStudio,
   onToggleStatus,
   onDelete,
-  viewMode = 'normal',
-  isWatermarkActive = false
+  viewMode = 'normal'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [copied, setCopied] = useState(false);
@@ -36,9 +34,9 @@ export const QRCard: React.FC<QRListItemProps> = ({
   useEffect(() => {
     if (canvasRef.current) {
       const safeStyle = qr.style || DEFAULT_QR_STYLE;
-      renderStyledQRToCanvas(canvasRef.current, redirectUrl, safeStyle, canvasSize, isWatermarkActive);
+      renderStyledQRToCanvas(canvasRef.current, redirectUrl, safeStyle, canvasSize, false);
     }
-  }, [qr.id, qr.slug, qr.targetUrl, qr.updatedAt, qr.style, redirectUrl, canvasSize, isWatermarkActive]);
+  }, [qr.id, qr.slug, qr.targetUrl, qr.updatedAt, qr.style, redirectUrl, canvasSize]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(redirectUrl);
@@ -167,10 +165,10 @@ export const QRCard: React.FC<QRListItemProps> = ({
             <button
               onClick={() => onOpenEditLink(qr)}
               className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
-              title="Ganti URL tujuan atau perbarui desain QR"
+              title="Ganti tautan tujuan (desain fisik QR tetap sesuai awal)"
             >
               <Edit3 className="w-3 h-3 text-[#FFE600]" />
-              <span>Ganti Link & Desain</span>
+              <span>Ganti Link</span>
             </button>
 
             <button
@@ -356,14 +354,14 @@ export const QRCard: React.FC<QRListItemProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-end w-full sm:w-auto">
-            {/* Ganti Link & Desain Button */}
+            {/* Ganti Link Button */}
             <button
               onClick={() => onOpenEditLink(qr)}
               className="px-3.5 py-1.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-              title="Ganti URL tujuan atau perbarui desain & bingkai QR"
+              title="Ganti tautan tujuan (desain fisik QR tetap sesuai awal)"
             >
               <Edit3 className="w-3.5 h-3.5 text-[#FFE600]" />
-              <span>Ganti Link & Desain</span>
+              <span>Ganti Link</span>
             </button>
 
             {/* Detail / Analytics */}

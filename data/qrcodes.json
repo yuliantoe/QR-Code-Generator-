@@ -1,5 +1,141 @@
 [
   {
+    "id": "qr-fb-fanspage",
+    "code": "QR-FB-FANSPAGE",
+    "slug": "fb-fanspage",
+    "title": "QR Code #fb-fanspage",
+    "targetUrl": "https://facebook.com/restoran.official",
+    "status": "active",
+    "createdAt": "2026-11-10T09:19:42.092Z",
+    "updatedAt": "2026-11-10T09:19:42.092Z",
+    "tags": [
+      "Cloud Synced"
+    ],
+    "notes": "Tautan disinkronkan otomatis dari cloud sync.",
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-10T09:19:42.092Z",
+    "urlHistory": [
+      {
+        "url": "https://facebook.com/restoran.official",
+        "changedAt": "2026-11-10T09:19:42.092Z",
+        "reason": "Cloud Sync Serverless"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-tiktok-promo",
+    "code": "QR-TIKTOK-PROMO",
+    "slug": "tiktok-promo",
+    "title": "QR Code #tiktok-promo",
+    "targetUrl": "https://tiktok.com/@restoran_official",
+    "status": "active",
+    "createdAt": "2026-11-10T09:19:41.580Z",
+    "updatedAt": "2026-11-10T09:19:41.580Z",
+    "tags": [
+      "Cloud Synced"
+    ],
+    "notes": "Tautan disinkronkan otomatis dari cloud sync.",
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-10T09:19:41.580Z",
+    "urlHistory": [
+      {
+        "url": "https://tiktok.com/@restoran_official",
+        "changedAt": "2026-11-10T09:19:41.580Z",
+        "reason": "Cloud Sync Serverless"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-ig-official",
+    "code": "QR-IG-OFFICIAL",
+    "slug": "ig-official",
+    "title": "QR Code #ig-official",
+    "targetUrl": "https://instagram.com/restoran_official",
+    "status": "active",
+    "createdAt": "2026-11-10T09:19:41.042Z",
+    "updatedAt": "2026-11-10T09:19:41.042Z",
+    "tags": [
+      "Cloud Synced"
+    ],
+    "notes": "Tautan disinkronkan otomatis dari cloud sync.",
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-10T09:19:41.043Z",
+    "urlHistory": [
+      {
+        "url": "https://instagram.com/restoran_official",
+        "changedAt": "2026-11-10T09:19:41.042Z",
+        "reason": "Cloud Sync Serverless"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
+    "id": "qr-wa-order",
+    "code": "QR-WA-ORDER",
+    "slug": "wa-order",
+    "title": "QR Code #wa-order",
+    "targetUrl": "https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info",
+    "status": "active",
+    "createdAt": "2026-11-10T09:19:40.540Z",
+    "updatedAt": "2026-11-10T09:19:40.540Z",
+    "tags": [
+      "Cloud Synced"
+    ],
+    "notes": "Tautan disinkronkan otomatis dari cloud sync.",
+    "totalScans": 1,
+    "lastScannedAt": "2026-11-10T09:19:40.541Z",
+    "urlHistory": [
+      {
+        "url": "https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info",
+        "changedAt": "2026-11-10T09:19:40.540Z",
+        "reason": "Cloud Sync Serverless"
+      }
+    ],
+    "style": {
+      "fgColor": "#104F38",
+      "bgColor": "#ffffff",
+      "dotStyle": "rounded",
+      "cornerStyle": "rounded",
+      "frameStyle": "bottom-banner",
+      "frameText": "PINDAI SAYA",
+      "frameColor": "#104F38",
+      "frameTextColor": "#ffffff",
+      "logoType": "none"
+    }
+  },
+  {
     "id": "qr-qr-001",
     "code": "QR-QR-001",
     "slug": "qr-001",

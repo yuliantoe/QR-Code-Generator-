@@ -115,5 +115,41 @@
     "os": "Unknown OS",
     "browser": "Browser",
     "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794302380849-n8tpq",
+    "qrId": "qr-wa-order",
+    "timestamp": "2026-11-10T09:19:40.541Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794302381427-5p33r",
+    "qrId": "qr-ig-official",
+    "timestamp": "2026-11-10T09:19:41.043Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794302381936-syojy",
+    "qrId": "qr-tiktok-promo",
+    "timestamp": "2026-11-10T09:19:41.580Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794302382444-ljcfn",
+    "qrId": "qr-fb-fanspage",
+    "timestamp": "2026-11-10T09:19:42.092Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
   }
 ]

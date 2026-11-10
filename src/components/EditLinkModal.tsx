@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Check, History, Sparkles, AlertCircle, ArrowRight, Tag, Palette, Sliders, Upload, RefreshCw } from 'lucide-react';
+import { ExternalLink, Check, History, Sparkles, AlertCircle, ArrowRight, Tag, Sliders, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { renderStyledQRToCanvas, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import type { DynamicQRCode, QRStyleConfig } from '../types.ts';
@@ -11,22 +11,13 @@ interface EditLinkModalProps {
   onUpdate: (updatedQR: DynamicQRCode) => void;
 }
 
-const COLOR_PRESETS = [
-  { name: 'Pitch Forest', fg: '#104F38', bg: '#ffffff', frame: '#104F38' },
-  { name: 'Canary Highlight', fg: '#104F38', bg: '#ffffea', frame: '#FFE600' },
-  { name: 'Classic Slate', fg: '#0f172a', bg: '#ffffff', frame: '#0f172a' },
-  { name: 'Botanical Sage', fg: '#2b3f30', bg: '#f9fbf9', frame: '#557a60' },
-  { name: 'Emerald Forest', fg: '#064e3b', bg: '#f0fdf4', frame: '#064e3b' },
-  { name: 'Deep Onyx', fg: '#000000', bg: '#ffffff', frame: '#000000' },
-];
-
 export const EditLinkModal: React.FC<EditLinkModalProps> = ({
   qr,
   isOpen,
   onClose,
   onUpdate
 }) => {
-  const [activeTab, setActiveTab] = useState<'content' | 'design' | 'history'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'history'>('content');
   const [newUrl, setNewUrl] = useState(qr.targetUrl);
   const [title, setTitle] = useState(qr.title || '');
   const [reason, setReason] = useState('');
@@ -38,11 +29,11 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Style State
-  const [style, setStyle] = useState<QRStyleConfig>(() => ({
+  // Preserve initial QR Code design exactly as generated initially
+  const initialStyle: QRStyleConfig = {
     ...DEFAULT_QR_STYLE,
     ...(qr.style || {})
-  }));
+  };
 
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -55,44 +46,22 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       setUtmSource(qr.utm?.source || '');
       setUtmMedium(qr.utm?.medium || '');
       setUtmCampaign(qr.utm?.campaign || '');
-      setStyle({
-        ...DEFAULT_QR_STYLE,
-        ...(qr.style || {})
-      });
       setFeedbackMessage(null);
       setErrorMessage(null);
+      setActiveTab('content');
     }
   }, [qr, isOpen]);
 
-  // Live Canvas Preview
+  // Live Canvas Preview keeping the initial generated QR style
   useEffect(() => {
     if (previewCanvasRef.current && isOpen) {
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const redirectUrl = `${origin}/r/${qr.slug}`;
-      const safeStyle: QRStyleConfig = {
-        ...DEFAULT_QR_STYLE,
-        ...style
-      };
-      renderStyledQRToCanvas(previewCanvasRef.current, redirectUrl, safeStyle, 320);
+      renderStyledQRToCanvas(previewCanvasRef.current, redirectUrl, initialStyle, 320, false);
     }
-  }, [style, qr.slug, isOpen]);
+  }, [qr.slug, qr.style, isOpen]);
 
   if (!isOpen) return null;
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setStyle(prev => ({
-          ...prev,
-          logoType: 'custom',
-          logo: event.target?.result as string
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -109,20 +78,15 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
     setIsSubmitting(true);
     setErrorMessage(null);
 
-    const safeStyle: QRStyleConfig = {
-      ...DEFAULT_QR_STYLE,
-      ...style
-    };
-
     const now = new Date().toISOString();
     const urlChanged = formattedUrl !== qr.targetUrl;
 
-    // Construct local updated QR item immediately with guaranteed safe style
+    // Construct local updated QR item keeping initial style untouched
     const localUpdatedQR: DynamicQRCode = {
       ...qr,
       title: title.trim() || qr.title,
       targetUrl: formattedUrl,
-      style: safeStyle,
+      style: initialStyle,
       updatedAt: now,
       urlHistory: urlChanged
         ? [
@@ -148,7 +112,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
         title: title.trim() || qr.title,
         targetUrl: formattedUrl,
         reason: reason.trim() || 'Pembaruan tautan tujuan langsung',
-        style: safeStyle,
+        style: initialStyle,
         utm: (utmSource.trim() || utmMedium.trim() || utmCampaign.trim()) ? {
           source: utmSource.trim(),
           medium: utmMedium.trim(),
@@ -186,7 +150,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
         if (json.success && json.data) {
           finalQR = {
             ...json.data,
-            style: json.data.style || safeStyle
+            style: json.data.style || initialStyle
           };
         }
       }
@@ -205,7 +169,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       });
     } catch {}
 
-    setFeedbackMessage('Tautan & Desain QR berhasil diperbarui dan tersimpan permanen!');
+    setFeedbackMessage('Tautan tujuan berhasil diperbarui! Desain QR fisik tetap sesuai generate awal.');
     setTimeout(() => {
       onClose();
     }, 1100);
@@ -215,7 +179,6 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
   const hasChanged =
     newUrl.trim() !== qr.targetUrl ||
     (title.trim() && title.trim() !== qr.title) ||
-    JSON.stringify(style) !== JSON.stringify(qr.style || DEFAULT_QR_STYLE) ||
     utmSource !== (qr.utm?.source || '') ||
     utmMedium !== (qr.utm?.medium || '') ||
     utmCampaign !== (qr.utm?.campaign || '');
@@ -237,7 +200,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
               </span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
-              Ubah Tautan Tujuan & Desain QR Code
+              Ganti Link Tujuan QR Code
             </h2>
           </div>
           <button
@@ -261,9 +224,9 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
               </div>
               <div className="text-xs text-emerald-950 leading-relaxed">
                 <strong className="font-bold block text-[#104F38] text-[13px]">
-                  ✓ Ketika Dicetak, Link Tujuan Bisa Diganti Kapan Saja Bebas!
+                  ✓ Desain Fisik QR Code Tetap Sesuai Generate Awal
                 </strong>
-                QR Code fisik yang sudah Anda cetak di meja, stand akrilik, atau stiker <strong>TIDAK PERLU dicetak ulang</strong>. Begitu Anda menyimpan link tujuan baru di sini, semua orang yang memindai QR fisik di lapangan otomatis dialihkan ke link baru ini seketika.
+                QR Code fisik yang sudah Anda cetak di meja, stand akrilik, atau stiker <strong>TIDAK PERLU dicetak ulang</strong>. Cukup masukkan link tujuan baru di bawah, dan seluruh pemindaian fisik di lapangan otomatis dialihkan ke link baru ini seketika.
               </div>
             </div>
 
@@ -279,20 +242,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                 }`}
               >
                 <Sliders className="w-3.5 h-3.5 text-slate-500" />
-                <span>1. Tautan & Data</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('design')}
-                className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  activeTab === 'design'
-                    ? 'bg-white text-slate-900 shadow-xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Palette className="w-3.5 h-3.5 text-slate-500" />
-                <span>2. Desain & Warna QR</span>
+                <span>1. Ganti Tautan Tujuan</span>
               </button>
 
               <button
@@ -305,7 +255,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                 }`}
               >
                 <History className="w-3.5 h-3.5 text-slate-500" />
-                <span>3. Riwayat ({qr.urlHistory?.length || 1})</span>
+                <span>2. Riwayat Tautan ({qr.urlHistory?.length || 1})</span>
               </button>
             </div>
 
@@ -328,68 +278,73 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
 
                 {/* Target URL */}
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label htmlFor="editTargetUrlInput" className="text-xs font-semibold text-slate-800">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-800">
                       Tautan Tujuan Baru <span className="text-rose-500">*</span>
                     </label>
-                    <a
-                      href={qr.targetUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] text-[#104F38] hover:underline flex items-center gap-1 font-semibold"
-                    >
-                      Buka Tautan Lama <ExternalLink className="w-3 h-3" />
-                    </a>
+                    <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Dialihkan Seketika
+                    </span>
                   </div>
                   <input
-                    id="editTargetUrlInput"
                     type="text"
                     required
-                    placeholder="https://contoh.com/menu-baru atau https://wa.me/..."
+                    placeholder="https://restoran.com/menu-baru.pdf"
                     value={newUrl}
                     onChange={(e) => setNewUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#104F38]/40 font-mono text-slate-900 placeholder:text-slate-400 placeholder:font-sans"
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#104F38] focus:border-[#104F38] font-mono text-slate-900 shadow-2xs"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Bisa berupa link PDF, Google Review, Google Form, katalog menu, Shopee, WhatsApp, dsb.
-                  </p>
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                    <span>Mendukung link Google Review, PDF, Website, WhatsApp, dan Sosial Media.</span>
+                    {newUrl && (
+                      <a
+                        href={newUrl.startsWith('http') ? newUrl : `https://${newUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#104F38] font-medium hover:underline flex items-center gap-1 shrink-0 ml-2"
+                      >
+                        <span>Uji Buka</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
-                {/* Reason for change */}
+                {/* Optional Change Reason / Audit Notes */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Catatan Perubahan (Opsional)
+                  <label className="block text-xs font-semibold text-slate-800 mb-1">
+                    Catatan Alasan Perubahan (Opsional)
                   </label>
                   <input
                     type="text"
-                    placeholder="Misal: Update menu promo akhir tahun / flash sale"
+                    placeholder="Contoh: Update menu Ramadan / Promo Musim Baru"
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 text-slate-800"
                   />
+                  <p className="text-[10.5px] text-slate-400 mt-1">
+                    Catatan ini akan tersimpan rapi di riwayat untuk mempermudah pelacakan tim Anda.
+                  </p>
                 </div>
 
-                {/* UTM Parameters Toggle */}
-                <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/60">
+                {/* Optional UTM Campaign Tracking */}
+                <div className="pt-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowUtm(!showUtm)}
-                    className="w-full flex items-center justify-between text-xs font-semibold text-slate-700 cursor-pointer"
+                    className="text-xs font-semibold text-[#104F38] hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <span className="flex items-center gap-1.5">
-                      <Tag className="w-3.5 h-3.5 text-slate-500" />
-                      Parameter Pelacakan UTM (Opsional untuk Google Analytics)
-                    </span>
-                    <span className="text-slate-400 text-[11px]">{showUtm ? '▲ Sembunyikan' : '▼ Tampilkan'}</span>
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>{showUtm ? 'Sembunyikan Pelacak UTM' : '+ Tambah Pelacak UTM Google Analytics (Opsional)'}</span>
                   </button>
 
                   {showUtm && (
-                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-200">
+                    <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                       <div>
                         <label className="text-[10px] text-slate-500 block mb-1">UTM Source</label>
                         <input
                           type="text"
-                          placeholder="qr_meja_fisik"
+                          placeholder="stand_meja_akrilik"
                           value={utmSource}
                           onChange={(e) => setUtmSource(e.target.value)}
                           className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-mono"
@@ -422,170 +377,25 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
               </form>
             )}
 
-            {/* TAB 2: DESIGN & LOGO */}
-            {activeTab === 'design' && (
-              <div className="space-y-4">
-                
-                {/* Palette Presets */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                    Palet Warna Cetak
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {COLOR_PRESETS.map((p, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setStyle(prev => ({
-                            ...prev,
-                            fgColor: p.fg,
-                            bgColor: p.bg,
-                            frameColor: p.frame
-                          }));
-                        }}
-                        className={`p-2 rounded-xl border text-left flex items-center gap-2 text-xs transition-all cursor-pointer ${
-                          style.fgColor === p.fg
-                            ? 'border-[#104F38] bg-[#EAF5F0] ring-1 ring-[#104F38]'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <span
-                          className="w-4 h-4 rounded-full border border-black/10 shrink-0"
-                          style={{ backgroundColor: p.fg }}
-                        />
-                        <span className="truncate font-medium text-slate-800">{p.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Dot Style & Corner Style */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-800 mb-1">
-                      Gaya Titik QR
-                    </label>
-                    <select
-                      value={style.dotStyle || 'rounded'}
-                      onChange={(e) => setStyle(prev => ({ ...prev, dotStyle: e.target.value as any }))}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl"
-                    >
-                      <option value="rounded">Rounded (Halus Modern)</option>
-                      <option value="dots">Dots (Titik Bulat)</option>
-                      <option value="square">Square (Klasik Tegas)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-800 mb-1">
-                      Gaya Sudut Mata
-                    </label>
-                    <select
-                      value={style.cornerStyle || 'rounded'}
-                      onChange={(e) => setStyle(prev => ({ ...prev, cornerStyle: e.target.value as any }))}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl"
-                    >
-                      <option value="rounded">Rounded Corner</option>
-                      <option value="square">Square Corner</option>
-                      <option value="dot">Circle Dot Corner</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Frame Style & Banner Text */}
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                  <label className="block text-xs font-semibold text-slate-900">
-                    Bingkai CTA / Ajakan Bertindak
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={style.frameStyle || 'bottom-banner'}
-                      onChange={(e) => setStyle(prev => ({ ...prev, frameStyle: e.target.value as any }))}
-                      className="px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg"
-                    >
-                      <option value="none">Tanpa Bingkai</option>
-                      <option value="bottom-banner">Banner Bawah</option>
-                      <option value="top-banner">Banner Atas</option>
-                      <option value="border-card">Kartu Berbingkai</option>
-                    </select>
-
-                    <input
-                      type="text"
-                      placeholder="PINDAI SAYA / LIHAT MENU"
-                      value={style.frameText || ''}
-                      onChange={(e) => setStyle(prev => ({ ...prev, frameText: e.target.value }))}
-                      className="px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg font-bold"
-                    />
-                  </div>
-                </div>
-
-                {/* Center Logo Selection */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                    Ikon / Logo di Tengah QR
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      { id: 'none', label: 'Tanpa Logo', icon: '—' },
-                      { id: 'menu', label: 'Menu Resto', icon: '🍽️' },
-                      { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
-                      { id: 'instagram', label: 'Instagram', icon: '📷' },
-                      { id: 'web', label: 'Website', icon: '🌐' },
-                      { id: 'wifi', label: 'WiFi Tamu', icon: '📶' },
-                      { id: 'cart', label: 'Belanja', icon: '🛒' },
-                      { id: 'map', label: 'Lokasi Map', icon: '📍' },
-                    ].map(item => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => {
-                          if (item.id === 'none') {
-                            setStyle(prev => ({ ...prev, logoType: 'none', logo: '' }));
-                          } else {
-                            setStyle(prev => ({ ...prev, logoType: 'preset', logo: item.id }));
-                          }
-                        }}
-                        className={`p-1.5 rounded-lg border text-center text-xs transition-colors cursor-pointer ${
-                          (item.id === 'none' && style.logoType === 'none') ||
-                          (style.logoType === 'preset' && style.logo === item.id)
-                            ? 'border-[#104F38] bg-[#EAF5F0] text-[#104F38] font-bold'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                        }`}
-                      >
-                        <span className="block text-sm mb-0.5">{item.icon}</span>
-                        <span className="text-[10px] truncate block">{item.label}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <label className="text-xs text-[#104F38] hover:underline flex items-center gap-1 cursor-pointer font-medium">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Atau unggah logo kustom (PNG transparan)</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* TAB 3: AUDIT HISTORY */}
+            {/* TAB 2: AUDIT HISTORY */}
             {activeTab === 'history' && (
               <div className="space-y-3">
-                <span className="text-xs font-semibold text-slate-800 block">
-                  Riwayat Pengalihan Tautan Sebelumnya:
-                </span>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-800">
+                    Log Riwayat Perubahan Tautan
+                  </h4>
+                  <span className="text-[11px] text-slate-500">
+                    Total {qr.urlHistory?.length || 1} versi tautan
+                  </span>
+                </div>
+
                 {qr.urlHistory && qr.urlHistory.length > 0 ? (
-                  <div className="max-h-60 overflow-y-auto space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {qr.urlHistory.map((item, idx) => (
-                      <div key={idx} className="pb-2.5 border-b border-slate-200 last:border-0 last:pb-0">
+                      <div
+                        key={idx}
+                        className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1"
+                      >
                         <div className="flex items-center justify-between text-[11px] text-slate-500">
                           <span className="font-semibold">{new Date(item.changedAt).toLocaleString('id-ID')}</span>
                           {item.reason && <span className="italic text-slate-600 bg-white px-2 py-0.5 border border-slate-200 rounded">{item.reason}</span>}
@@ -624,9 +434,12 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
           {/* Right Column: Live QR Preview */}
           <div className="md:col-span-5 p-5 bg-slate-50/70 flex flex-col justify-between items-center text-center">
             <div className="w-full">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-                Pratinjau Hasil Desain QR Code
-              </span>
+              <div className="flex items-center justify-center gap-1.5 mb-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#104F38]" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#104F38]">
+                  Desain Fisik QR Sesuai Generate Awal
+                </span>
+              </div>
 
               {/* Render Canvas */}
               <div className="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 inline-block mx-auto max-w-[240px]">
@@ -641,7 +454,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
               </div>
 
               <div className="mt-3 bg-white p-2.5 rounded-none border border-[#104F38]/20 text-left text-xs space-y-1.5">
-                <div className="text-[10px] font-bold uppercase text-[#104F38]/60">Target URL Sekarang:</div>
+                <div className="text-[10px] font-bold uppercase text-[#104F38]/60">Target URL Baru:</div>
                 <div className="font-mono text-[11px] text-[#104F38] font-bold truncate">
                   {newUrl || qr.targetUrl}
                 </div>
@@ -660,7 +473,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
               </div>
 
               <p className="text-[11px] text-slate-500 mt-2 max-w-xs mx-auto leading-relaxed">
-                Desain dan tautan baru ini langsung disinkronkan ke seluruh sistem dan QR fisik tanpa perlu cetak ulang.
+                Desain fisik QR Code di atas terkunci sesuai saat dibuat pertama kali. Mengganti link di sini tidak akan mengubah tampilan cetakan fisik di lapangan.
               </p>
             </div>
 
@@ -688,7 +501,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                   <span>Menyimpan...</span>
                 ) : (
                   <>
-                    <span>Simpan & Terapkan Seketika</span>
+                    <span>Simpan Tautan Baru</span>
                     <ArrowRight className="w-4 h-4 text-[#104F38]" />
                   </>
                 )}

@@ -26,9 +26,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     const adminUser: AuthUser = {
       username: 'admin',
       name: 'Administrator',
-      plan: 'yearly',
+      plan: 'monthly',
       isWatermarkActive: false,
-      subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     };
     const token = 'auth_admin_' + Date.now();
     localStorage.setItem('dinamis_auth_token', token);
@@ -88,9 +88,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     const fallbackUser: AuthUser = {
       username: cleanUser,
       name: cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1),
-      plan: 'trial',
-      isWatermarkActive: true,
-      trialExpiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      plan: 'monthly',
+      isWatermarkActive: false
     };
     const fallbackToken = 'auth_local_' + Date.now();
     localStorage.setItem('dinamis_auth_token', fallbackToken);
@@ -151,11 +150,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       username: cleanUser,
       name: cleanName,
       phone: phone.trim(),
-      plan: 'trial',
-      isWatermarkActive: true,
-      trialExpiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      plan: 'monthly',
+      isWatermarkActive: false
     };
-    const newToken = 'auth_trial_' + Date.now();
+    const newToken = 'auth_user_' + Date.now();
     localStorage.setItem('dinamis_auth_token', newToken);
     localStorage.setItem('dinamis_auth_user', JSON.stringify(newTrialUser));
     
@@ -163,7 +161,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
       confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
     } catch {}
 
-    setSuccessNotice('Selamat! Akun Trial 3 Hari Anda telah aktif.');
+    setSuccessNotice('Selamat! Akun Anda telah aktif.');
     setTimeout(() => onLoginSuccess(newTrialUser, newToken), 800);
     setLoading(false);
   };
@@ -232,7 +230,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-[#104F38]" />
-            <span>Daftar Baru (Trial)</span>
+            <span>Daftar Akun Baru</span>
           </button>
         </div>
 
@@ -351,7 +349,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                   }}
                   className="text-[11px] font-medium text-[#104F38] hover:underline cursor-pointer"
                 >
-                  Belum punya akun? <strong className="underline">Daftar Akun Baru (Trial 3 Hari)</strong>
+                  Belum punya akun? <strong className="underline">Daftar Akun Baru</strong>
                 </button>
               </div>
             </form>
@@ -363,7 +361,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           <form onSubmit={handleRegister} className="space-y-3">
             <div className="p-2.5 bg-[#FFE600]/20 border border-[#FFE600] text-[#104F38] text-[11px] font-medium flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#104F38] shrink-0" />
-              <span>Dapatkan <strong>Trial Gratis 3 Hari</strong> untuk membuat QR dinamis dan cetak stand meja!</span>
+              <span>Buat QR dinamis dan cetak stand meja akrilik berkualitas tinggi bebas watermark!</span>
             </div>
 
             <div>
@@ -427,7 +425,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               className="w-full py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold tracking-tight transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 mt-1"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#FFE600]" />
-              <span>{loading ? 'Memproses...' : 'Daftar Akun Baru (Trial 3 Hari)'}</span>
+              <span>{loading ? 'Memproses...' : 'Daftar Akun Sekarang'}</span>
             </button>
 
             <div className="text-center pt-1">
