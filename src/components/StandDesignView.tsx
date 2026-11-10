@@ -169,8 +169,9 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
   // Format Size: A6 (105x148mm) vs Persegi (1:1)
   const [formatSize, setFormatSize] = useState<StandFormatSize>('a6');
   
-  // Template Filter Tab: 'all' | 'a6' | 'square'
-  const [templateFilter, setTemplateFilter] = useState<'all' | 'a6' | 'square'>('all');
+  // Template Filter Tab: 'all' | 'whatsapp' | 'instagram' | 'tiktok' | 'facebook' | 'social' | 'google' | 'a6' | 'square'
+  type TemplateCategoryFilter = 'all' | 'whatsapp' | 'instagram' | 'tiktok' | 'facebook' | 'social' | 'google' | 'a6' | 'square';
+  const [templateFilter, setTemplateFilter] = useState<TemplateCategoryFilter>('all');
 
   // Customization State
   const [themeColor, setThemeColor] = useState<string>('#0038CB');
@@ -409,9 +410,10 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   // Filter templates list
   const filteredTemplates = STAND_TEMPLATES.filter(tmpl => {
+    if (templateFilter === 'all') return true;
     if (templateFilter === 'a6') return tmpl.formatSize === 'a6';
     if (templateFilter === 'square') return tmpl.formatSize === 'square';
-    return true;
+    return tmpl.category === templateFilter;
   });
 
   return (
@@ -425,13 +427,13 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
           <div className="max-w-2xl space-y-2">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#104F38] bg-[#FFE600] px-2.5 py-0.5 border border-[#104F38]/20">
               <Sparkles className="w-3.5 h-3.5 text-[#104F38]" />
-              <span>Studio Stand Akrilik Google Review Meja</span>
+              <span>Studio Stand Akrilik Meja & Media Sosial</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#104F38] leading-tight">
-              Desain Stand Meja Ukuran A6 & Kotak Akrilik
+              Desain Stand Meja: WhatsApp, Instagram, TikTok, Facebook & Google Review
             </h1>
             <p className="text-xs sm:text-sm text-[#104F38]/80 leading-relaxed font-medium">
-              Tersedia 4 desain khusus <strong>Ukuran A6 (105 × 148 mm)</strong> standar stand akrilik meja kasir/kafe (Lengkung Biru, Onyx Hitam, Kubah Biru, 4-Warna Kuadran) serta 5 desain format persegi. QR Code & instruksi Tap NFC terpasang otomatis untuk mempercepat ulasan bintang 5 bisnis Anda.
+              Tersedia <strong>19 variasi desain siap cetak</strong> dalam <strong>Ukuran A6 (105 × 148 mm)</strong> dan <strong>Persegi 1:1</strong> untuk stand akrilik meja kasir/kafe. Pilih template WhatsApp, Instagram, TikTok, Facebook, All-in-One Sosmed, atau Google Review bintang 5. Tautan dinamis cloud dapat diganti kapan saja tanpa cetak ulang akrilik fisik.
             </p>
           </div>
 
@@ -516,69 +518,186 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
       {/* TOP SECTION: FORMAT SIZE & TEMPLATE PICKER */}
       <div className="bg-white border border-[#104F38]/20 p-4 sm:p-5 space-y-4">
         
-        {/* Header with Format Selector & Filter Tabs */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#104F38]/10 pb-3">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#104F38]" />
-            <h2 className="text-xs sm:text-sm font-extrabold text-[#104F38]">
-              PILIH TEMPLATE DESAIN STAND (9 VARIASI)
-            </h2>
+        {/* Header with Category & Format Filter Tabs */}
+        <div className="space-y-3 border-b border-[#104F38]/10 pb-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#104F38]" />
+              <h2 className="text-xs sm:text-sm font-extrabold text-[#104F38]">
+                PILIH TEMPLATE DESAIN STAND ({filteredTemplates.length} DARI {STAND_TEMPLATES.length} DESAIN)
+              </h2>
+            </div>
+            <div className="text-xs font-semibold text-[#104F38]/70 flex items-center gap-2">
+              <span>Format Stand Aktif:</span>
+              <span className="font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20">
+                {formatSize === 'a6' ? 'Ukuran A6 (105×148 mm)' : 'Kotak Persegi (1:1)'}
+              </span>
+            </div>
           </div>
 
-          {/* Quick Size Format Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-semibold text-[#104F38]/70">Ukuran Stand:</span>
-            <div className="inline-flex p-1 bg-[#F4FAF6] border border-[#104F38]/15 gap-1 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setTemplateFilter('all');
-                }}
-                className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors ${
-                  templateFilter === 'all'
-                    ? 'bg-[#104F38] text-white'
-                    : 'text-[#104F38] hover:bg-white'
-                }`}
-              >
-                Semua (9)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTemplateFilter('a6');
-                  setFormatSize('a6');
-                  if (!isA6Template(selectedTemplate)) {
-                    setSelectedTemplate('a6-blue-cutout');
-                  }
-                }}
-                className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors flex items-center gap-1 ${
-                  templateFilter === 'a6'
-                    ? 'bg-[#FFE600] text-[#104F38]'
-                    : 'text-[#104F38] hover:bg-white'
-                }`}
-              >
-                <Maximize2 className="w-3 h-3" />
-                <span>Stand Meja A6 (4 Baru)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTemplateFilter('square');
-                  setFormatSize('square');
-                  if (isA6Template(selectedTemplate)) {
-                    setSelectedTemplate('classic-blue');
-                  }
-                }}
-                className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors flex items-center gap-1 ${
-                  templateFilter === 'square'
-                    ? 'bg-[#104F38] text-white'
-                    : 'text-[#104F38] hover:bg-white'
-                }`}
-              >
-                <Square className="w-3 h-3" />
-                <span>Persegi 1:1 (5)</span>
-              </button>
-            </div>
+          {/* Quick Platform Category Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="text-[11px] font-bold text-[#104F38]/80 mr-1">Kategori:</span>
+
+            <button
+              type="button"
+              onClick={() => setTemplateFilter('all')}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border ${
+                templateFilter === 'all'
+                  ? 'bg-[#104F38] text-white border-[#104F38]'
+                  : 'bg-white text-[#104F38] border-[#104F38]/20 hover:bg-[#F4FAF6]'
+              }`}
+            >
+              Semua ({STAND_TEMPLATES.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('whatsapp');
+                if (!selectedTemplate.includes('whatsapp')) {
+                  handleSelectTemplate('a6-whatsapp');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'whatsapp'
+                  ? 'bg-[#25D366] text-black border-[#25D366] font-black shadow-xs'
+                  : 'bg-white text-[#075E54] border-emerald-300 hover:bg-emerald-50'
+              }`}
+            >
+              <span>💬 WhatsApp</span>
+              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'whatsapp').length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('instagram');
+                if (!selectedTemplate.includes('instagram')) {
+                  handleSelectTemplate('a6-instagram');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'instagram'
+                  ? 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCB045] text-white border-transparent font-black shadow-xs'
+                  : 'bg-white text-[#C13584] border-pink-300 hover:bg-pink-50'
+              }`}
+            >
+              <span>📸 Instagram</span>
+              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'instagram').length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('tiktok');
+                if (!selectedTemplate.includes('tiktok')) {
+                  handleSelectTemplate('a6-tiktok');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'tiktok'
+                  ? 'bg-black text-[#00F2FE] border-black font-black shadow-xs'
+                  : 'bg-white text-slate-900 border-slate-300 hover:bg-slate-100'
+              }`}
+            >
+              <span>🎵 TikTok</span>
+              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'tiktok').length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('facebook');
+                if (!selectedTemplate.includes('facebook')) {
+                  handleSelectTemplate('a6-facebook');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'facebook'
+                  ? 'bg-[#1877F2] text-white border-[#1877F2] font-black shadow-xs'
+                  : 'bg-white text-[#1877F2] border-blue-300 hover:bg-blue-50'
+              }`}
+            >
+              <span>📘 Facebook</span>
+              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'facebook').length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('social');
+                if (!selectedTemplate.includes('social')) {
+                  handleSelectTemplate('a6-social-all');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'social'
+                  ? 'bg-[#104F38] text-[#FFE600] border-[#104F38] font-black shadow-xs'
+                  : 'bg-white text-[#104F38] border-[#104F38]/20 hover:bg-[#F4FAF6]'
+              }`}
+            >
+              <span>🌐 Multi-Sosmed</span>
+              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'social').length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('google');
+                if (!['a6-blue-cutout', 'a6-onyx-dark', 'a6-blue-dome', 'a6-pinwheel', 'classic-blue', 'blue-arc', 'pinwheel-4color', 'border-4color', 'onyx-black'].includes(selectedTemplate)) {
+                  handleSelectTemplate('a6-blue-cutout');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'google'
+                  ? 'bg-[#0038CB] text-white border-[#0038CB] font-black shadow-xs'
+                  : 'bg-white text-[#0038CB] border-blue-200 hover:bg-blue-50'
+              }`}
+            >
+              <span>⭐ Google Review</span>
+              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'google').length})</span>
+            </button>
+
+            <div className="h-4 w-px bg-slate-300 mx-1 hidden sm:block" />
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('a6');
+                setFormatSize('a6');
+                if (!isA6Template(selectedTemplate)) {
+                  handleSelectTemplate('a6-blue-cutout');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'a6'
+                  ? 'bg-[#FFE600] text-[#104F38] border-[#104F38]'
+                  : 'bg-white text-[#104F38] border-[#104F38]/20 hover:bg-[#F4FAF6]'
+              }`}
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>Stand A6 (9)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setTemplateFilter('square');
+                setFormatSize('square');
+                if (isA6Template(selectedTemplate)) {
+                  handleSelectTemplate('classic-blue');
+                }
+              }}
+              className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
+                templateFilter === 'square'
+                  ? 'bg-[#104F38] text-white border-[#104F38]'
+                  : 'bg-white text-[#104F38] border-[#104F38]/20 hover:bg-[#F4FAF6]'
+              }`}
+            >
+              <Square className="w-3 h-3" />
+              <span>Persegi 1:1 (10)</span>
+            </button>
           </div>
         </div>
 
@@ -1148,17 +1267,44 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               )}
             </div>
 
-            {/* Template specs callout */}
-            <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/15 text-xs text-[#104F38]/80">
-              <div className="flex items-center gap-1.5 font-bold text-[#104F38] mb-1">
+            {/* Template specs callout & Platform Tips */}
+            <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/15 text-xs text-[#104F38]/80 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-[#104F38]">
                 <span>Template Aktif:</span>
-                <span className="text-[#0038CB]">
+                <span className="text-[#104F38] font-extrabold underline decoration-[#FFE600] decoration-2">
                   {STAND_TEMPLATES.find(t => t.id === selectedTemplate)?.name}
                 </span>
               </div>
-              <p className="text-[11px]">
+              <p className="text-[11px] leading-relaxed">
                 {STAND_TEMPLATES.find(t => t.id === selectedTemplate)?.description}
               </p>
+
+              {/* Dynamic Platform Tip */}
+              {selectedTemplate.includes('whatsapp') && (
+                <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-none text-[10.5px] mt-1.5">
+                  💬 <strong>Tips Stand WhatsApp:</strong> Letakkan di atas meja makan/kasir agar pelanggan dapat langsung chat pelayan atau order tanpa perlu menyimpan nomor telepon terlebih dahulu.
+                </div>
+              )}
+              {selectedTemplate.includes('instagram') && (
+                <div className="p-2 bg-pink-50 border border-pink-200 text-[#833AB4] rounded-none text-[10.5px] mt-1.5">
+                  📸 <strong>Tips Stand Instagram:</strong> Dorong pelanggan mengunggah foto kuliner ke IG Story dan tag akun resmi Anda untuk mendapatkan diskon langsung.
+                </div>
+              )}
+              {selectedTemplate.includes('tiktok') && (
+                <div className="p-2 bg-slate-900 text-[#00F2FE] border border-slate-700 rounded-none text-[10.5px] mt-1.5">
+                  🎵 <strong>Tips Stand TikTok:</strong> Ajak pengunjung menonton konten video viral, proses pembuatan menu, dan review seru pengunjung lainnya.
+                </div>
+              )}
+              {selectedTemplate.includes('facebook') && (
+                <div className="p-2 bg-blue-50 border border-blue-200 text-[#1877F2] rounded-none text-[10.5px] mt-1.5">
+                  📘 <strong>Tips Stand Facebook:</strong> Bagikan info promo bulanan, lowongan kerja, dan bangun komunitas pelanggan setia.
+                </div>
+              )}
+              {selectedTemplate.includes('social-all') && (
+                <div className="p-2 bg-[#FFFDEB] border border-[#FFE600] text-[#104F38] rounded-none text-[10.5px] mt-1.5">
+                  🌐 <strong>Tips All-in-One:</strong> Hubungkan QR Code ke Linktree atau halaman utama yang memuat semua akun media sosial bisnis Anda dalam 1 scan.
+                </div>
+              )}
             </div>
 
             {/* Reset */}

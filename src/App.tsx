@@ -13,6 +13,7 @@ import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx'
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
 import { SubscriptionModal } from './components/SubscriptionModal.tsx';
 import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles, Crown } from 'lucide-react';
+import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
 export default function App() {
@@ -42,10 +43,22 @@ export default function App() {
       const saved = localStorage.getItem('dinamis_qrcodes_cache');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Merge in any missing social media initial QR codes (QR 004, 005, 006, 007)
+          const existingIds = new Set(parsed.map((item: any) => item.id || item.slug));
+          const toAdd = INITIAL_DEFAULT_QRCODES.filter(item => !existingIds.has(item.id) && !existingIds.has(item.slug));
+          if (toAdd.length > 0) {
+            const combined = [...parsed, ...toAdd];
+            try {
+              localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(combined));
+            } catch {}
+            return combined;
+          }
+          return parsed;
+        }
       }
     } catch {}
-    return [];
+    return INITIAL_DEFAULT_QRCODES;
   });
   const [loadingQRs, setLoadingQRs] = useState(true);
 

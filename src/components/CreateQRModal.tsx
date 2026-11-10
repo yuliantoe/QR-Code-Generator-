@@ -130,6 +130,59 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
     }
   };
 
+  const applySocialPreset = (type: 'whatsapp' | 'instagram' | 'tiktok' | 'facebook') => {
+    if (type === 'whatsapp') {
+      setTitle('WhatsApp CS & Order Langsung');
+      setTargetUrl('https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20order%20menu');
+      setSlug(`wa-${String(existingCount + 1).padStart(2, '0')}`);
+      setStyle(prev => ({
+        ...prev,
+        fgColor: '#075E54',
+        frameColor: '#25D366',
+        frameText: 'CHAT WHATSAPP',
+        logoType: 'preset',
+        logo: 'whatsapp'
+      }));
+    } else if (type === 'instagram') {
+      setTitle('Instagram Resmi & Menu Spesial');
+      setTargetUrl('https://instagram.com/restoran_official');
+      setSlug(`ig-${String(existingCount + 1).padStart(2, '0')}`);
+      setStyle(prev => ({
+        ...prev,
+        fgColor: '#833AB4',
+        frameColor: '#E1306C',
+        frameText: 'FOLLOW INSTAGRAM',
+        logoType: 'preset',
+        logo: 'instagram'
+      }));
+    } else if (type === 'tiktok') {
+      setTitle('TikTok Video Viral & Review Kuliner');
+      setTargetUrl('https://tiktok.com/@restoran_official');
+      setSlug(`tiktok-${String(existingCount + 1).padStart(2, '0')}`);
+      setStyle(prev => ({
+        ...prev,
+        fgColor: '#000000',
+        frameColor: '#000000',
+        frameTextColor: '#00F2FE',
+        frameText: 'FOLLOW TIKTOK',
+        logoType: 'none',
+        logo: ''
+      }));
+    } else if (type === 'facebook') {
+      setTitle('Facebook Fanspage Resmi');
+      setTargetUrl('https://facebook.com/restoran.official');
+      setSlug(`fb-${String(existingCount + 1).padStart(2, '0')}`);
+      setStyle(prev => ({
+        ...prev,
+        fgColor: '#1877F2',
+        frameColor: '#1877F2',
+        frameText: 'GABUNG FACEBOOK',
+        logoType: 'preset',
+        logo: 'web'
+      }));
+    }
+  };
+
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -552,6 +605,46 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                       Contoh hasil: <strong className="text-slate-800">{title ? `${title} #01, ${title} #02 ... ${title} #${String(batchCount).padStart(2, '0')}` : 'Meja Restoran #01, #02, ...'}</strong>
                     </div>
                   )}
+                </div>
+
+                {/* Quick 1-Click Social Media Presets */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <span>⚡ Preset Cepat Media Sosial (1-Klik Isi Langsung):</span>
+                    </span>
+                    <span className="text-[9.5px] font-semibold text-slate-500">Auto Isi Tautan & Desain</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => applySocialPreset('whatsapp')}
+                      className="py-1.5 px-2 bg-white hover:bg-emerald-50 text-[#075E54] border border-emerald-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                    >
+                      <span>💬 WhatsApp</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applySocialPreset('instagram')}
+                      className="py-1.5 px-2 bg-white hover:bg-pink-50 text-[#C13584] border border-pink-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                    >
+                      <span>📸 Instagram</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applySocialPreset('tiktok')}
+                      className="py-1.5 px-2 bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                    >
+                      <span>🎵 TikTok</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applySocialPreset('facebook')}
+                      className="py-1.5 px-2 bg-white hover:bg-blue-50 text-[#1877F2] border border-blue-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                    >
+                      <span>📘 Facebook</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div>

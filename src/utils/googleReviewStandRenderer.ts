@@ -3,22 +3,35 @@ import QRCode from 'qrcode';
 export type StandFormatSize = 'a6' | 'square';
 
 export type StandTemplateId =
-  // 4 DESAIN KHUSUS STAND MEJA UKURAN A6 (105 x 148 mm)
-  | 'a6-blue-cutout'    // 1_24661c48.png: A6 Lengkung Biru (Header Arch Cutout)
-  | 'a6-onyx-dark'      // 4_a9355167.png: A6 Onyx Hitam Elegan (Dark Edition)
-  | 'a6-blue-dome'      // 2_f3802f03.png: A6 Kubah Biru Google (Dome Curve)
-  | 'a6-pinwheel'       // 3_84ea9530.png: A6 4-Warna Kuadran Google (Quadrant Color)
-  // 5 DESAIN UNIVERSAL / KOTAK PERSEGI (1:1)
-  | 'classic-blue'      // 2_c63faeab.png: Biru Klasik Meja
-  | 'blue-arc'          // 3_d5f74b44.png: Lengkung Biru Modern
-  | 'pinwheel-4color'   // 4_e087ce46.png: 4 Warna Geometris
-  | 'border-4color'     // 5_b6857285.png: Bingkai 4 Warna Google
-  | 'onyx-black';       // 1_f8254b9d.png: Onyx Dark Minimalis
+  // 4 DESAIN KHUSUS STAND MEJA UKURAN A6 (105 x 148 mm) - GOOGLE REVIEW
+  | 'a6-blue-cutout'    // A6 Lengkung Biru (Header Arch Cutout)
+  | 'a6-onyx-dark'      // A6 Onyx Hitam Elegan (Dark Edition)
+  | 'a6-blue-dome'      // A6 Kubah Biru Google (Dome Curve)
+  | 'a6-pinwheel'       // A6 4-Warna Kuadran Google (Quadrant Color)
+  // DESAIN STAND MEJA SOSIAL MEDIA - A6 (105 x 148 mm)
+  | 'a6-whatsapp'       // A6 WhatsApp: Chat & Order Langsung
+  | 'a6-instagram'      // A6 Instagram: Follow & Tag Story
+  | 'a6-tiktok'         // A6 TikTok: Tonton Keseruan & Review
+  | 'a6-facebook'       // A6 Facebook: Komunitas & Fanspage
+  | 'a6-social-all'     // A6 Multi-Sosmed All-in-One (WA • IG • TikTok • FB)
+  // DESAIN UNIVERSAL / KOTAK PERSEGI (1:1) - GOOGLE REVIEW
+  | 'classic-blue'      // Biru Klasik Meja
+  | 'blue-arc'          // Lengkung Biru Modern
+  | 'pinwheel-4color'   // 4 Warna Geometris
+  | 'border-4color'     // Bingkai 4 Warna Google
+  | 'onyx-black'        // Onyx Dark Minimalis
+  // DESAIN STAND MEJA SOSIAL MEDIA - KOTAK PERSEGI (1:1)
+  | 'square-whatsapp'   // Persegi: WhatsApp Stand Akrilik
+  | 'square-instagram'  // Persegi: Instagram Acrylic Card
+  | 'square-tiktok'     // Persegi: TikTok Neon Dark
+  | 'square-facebook'   // Persegi: Facebook Stand Meja
+  | 'square-social-all';// Persegi: Semua Sosmed (1:1)
 
 export interface StandTemplateMeta {
   id: StandTemplateId;
   name: string;
   badge: string;
+  category: 'google' | 'whatsapp' | 'instagram' | 'tiktok' | 'facebook' | 'social';
   formatSize: StandFormatSize;
   description: string;
   previewColors: string[];
@@ -26,19 +39,123 @@ export interface StandTemplateMeta {
 }
 
 export const STAND_TEMPLATES: StandTemplateMeta[] = [
-  // 4 A6 TABLE STAND DESIGNS (Matching uploaded images 1, 4, 2, 3)
+  // === TEMPLATE STAND WHATSAPP ===
+  {
+    id: 'a6-whatsapp',
+    name: 'WhatsApp: Chat & Order A6 (105×148mm)',
+    badge: 'WhatsApp A6',
+    category: 'whatsapp',
+    formatSize: 'a6',
+    description: 'Format A6 stand meja akrilik khusus WhatsApp. Header hijau zamrud, logo WhatsApp resmi, ajakan chat CS & order menu tanpa simpan nomor HP.',
+    previewColors: ['#25D366', '#075E54', '#FFFFFF']
+  },
+  {
+    id: 'square-whatsapp',
+    name: 'WhatsApp: Stand Meja Persegi (1:1)',
+    badge: 'WhatsApp 1:1',
+    category: 'whatsapp',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 stand akrilik WhatsApp. Bingkai hijau segar, lencana chat resmi, dan layout seimbang untuk pemesanan meja kasir.',
+    previewColors: ['#25D366', '#128C7E', '#FFFFFF']
+  },
+
+  // === TEMPLATE STAND INSTAGRAM ===
+  {
+    id: 'a6-instagram',
+    name: 'Instagram: Follow & Tag A6 (105×148mm)',
+    badge: 'Instagram A6',
+    category: 'instagram',
+    formatSize: 'a6',
+    description: 'Format A6 stand akrilik Instagram dengan gradien sunset ikonik (#833AB4 → #FD1D1D → #FCB045), logo kamera elegan, dan ajakan tag story berhadiah diskon.',
+    previewColors: ['#833AB4', '#FD1D1D', '#FCB045', '#FFFFFF']
+  },
+  {
+    id: 'square-instagram',
+    name: 'Instagram: Acrylic Card Persegi (1:1)',
+    badge: 'Instagram 1:1',
+    category: 'instagram',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 stand akrilik Instagram. Bingkai gradien warna-warni, logo kamera resmi, dan tampilan profil feeds modern.',
+    previewColors: ['#E1306C', '#833AB4', '#FFDC80']
+  },
+
+  // === TEMPLATE STAND TIKTOK ===
+  {
+    id: 'a6-tiktok',
+    name: 'TikTok: Review & Video Viral A6 (105×148mm)',
+    badge: 'TikTok Dark A6',
+    category: 'tiktok',
+    formatSize: 'a6',
+    description: 'Format A6 stand akrilik tema gelap elegan TikTok (#010101) dengan aksen chromatic neon cyan & magenta, logo not balok resmi, dan pad QR putih 100% kontras.',
+    previewColors: ['#010101', '#00F2FE', '#FE2C55'],
+    isDark: true
+  },
+  {
+    id: 'square-tiktok',
+    name: 'TikTok: Neon Dark Persegi (1:1)',
+    badge: 'TikTok 1:1',
+    category: 'tiktok',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 stand akrilik TikTok. Latar hitam pekat, bingkai neon dinamis, dan ajakan tonton video konten seru & ulasan viral.',
+    previewColors: ['#000000', '#00F2FE', '#FE2C55'],
+    isDark: true
+  },
+
+  // === TEMPLATE STAND FACEBOOK ===
+  {
+    id: 'a6-facebook',
+    name: 'Facebook: Komunitas & Fanspage A6 (105×148mm)',
+    badge: 'Facebook A6',
+    category: 'facebook',
+    formatSize: 'a6',
+    description: 'Format A6 stand akrilik Facebook dengan header biru klasik (#1877F2), logo f lingkaran resmi, dan ajakan gabung komunitas pelanggan setia.',
+    previewColors: ['#1877F2', '#0C4A9E', '#FFFFFF']
+  },
+  {
+    id: 'square-facebook',
+    name: 'Facebook: Stand Meja Persegi (1:1)',
+    badge: 'Facebook 1:1',
+    category: 'facebook',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 stand akrilik Facebook. Lencana biru royal elegan, tata letak proporsional untuk kasir atau meja ruang tunggu.',
+    previewColors: ['#1877F2', '#FFFFFF', '#E7F3FF']
+  },
+
+  // === TEMPLATE STAND ALL-IN-ONE (SEMUA SOSMED) ===
+  {
+    id: 'a6-social-all',
+    name: 'Semua Sosmed: All-in-One A6 (105×148mm)',
+    badge: 'Multi-Sosmed A6',
+    category: 'social',
+    formatSize: 'a6',
+    description: 'Format A6 stand akrilik memuat 4 ikon sosial media sekaligus (WhatsApp, Instagram, TikTok, Facebook) dalam satu lembar cetak rapi.',
+    previewColors: ['#104F38', '#25D366', '#E1306C', '#1877F2']
+  },
+  {
+    id: 'square-social-all',
+    name: 'Semua Sosmed: All-in-One Persegi (1:1)',
+    badge: 'Multi-Sosmed 1:1',
+    category: 'social',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 memuat lencana lengkap 4 platform sosial media dengan QR Code / Linktree sentral.',
+    previewColors: ['#104F38', '#FFE600', '#25D366', '#FE2C55']
+  },
+
+  // === TEMPLATE STAND GOOGLE REVIEW (ORIGINAL A6 & SQUARE) ===
   {
     id: 'a6-blue-cutout',
-    name: '1. A6 Lengkung Biru (Resmi)',
-    badge: 'A6 Stand Meja',
+    name: 'Google Review: A6 Lengkung Biru (Resmi)',
+    badge: 'Google A6',
+    category: 'google',
     formatSize: 'a6',
     description: 'Format A6 (105x148mm) dengan header biru royal, cutout lengkung putih untuk logo Google G, dan 5 bintang emas.',
     previewColors: ['#0038CB', '#FFFFFF', '#FBBC05']
   },
   {
     id: 'a6-onyx-dark',
-    name: '2. A6 Onyx Hitam Elegan',
-    badge: 'A6 Dark Edition',
+    name: 'Google Review: A6 Onyx Hitam Elegan',
+    badge: 'Google A6 Dark',
+    category: 'google',
     formatSize: 'a6',
     description: 'Format A6 latar hitam pekat premium, logo Google G berpadu 5 bintang putih solid dan tipografi kontras mewah.',
     previewColors: ['#000000', '#FFFFFF', '#4285F4'],
@@ -46,58 +163,63 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
   },
   {
     id: 'a6-blue-dome',
-    name: '3. A6 Kubah Biru Google',
-    badge: 'A6 Populer',
+    name: 'Google Review: A6 Kubah Biru Google',
+    badge: 'Google A6',
+    category: 'google',
     formatSize: 'a6',
     description: 'Format A6 dengan kubah lengkung biru modern di atas, logo Google G menonjol dan teks warna-warni resmi.',
     previewColors: ['#0038CB', '#FFFFFF', '#FBBC05', '#EA4335']
   },
   {
     id: 'a6-pinwheel',
-    name: '4. A6 4-Warna Kuadran Google',
-    badge: 'A6 Penuh Warna',
+    name: 'Google Review: A6 4-Warna Kuadran',
+    badge: 'Google A6 Warna',
+    category: 'google',
     formatSize: 'a6',
     description: 'Format A6 4 kuadran diagonal warna khas Google (Merah, Biru, Hijau, Kuning) dengan 5 bintang hitam tegas.',
     previewColors: ['#EA4335', '#4285F4', '#34A853', '#FBBC05']
   },
-
-  // 5 SQUARE 1:1 STAND DESIGNS
   {
     id: 'classic-blue',
-    name: '5. Persegi: Biru Klasik Meja',
-    badge: 'Kotak 1:1',
+    name: 'Google Review: Persegi Biru Klasik Meja',
+    badge: 'Google 1:1',
+    category: 'google',
     formatSize: 'square',
     description: 'Format kotak 1:1 dengan header biru horizontal dan tata letak seimbang.',
     previewColors: ['#0038CB', '#FFFFFF', '#F9BC06']
   },
   {
     id: 'blue-arc',
-    name: '6. Persegi: Lengkung Biru Modern',
-    badge: 'Kotak 1:1',
+    name: 'Google Review: Persegi Lengkung Biru Modern',
+    badge: 'Google 1:1',
+    category: 'google',
     formatSize: 'square',
     description: 'Format kotak 1:1 kubah lengkung biru modern dengan lencana lingkaran Google dan teks warna-warni.',
     previewColors: ['#074BB3', '#FFFFFF', '#4285F4', '#EA4335']
   },
   {
     id: 'pinwheel-4color',
-    name: '7. Persegi: Geometris 4 Warna',
-    badge: 'Kotak 1:1',
+    name: 'Google Review: Persegi Geometris 4 Warna',
+    badge: 'Google 1:1',
+    category: 'google',
     formatSize: 'square',
     description: 'Format kotak 1:1 4 kuadran segitiga Google dengan sudut melengkung dan bintang putih.',
     previewColors: ['#EA4335', '#4285F4', '#34A853', '#FBBC05']
   },
   {
     id: 'border-4color',
-    name: '8. Persegi: Bingkai 4 Warna',
-    badge: 'Kotak 1:1',
+    name: 'Google Review: Persegi Bingkai 4 Warna',
+    badge: 'Google 1:1',
+    category: 'google',
     formatSize: 'square',
     description: 'Format kotak 1:1 bingkai tebal 4 warna khas Google dengan latar putih minimalis.',
     previewColors: ['#FFFFFF', '#EA4335', '#4285F4', '#34A853']
   },
   {
     id: 'onyx-black',
-    name: '9. Persegi: Onyx Dark Minimalis',
-    badge: 'Kotak 1:1',
+    name: 'Google Review: Persegi Onyx Dark Minimalis',
+    badge: 'Google 1:1 Dark',
+    category: 'google',
     formatSize: 'square',
     description: 'Format kotak 1:1 latar hitam legam premium dengan bintang emas berkilau.',
     previewColors: ['#0A0A0A', '#FFFFFF', '#FBBC05'],
@@ -110,7 +232,12 @@ export function isA6Template(templateId: StandTemplateId): boolean {
     templateId === 'a6-blue-cutout' ||
     templateId === 'a6-onyx-dark' ||
     templateId === 'a6-blue-dome' ||
-    templateId === 'a6-pinwheel'
+    templateId === 'a6-pinwheel' ||
+    templateId === 'a6-whatsapp' ||
+    templateId === 'a6-instagram' ||
+    templateId === 'a6-tiktok' ||
+    templateId === 'a6-facebook' ||
+    templateId === 'a6-social-all'
   );
 }
 
@@ -216,6 +343,45 @@ const GOOGLE_G_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48
   <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
   <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
   <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+</svg>`;
+
+// WhatsApp Logo SVG String
+const WHATSAPP_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <circle cx="48" cy="48" r="46" fill="#25D366"/>
+  <path fill="#ffffff" d="M48 18c-16.57 0-30 13.43-30 30 0 5.3 1.38 10.28 3.79 14.61L18 78l16.03-3.69C38.12 76.4 42.9 78 48 78c16.57 0 30-13.43 30-30s-13.43-30-30-30zm17.48 42.42c-.74 2.08-3.66 3.82-5.99 4.32-1.6.34-3.68.61-10.7-2.3-9.01-3.73-14.77-12.87-15.22-13.47-.44-.6-3.63-4.83-3.63-9.21s2.29-6.53 3.1-7.42c.81-.89 1.77-1.11 2.36-1.11.59 0 1.18.01 1.7.03.55.02 1.28-.21 2 .1.54 1.3 2.66 6.5 2.89 7.09.23.59.39 1.28-.01 2.06-.4.78-.6 1.27-1.19 1.96-.59.69-1.24 1.54-1.77 2.07-.59.59-1.2 1.23-.52 2.4 1.39 2.39 3.08 4.78 5.79 7.19 3.5 3.12 6.45 4.19 7.64 4.79 1.19.6 1.88.5 2.57-.3.69-.79 2.97-3.46 3.76-4.65.79-1.19 1.58-1 2.66-.6 1.09.4 6.89 3.25 8.08 3.84 1.19.59 1.98.89 2.28 1.38.3.49.3 2.86-.44 4.94z"/>
+</svg>`;
+
+// Instagram Logo SVG String (with sunset gradient)
+const INSTAGRAM_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <defs>
+    <linearGradient id="ig-grad-svg" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFDC80"/>
+      <stop offset="25%" stop-color="#F77737"/>
+      <stop offset="50%" stop-color="#F56040"/>
+      <stop offset="75%" stop-color="#FD1D1D"/>
+      <stop offset="100%" stop-color="#833AB4"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="92" height="92" rx="26" fill="url(#ig-grad-svg)"/>
+  <rect x="20" y="20" width="56" height="56" rx="16" fill="none" stroke="#ffffff" stroke-width="6"/>
+  <circle cx="48" cy="48" r="14" fill="none" stroke="#ffffff" stroke-width="6"/>
+  <circle cx="64" cy="32" r="3.5" fill="#ffffff"/>
+</svg>`;
+
+// TikTok Logo SVG String
+const TIKTOK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <rect x="2" y="2" width="92" height="92" rx="24" fill="#010101"/>
+  <g transform="translate(26, 20)">
+    <path fill="#00F2FE" d="M37.8 11.5a16.8 16.8 0 0 1-9.8-3.1v19.4a16.2 16.2 0 1 1-16.2-16.2c.9 0 1.8.1 2.7.2v7.2a9 9 0 1 0 6.3 8.6V0h7.2a9.6 9.6 0 0 0 9.8 9.6v1.9z"/>
+    <path fill="#FE2C55" d="M39.8 13.5a16.8 16.8 0 0 1-9.8-3.1v19.4a16.2 16.2 0 1 1-16.2-16.2c.9 0 1.8.1 2.7.2v7.2a9 9 0 1 0 6.3 8.6V2h7.2a9.6 9.6 0 0 0 9.8 9.6v1.9z"/>
+    <path fill="#FFFFFF" d="M38.8 12.5a16.8 16.8 0 0 1-9.8-3.1v19.4a16.2 16.2 0 1 1-16.2-16.2c.9 0 1.8.1 2.7.2v7.2a9 9 0 1 0 6.3 8.6V1h7.2a9.6 9.6 0 0 0 9.8 9.6v1.9z"/>
+  </g>
+</svg>`;
+
+// Facebook Logo SVG String
+const FACEBOOK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <circle cx="48" cy="48" r="46" fill="#1877F2"/>
+  <path fill="#ffffff" d="M53.6 78V48.5h9.9l1.5-11.5h-11.4v-7.3c0-3.3.9-5.6 5.7-5.6h6.1V13.8c-1.1-.1-4.7-.5-8.9-.5-8.8 0-14.8 5.4-14.8 15.2v8.5H32v11.5h9.7V78h11.9z"/>
 </svg>`;
 
 /**
@@ -1413,8 +1579,925 @@ async function renderOnyxBlack(
   });
 }
 
+/* ======================================================================================
+   DESAIN STAND MEJA SOSIAL MEDIA (WHATSAPP, INSTAGRAM, TIKTOK, FACEBOOK, ALL-IN-ONE)
+   ====================================================================================== */
+
 /**
- * Main Entry Point: Renders any of the 9 Google Review Stand templates onto an HTML5 canvas.
+ * 1. A6 WhatsApp: Chat & Order Langsung (105 x 148 mm)
+ */
+async function renderA6WhatsApp(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  waLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  // Background: Pure White
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Curved Header: WhatsApp Deep Forest
+  const bannerH = 430 * scale;
+  ctx.fillStyle = '#075E54';
+  ctx.fillRect(0, 0, width, bannerH);
+
+  // Decorative arch cutout for WhatsApp logo
+  const cutoutCx = width / 2;
+  const cutoutCy = bannerH;
+  const cutoutR = 210 * scale;
+
+  ctx.fillStyle = '#25D366';
+  ctx.beginPath();
+  ctx.arc(cutoutCx, cutoutCy, cutoutR + 10 * scale, Math.PI, 0, false);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cutoutCx, cutoutCy, cutoutR, Math.PI, 0, false);
+  ctx.fill();
+
+  // Draw WhatsApp Logo
+  if (waLogoImg) {
+    const waSize = 290 * scale;
+    ctx.drawImage(waLogoImg, cutoutCx - waSize / 2, cutoutCy - waSize / 2, waSize, waSize);
+  }
+
+  // Top Pill Badge
+  ctx.save();
+  ctx.fillStyle = '#EAF8F0';
+  drawRoundedRectPath(ctx, cutoutCx - 270 * scale, 130 * scale, 540 * scale, 56 * scale, 28 * scale);
+  ctx.fill();
+  ctx.strokeStyle = '#25D366';
+  ctx.lineWidth = 3 * scale;
+  ctx.stroke();
+
+  ctx.fillStyle = '#075E54';
+  ctx.font = `800 ${22 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✓ CHAT LANGSUNG • TANPA SIMPAN NOMOR', cutoutCx, 158 * scale);
+  ctx.restore();
+
+  // Headings
+  const textCenterY = 740 * scale;
+  ctx.fillStyle = '#075E54';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('CHAT & PESAN LEWAT', cutoutCx, textCenterY);
+
+  ctx.font = `900 ${94 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#25D366';
+  ctx.fillText('WhatsApp', cutoutCx, textCenterY + 95 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#475569';
+  ctx.fillText('Pindai QR atau Tap NFC untuk Pemesanan & Tanya Admin', cutoutCx, textCenterY + 155 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#075E54';
+    ctx.fillText(placeName, cutoutCx, textCenterY + 215 * scale);
+  }
+
+  // Bottom Content: NFC & QR Code
+  const bottomCenterY = 1330 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.30,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    color: '#075E54',
+    customLabel: 'TAP CHAT WA'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    qrText,
+    borderColor: '#25D366',
+    textColor: '#075E54',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR WHATSAPP',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 2. Persegi WhatsApp (1:1)
+ */
+async function renderSquareWhatsApp(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  waLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top WhatsApp Bar
+  ctx.fillStyle = '#075E54';
+  ctx.fillRect(0, 0, width, 240 * scale);
+
+  const badgeCx = width / 2;
+  const badgeCy = 240 * scale;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(badgeCx, badgeCy, 140 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#25D366';
+  ctx.lineWidth = 6 * scale;
+  ctx.stroke();
+
+  if (waLogoImg) {
+    const waSize = 210 * scale;
+    ctx.drawImage(waLogoImg, badgeCx - waSize / 2, badgeCy - waSize / 2, waSize, waSize);
+  }
+
+  ctx.fillStyle = '#075E54';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('CHAT & PESAN LEWAT WHATSAPP', badgeCx, 440 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Layanan Pemesanan Meja, Tanya Promo & Reservasi Cepat', badgeCx, 490 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#25D366';
+    ctx.fillText(placeName, badgeCx, 535 * scale);
+  }
+
+  const bottomCenterY = 820 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.28,
+    centerY: bottomCenterY,
+    scale,
+    color: '#075E54',
+    customLabel: 'TAP CHAT WA'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale,
+    qrText,
+    borderColor: '#25D366',
+    textColor: '#075E54',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR WHATSAPP',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 3. A6 Instagram: Follow & Tag Story (105 x 148 mm)
+ */
+async function renderA6Instagram(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  igLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Sunset Gradient Banner
+  const bannerH = 430 * scale;
+  const grad = ctx.createLinearGradient(0, 0, width, bannerH);
+  grad.addColorStop(0, '#833AB4');
+  grad.addColorStop(0.4, '#FD1D1D');
+  grad.addColorStop(1, '#FCB045');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, bannerH);
+
+  // Arch cutout
+  const cutoutCx = width / 2;
+  const cutoutCy = bannerH;
+  const cutoutR = 210 * scale;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cutoutCx, cutoutCy, cutoutR, Math.PI, 0, false);
+  ctx.fill();
+
+  if (igLogoImg) {
+    const igSize = 280 * scale;
+    ctx.drawImage(igLogoImg, cutoutCx - igSize / 2, cutoutCy - igSize / 2, igSize, igSize);
+  }
+
+  // Top Pill Badge
+  ctx.save();
+  ctx.fillStyle = '#FFF5F7';
+  drawRoundedRectPath(ctx, cutoutCx - 270 * scale, 130 * scale, 540 * scale, 56 * scale, 28 * scale);
+  ctx.fill();
+  ctx.strokeStyle = '#FD1D1D';
+  ctx.lineWidth = 3 * scale;
+  ctx.stroke();
+
+  ctx.fillStyle = '#E1306C';
+  ctx.font = `800 ${22 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('📸 TAG STORY ANDA & DAPATKAN DISKON', cutoutCx, 158 * scale);
+  ctx.restore();
+
+  // Headings
+  const textCenterY = 740 * scale;
+  ctx.fillStyle = '#833AB4';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('IKUTI KAMI DI', cutoutCx, textCenterY);
+
+  ctx.font = `900 ${94 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#E1306C';
+  ctx.fillText('Instagram', cutoutCx, textCenterY + 95 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#475569';
+  ctx.fillText('Dapatkan Info Menu Baru, Voucher Promo & Giveaway Menarik', cutoutCx, textCenterY + 155 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#833AB4';
+    ctx.fillText(placeName, cutoutCx, textCenterY + 215 * scale);
+  }
+
+  const bottomCenterY = 1330 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.30,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    color: '#E1306C',
+    customLabel: 'TAP FOLLOW IG'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    qrText,
+    borderColor: '#E1306C',
+    textColor: '#833AB4',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR INSTAGRAM',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 4. Persegi Instagram (1:1)
+ */
+async function renderSquareInstagram(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  igLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Gradient Top Bar
+  const grad = ctx.createLinearGradient(0, 0, width, 0);
+  grad.addColorStop(0, '#833AB4');
+  grad.addColorStop(0.5, '#FD1D1D');
+  grad.addColorStop(1, '#FCB045');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, 240 * scale);
+
+  const badgeCx = width / 2;
+  const badgeCy = 240 * scale;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(badgeCx, badgeCy, 140 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#E1306C';
+  ctx.lineWidth = 6 * scale;
+  ctx.stroke();
+
+  if (igLogoImg) {
+    const igSize = 200 * scale;
+    ctx.drawImage(igLogoImg, badgeCx - igSize / 2, badgeCy - igSize / 2, igSize, igSize);
+  }
+
+  ctx.fillStyle = '#833AB4';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('FOLLOW KAMI DI INSTAGRAM', badgeCx, 440 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Tag Story Anda & Dapatkan Bonus Spesial di Meja Kasir', badgeCx, 490 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#E1306C';
+    ctx.fillText(placeName, badgeCx, 535 * scale);
+  }
+
+  const bottomCenterY = 820 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.28,
+    centerY: bottomCenterY,
+    scale,
+    color: '#E1306C',
+    customLabel: 'TAP FOLLOW IG'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale,
+    qrText,
+    borderColor: '#E1306C',
+    textColor: '#833AB4',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR INSTAGRAM',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 5. A6 TikTok: Review & Video Viral (105 x 148 mm)
+ */
+async function renderA6TikTok(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  ttLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  // Dark Jet Black Background
+  ctx.fillStyle = '#010101';
+  ctx.fillRect(0, 0, width, height);
+
+  const cutoutCx = width / 2;
+  const bannerH = 430 * scale;
+
+  // Neon dual gradient lines
+  ctx.save();
+  ctx.strokeStyle = '#00F2FE';
+  ctx.lineWidth = 4 * scale;
+  ctx.beginPath();
+  ctx.arc(cutoutCx - 4 * scale, bannerH - 4 * scale, 212 * scale, Math.PI, 0, false);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#FE2C55';
+  ctx.beginPath();
+  ctx.arc(cutoutCx + 4 * scale, bannerH + 4 * scale, 212 * scale, Math.PI, 0, false);
+  ctx.stroke();
+  ctx.restore();
+
+  // White disc for logo
+  ctx.fillStyle = '#111111';
+  ctx.beginPath();
+  ctx.arc(cutoutCx, bannerH, 200 * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (ttLogoImg) {
+    const ttSize = 280 * scale;
+    ctx.drawImage(ttLogoImg, cutoutCx - ttSize / 2, bannerH - ttSize / 2, ttSize, ttSize);
+  }
+
+  // Top Neon Pill Badge
+  ctx.save();
+  ctx.fillStyle = '#111111';
+  drawRoundedRectPath(ctx, cutoutCx - 260 * scale, 130 * scale, 520 * scale, 56 * scale, 28 * scale);
+  ctx.fill();
+  ctx.strokeStyle = '#00F2FE';
+  ctx.lineWidth = 3 * scale;
+  ctx.stroke();
+
+  ctx.fillStyle = '#00F2FE';
+  ctx.font = `800 ${22 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🎵 TONTON KESERUAN & REVIEW VIRAL', cutoutCx, 158 * scale);
+  ctx.restore();
+
+  // Headings
+  const textCenterY = 740 * scale;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('TONTON KAMI DI', cutoutCx, textCenterY);
+
+  // 3D chromatic drop text for "TikTok"
+  ctx.font = `900 ${98 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#00F2FE';
+  ctx.fillText('TikTok', cutoutCx - 4 * scale, textCenterY + 93 * scale);
+  ctx.fillStyle = '#FE2C55';
+  ctx.fillText('TikTok', cutoutCx + 4 * scale, textCenterY + 97 * scale);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('TikTok', cutoutCx, textCenterY + 95 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Video Review Viral, Tren Resep & Konten Seru Kami', cutoutCx, textCenterY + 155 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#00F2FE';
+    ctx.fillText(placeName, cutoutCx, textCenterY + 215 * scale);
+  }
+
+  const bottomCenterY = 1330 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.30,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    color: '#00F2FE',
+    fillColor: '#161616',
+    customLabel: 'TAP TIKTOK'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    qrText,
+    borderColor: '#FE2C55',
+    textColor: '#FFFFFF',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR TIKTOK',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 6. Persegi TikTok (1:1)
+ */
+async function renderSquareTikTok(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  ttLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#010101';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(0, 0, width, 240 * scale);
+
+  const badgeCx = width / 2;
+  const badgeCy = 240 * scale;
+  ctx.fillStyle = '#010101';
+  ctx.beginPath();
+  ctx.arc(badgeCx, badgeCy, 140 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#00F2FE';
+  ctx.lineWidth = 6 * scale;
+  ctx.stroke();
+
+  if (ttLogoImg) {
+    const ttSize = 200 * scale;
+    ctx.drawImage(ttLogoImg, badgeCx - ttSize / 2, badgeCy - ttSize / 2, ttSize, ttSize);
+  }
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('FOLLOW KAMI DI TIKTOK', badgeCx, 440 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Tonton Review Kuliner, Resep Rahasia & Video Viral', badgeCx, 490 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#00F2FE';
+    ctx.fillText(placeName, badgeCx, 535 * scale);
+  }
+
+  const bottomCenterY = 820 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.28,
+    centerY: bottomCenterY,
+    scale,
+    color: '#00F2FE',
+    fillColor: '#161616',
+    customLabel: 'TAP TIKTOK'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale,
+    qrText,
+    borderColor: '#FE2C55',
+    textColor: '#FFFFFF',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR TIKTOK',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 7. A6 Facebook: Komunitas & Fanspage (105 x 148 mm)
+ */
+async function renderA6Facebook(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  fbLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  const bannerH = 430 * scale;
+  ctx.fillStyle = '#1877F2';
+  ctx.fillRect(0, 0, width, bannerH);
+
+  const cutoutCx = width / 2;
+  const cutoutCy = bannerH;
+  const cutoutR = 210 * scale;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cutoutCx, cutoutCy, cutoutR, Math.PI, 0, false);
+  ctx.fill();
+
+  if (fbLogoImg) {
+    const fbSize = 280 * scale;
+    ctx.drawImage(fbLogoImg, cutoutCx - fbSize / 2, cutoutCy - fbSize / 2, fbSize, fbSize);
+  }
+
+  // Top Pill Badge
+  ctx.save();
+  ctx.fillStyle = '#E7F3FF';
+  drawRoundedRectPath(ctx, cutoutCx - 270 * scale, 130 * scale, 540 * scale, 56 * scale, 28 * scale);
+  ctx.fill();
+  ctx.strokeStyle = '#1877F2';
+  ctx.lineWidth = 3 * scale;
+  ctx.stroke();
+
+  ctx.fillStyle = '#1877F2';
+  ctx.font = `800 ${22 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('👍 GABUNG DI KOMUNITAS KAMI', cutoutCx, 158 * scale);
+  ctx.restore();
+
+  // Headings
+  const textCenterY = 740 * scale;
+  ctx.fillStyle = '#0C4A9E';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('IKUTI HALAMAN KAMI DI', cutoutCx, textCenterY);
+
+  ctx.font = `900 ${94 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#1877F2';
+  ctx.fillText('Facebook', cutoutCx, textCenterY + 95 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#475569';
+  ctx.fillText('Info Event Komunitas, Promo Spesial & Ulasan Pelanggan', cutoutCx, textCenterY + 155 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#1877F2';
+    ctx.fillText(placeName, cutoutCx, textCenterY + 215 * scale);
+  }
+
+  const bottomCenterY = 1330 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.30,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    color: '#1877F2',
+    customLabel: 'TAP HALAMAN FB'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    qrText,
+    borderColor: '#1877F2',
+    textColor: '#0C4A9E',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR FACEBOOK',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 8. Persegi Facebook (1:1)
+ */
+async function renderSquareFacebook(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  fbLogoImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = '#1877F2';
+  ctx.fillRect(0, 0, width, 240 * scale);
+
+  const badgeCx = width / 2;
+  const badgeCy = 240 * scale;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(badgeCx, badgeCy, 140 * scale, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#1877F2';
+  ctx.lineWidth = 6 * scale;
+  ctx.stroke();
+
+  if (fbLogoImg) {
+    const fbSize = 200 * scale;
+    ctx.drawImage(fbLogoImg, badgeCx - fbSize / 2, badgeCy - fbSize / 2, fbSize, fbSize);
+  }
+
+  ctx.fillStyle = '#0C4A9E';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('IKUTI HALAMAN FACEBOOK KAMI', badgeCx, 440 * scale);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Dapatkan Info Promo Komunitas & Berikan Ulasan Anda', badgeCx, 490 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#1877F2';
+    ctx.fillText(placeName, badgeCx, 535 * scale);
+  }
+
+  const bottomCenterY = 820 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.28,
+    centerY: bottomCenterY,
+    scale,
+    color: '#1877F2',
+    customLabel: 'TAP HALAMAN FB'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale,
+    qrText,
+    borderColor: '#1877F2',
+    textColor: '#0C4A9E',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR FACEBOOK',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 9. A6 Semua Sosmed All-in-One (105 x 148 mm)
+ */
+async function renderA6SocialAll(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  logos: {
+    wa: HTMLImageElement | null;
+    ig: HTMLImageElement | null;
+    tt: HTMLImageElement | null;
+    fb: HTMLImageElement | null;
+  }
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  const bannerH = 400 * scale;
+  ctx.fillStyle = '#104F38';
+  ctx.fillRect(0, 0, width, bannerH);
+
+  // Decorative yellow bar
+  ctx.fillStyle = '#FFE600';
+  ctx.fillRect(0, bannerH - 8 * scale, width, 8 * scale);
+
+  // 4 Social Logos Row
+  const logoY = 480 * scale;
+  const logoItems = [
+    { img: logos.wa, bg: '#25D366' },
+    { img: logos.ig, bg: '#E1306C' },
+    { img: logos.tt, bg: '#010101' },
+    { img: logos.fb, bg: '#1877F2' }
+  ];
+
+  const totalLogosWidth = 4 * 160 * scale;
+  const startLogoX = (width - totalLogosWidth) / 2 + 80 * scale;
+
+  logoItems.forEach((item, idx) => {
+    const cx = startLogoX + idx * 160 * scale;
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, logoY, 70 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = item.bg;
+    ctx.lineWidth = 4 * scale;
+    ctx.stroke();
+
+    if (item.img) {
+      const s = 100 * scale;
+      ctx.drawImage(item.img, cx - s / 2, logoY - s / 2, s, s);
+    }
+    ctx.restore();
+  });
+
+  // Top Title in Banner
+  ctx.fillStyle = '#FFE600';
+  ctx.font = `900 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('HUBUNGI & IKUTI KAMI DI', width / 2, 120 * scale);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `900 ${70 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('SEMUA SOSMED', width / 2, 210 * scale);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = `600 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('WhatsApp • Instagram • TikTok • Facebook', width / 2, 290 * scale);
+
+  // Headings below logos
+  const textCenterY = 720 * scale;
+  ctx.fillStyle = '#104F38';
+  ctx.font = `800 ${42 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('SATU SCAN UNTUK SEMUA', width / 2, textCenterY);
+
+  ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Pindai QR atau Tap NFC untuk Terhubung ke Seluruh Akun Resmi Kami', width / 2, textCenterY + 60 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#104F38';
+    ctx.fillText(placeName, width / 2, textCenterY + 120 * scale);
+  }
+
+  const bottomCenterY = 1330 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.30,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    color: '#104F38',
+    customLabel: 'TAP SOSIAL MEDIA'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale: scale * 1.15,
+    qrText,
+    borderColor: '#104F38',
+    textColor: '#104F38',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR SEMUA SOSMED',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * 10. Persegi Semua Sosmed (1:1)
+ */
+async function renderSquareSocialAll(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  logos: {
+    wa: HTMLImageElement | null;
+    ig: HTMLImageElement | null;
+    tt: HTMLImageElement | null;
+    fb: HTMLImageElement | null;
+  }
+) {
+  const { qrText, placeName, showPlaceName } = options;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = '#104F38';
+  ctx.fillRect(0, 0, width, 220 * scale);
+
+  ctx.fillStyle = '#FFE600';
+  ctx.font = `800 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('TEMUKAN & HUBUNGI KAMI DI', width / 2, 80 * scale);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `900 ${56 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('SOSIAL MEDIA RESMI', width / 2, 145 * scale);
+
+  // 4 logos
+  const logoY = 290 * scale;
+  const logoItems = [
+    { img: logos.wa, bg: '#25D366' },
+    { img: logos.ig, bg: '#E1306C' },
+    { img: logos.tt, bg: '#010101' },
+    { img: logos.fb, bg: '#1877F2' }
+  ];
+  const startX = (width - 4 * 140 * scale) / 2 + 70 * scale;
+  logoItems.forEach((item, idx) => {
+    const cx = startX + idx * 140 * scale;
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx, logoY, 56 * scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = item.bg;
+    ctx.lineWidth = 3.5 * scale;
+    ctx.stroke();
+
+    if (item.img) {
+      const s = 80 * scale;
+      ctx.drawImage(item.img, cx - s / 2, logoY - s / 2, s, s);
+    }
+    ctx.restore();
+  });
+
+  ctx.fillStyle = '#104F38';
+  ctx.font = `800 ${36 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('WhatsApp • Instagram • TikTok • Facebook', width / 2, 420 * scale);
+
+  if (showPlaceName && placeName) {
+    ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillStyle = '#104F38';
+    ctx.fillText(placeName, width / 2, 470 * scale);
+  }
+
+  const bottomCenterY = 820 * scale;
+  drawNfcPhoneSection(ctx, {
+    centerX: width * 0.28,
+    centerY: bottomCenterY,
+    scale,
+    color: '#104F38',
+    customLabel: 'TAP SOSIAL MEDIA'
+  });
+
+  await drawQrCodeSection(ctx, {
+    centerX: width * 0.74,
+    centerY: bottomCenterY,
+    scale,
+    qrText,
+    borderColor: '#104F38',
+    textColor: '#104F38',
+    whitePadBackground: true,
+    customLabel: 'SCAN QR SEMUA SOSMED',
+    registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * Main Entry Point: Renders any of the Stand templates onto an HTML5 canvas.
  */
 export async function renderGoogleReviewStandToCanvas(
   canvas: HTMLCanvasElement,
@@ -1436,17 +2519,78 @@ export async function renderGoogleReviewStandToCanvas(
 
   const scale = width / 1200;
 
-  // Preload SVG logo once
+  // Preload SVG logos based on template requirements
   let gLogoImg: HTMLImageElement | null = null;
+  let waLogoImg: HTMLImageElement | null = null;
+  let igLogoImg: HTMLImageElement | null = null;
+  let ttLogoImg: HTMLImageElement | null = null;
+  let fbLogoImg: HTMLImageElement | null = null;
+
   try {
-    gLogoImg = await loadSvgImage(GOOGLE_G_SVG);
+    if (templateId.includes('whatsapp') || templateId.includes('social')) {
+      waLogoImg = await loadSvgImage(WHATSAPP_SVG);
+    }
+    if (templateId.includes('instagram') || templateId.includes('social')) {
+      igLogoImg = await loadSvgImage(INSTAGRAM_SVG);
+    }
+    if (templateId.includes('tiktok') || templateId.includes('social')) {
+      ttLogoImg = await loadSvgImage(TIKTOK_SVG);
+    }
+    if (templateId.includes('facebook') || templateId.includes('social')) {
+      fbLogoImg = await loadSvgImage(FACEBOOK_SVG);
+    }
+    if (!waLogoImg && !igLogoImg && !ttLogoImg && !fbLogoImg) {
+      gLogoImg = await loadSvgImage(GOOGLE_G_SVG);
+    }
   } catch (err) {
-    console.warn('Failed to load Google G SVG:', err);
+    console.warn('SVG preload warning:', err);
   }
+
+  const socialLogos = { wa: waLogoImg, ig: igLogoImg, tt: ttLogoImg, fb: fbLogoImg };
 
   // Route to the appropriate template renderer
   switch (templateId) {
-    // 4 A6 Table Stand Templates
+    // === WHATSAPP STAND TEMPLATES ===
+    case 'a6-whatsapp':
+      await renderA6WhatsApp(ctx, width, height, scale, options, waLogoImg);
+      break;
+    case 'square-whatsapp':
+      await renderSquareWhatsApp(ctx, width, height, scale, options, waLogoImg);
+      break;
+
+    // === INSTAGRAM STAND TEMPLATES ===
+    case 'a6-instagram':
+      await renderA6Instagram(ctx, width, height, scale, options, igLogoImg);
+      break;
+    case 'square-instagram':
+      await renderSquareInstagram(ctx, width, height, scale, options, igLogoImg);
+      break;
+
+    // === TIKTOK STAND TEMPLATES ===
+    case 'a6-tiktok':
+      await renderA6TikTok(ctx, width, height, scale, options, ttLogoImg);
+      break;
+    case 'square-tiktok':
+      await renderSquareTikTok(ctx, width, height, scale, options, ttLogoImg);
+      break;
+
+    // === FACEBOOK STAND TEMPLATES ===
+    case 'a6-facebook':
+      await renderA6Facebook(ctx, width, height, scale, options, fbLogoImg);
+      break;
+    case 'square-facebook':
+      await renderSquareFacebook(ctx, width, height, scale, options, fbLogoImg);
+      break;
+
+    // === ALL-IN-ONE MULTI-SOCIAL STAND TEMPLATES ===
+    case 'a6-social-all':
+      await renderA6SocialAll(ctx, width, height, scale, options, socialLogos);
+      break;
+    case 'square-social-all':
+      await renderSquareSocialAll(ctx, width, height, scale, options, socialLogos);
+      break;
+
+    // === 4 A6 GOOGLE REVIEW TABLE STAND TEMPLATES ===
     case 'a6-blue-cutout':
       await renderA6BlueCutout(ctx, width, height, scale, options, gLogoImg);
       break;
@@ -1463,7 +2607,7 @@ export async function renderGoogleReviewStandToCanvas(
       await renderA6Pinwheel(ctx, width, height, scale, options, gLogoImg);
       break;
 
-    // 5 Square 1:1 Templates
+    // === 5 SQUARE GOOGLE REVIEW 1:1 TEMPLATES ===
     case 'blue-arc':
       await renderBlueArc(ctx, width, height, scale, options, gLogoImg);
       break;

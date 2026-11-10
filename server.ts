@@ -1,6 +1,8 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import type { DynamicQRCode, ScanRecord, QRAnalyticsSummary } from './src/types.ts';
 import { db, syncAllSlugsToCloud } from './db.ts';
@@ -1286,17 +1288,39 @@ async function startServer() {
     return;
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa'
-    });
-    app.use(vite.middlewares);
+  const distPath = path.resolve(__dirname, 'dist');
+  const indexHtmlPath = path.resolve(distPath, 'index.html');
+
+  if (process.env.NODE_ENV === 'production') {
+    if (fs.existsSync(indexHtmlPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (_req: Request, res: Response) => {
+        res.sendFile(indexHtmlPath);
+      });
+    } else {
+      console.warn('dist/index.html not found in production, mounting Vite middleware fallback');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa'
+      });
+      app.use(vite.middlewares);
+    }
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist/index.html'));
-    });
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa'
+      });
+      app.use(vite.middlewares);
+    } catch (viteErr) {
+      console.warn('Vite middleware warning in dev, trying static dist fallback:', viteErr);
+      if (fs.existsSync(indexHtmlPath)) {
+        app.use(express.static(distPath));
+        app.get('*', (_req: Request, res: Response) => {
+          res.sendFile(indexHtmlPath);
+        });
+      }
+    }
   }
 
   const server = app.listen(PORT, '0.0.0.0', () => {

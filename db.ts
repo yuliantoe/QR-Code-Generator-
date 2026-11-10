@@ -152,6 +152,138 @@ const initialQRCodes: DynamicQRCode[] = [
       frameTextColor: '#ffffff',
       logoType: 'none'
     }
+  },
+  {
+    id: 'qr-whatsapp-order',
+    code: 'QR 004',
+    slug: 'wa-order',
+    title: 'WhatsApp CS & Pemesanan Meja Langsung',
+    targetUrl: 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+    status: 'active',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    tags: ['WhatsApp', 'Customer Service', 'Order'],
+    notes: 'Dicetak di stand meja akrilik untuk chat langsung tanpa simpan nomor HP.',
+    totalScans: 412,
+    lastScannedAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+    urlHistory: [
+      {
+        url: 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+        reason: 'Tautan WhatsApp CS & Pesan Meja'
+      }
+    ],
+    style: {
+      fgColor: '#075E54',
+      bgColor: '#ffffff',
+      dotStyle: 'rounded',
+      cornerStyle: 'rounded',
+      frameStyle: 'bottom-banner',
+      frameText: 'CHAT WHATSAPP',
+      frameColor: '#25D366',
+      frameTextColor: '#ffffff',
+      logoType: 'preset',
+      logo: 'whatsapp'
+    }
+  },
+  {
+    id: 'qr-instagram-official',
+    code: 'QR 005',
+    slug: 'ig-official',
+    title: 'Instagram Resmi Promo & Menu Spesial',
+    targetUrl: 'https://instagram.com/restoran_official',
+    status: 'active',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    tags: ['Instagram', 'Sosial Media', 'Promo'],
+    notes: 'Dicetak di stand meja untuk ajakan follow & tag IG story.',
+    totalScans: 578,
+    lastScannedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    urlHistory: [
+      {
+        url: 'https://instagram.com/restoran_official',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+        reason: 'Tautan Profil Instagram Resmi'
+      }
+    ],
+    style: {
+      fgColor: '#833AB4',
+      bgColor: '#ffffff',
+      dotStyle: 'rounded',
+      cornerStyle: 'rounded',
+      frameStyle: 'bottom-banner',
+      frameText: 'FOLLOW INSTAGRAM',
+      frameColor: '#E1306C',
+      frameTextColor: '#ffffff',
+      logoType: 'preset',
+      logo: 'instagram'
+    }
+  },
+  {
+    id: 'qr-tiktok-promo',
+    code: 'QR 006',
+    slug: 'tiktok-promo',
+    title: 'TikTok Video Viral & Review Kuliner',
+    targetUrl: 'https://tiktok.com/@restoran_official',
+    status: 'active',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    tags: ['TikTok', 'Video Viral', 'Review'],
+    notes: 'Dicetak di stand meja & kasir untuk tonton konten seru.',
+    totalScans: 724,
+    lastScannedAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
+    urlHistory: [
+      {
+        url: 'https://tiktok.com/@restoran_official',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+        reason: 'Tautan Akun TikTok Resmi'
+      }
+    ],
+    style: {
+      fgColor: '#000000',
+      bgColor: '#ffffff',
+      dotStyle: 'rounded',
+      cornerStyle: 'rounded',
+      frameStyle: 'bottom-banner',
+      frameText: 'FOLLOW TIKTOK',
+      frameColor: '#000000',
+      frameTextColor: '#00F2FE',
+      logoType: 'none',
+      logo: ''
+    }
+  },
+  {
+    id: 'qr-facebook-fanspage',
+    code: 'QR 007',
+    slug: 'fb-fanspage',
+    title: 'Facebook Fanspage & Komunitas Pelanggan',
+    targetUrl: 'https://facebook.com/restoran.official',
+    status: 'active',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    tags: ['Facebook', 'Fanspage', 'Komunitas'],
+    notes: 'Dicetak di stand akrilik untuk info event dan promo komunitas.',
+    totalScans: 215,
+    lastScannedAt: new Date(Date.now() - 1000 * 60 * 50).toISOString(),
+    urlHistory: [
+      {
+        url: 'https://facebook.com/restoran.official',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+        reason: 'Tautan Halaman Facebook Resmi'
+      }
+    ],
+    style: {
+      fgColor: '#1877F2',
+      bgColor: '#ffffff',
+      dotStyle: 'rounded',
+      cornerStyle: 'rounded',
+      frameStyle: 'bottom-banner',
+      frameText: 'GABUNG FACEBOOK',
+      frameColor: '#1877F2',
+      frameTextColor: '#ffffff',
+      logoType: 'preset',
+      logo: 'web'
+    }
   }
 ];
 
@@ -478,7 +610,19 @@ const BASE_SLUG_MAP: Record<string, string> = {
   'google-review': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
   'kopi-speciality': 'https://shopee.co.id',
   'kartu-nama-ceo': 'https://wa.me/6281234567890',
-  'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM'
+  'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
+  'wa-order': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+  'whatsapp': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+  'qr-004': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+  'ig-official': 'https://instagram.com/restoran_official',
+  'instagram': 'https://instagram.com/restoran_official',
+  'qr-005': 'https://instagram.com/restoran_official',
+  'tiktok-promo': 'https://tiktok.com/@restoran_official',
+  'tiktok': 'https://tiktok.com/@restoran_official',
+  'qr-006': 'https://tiktok.com/@restoran_official',
+  'fb-fanspage': 'https://facebook.com/restoran.official',
+  'facebook': 'https://facebook.com/restoran.official',
+  'qr-007': 'https://facebook.com/restoran.official'
 };
 
 const localSlugCache: Record<string, string> = {};

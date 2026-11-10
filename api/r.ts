@@ -9,7 +9,19 @@ const BASE_FALLBACK_SLUGS: Record<string, string> = {
   'google-review': 'https://search.google.com/local/writereview?placeid=ChIJ_8pMXbpfZS4Rlo0DNUQ77ro',
   'kopi-speciality': 'https://shopee.co.id',
   'kartu-nama-ceo': 'https://wa.me/6281234567890',
-  'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM'
+  'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
+  'wa-order': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+  'whatsapp': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+  'qr-004': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
+  'ig-official': 'https://instagram.com/restoran_official',
+  'instagram': 'https://instagram.com/restoran_official',
+  'qr-005': 'https://instagram.com/restoran_official',
+  'tiktok-promo': 'https://tiktok.com/@restoran_official',
+  'tiktok': 'https://tiktok.com/@restoran_official',
+  'qr-006': 'https://tiktok.com/@restoran_official',
+  'fb-fanspage': 'https://facebook.com/restoran.official',
+  'facebook': 'https://facebook.com/restoran.official',
+  'qr-007': 'https://facebook.com/restoran.official'
 };
 
 const CLOUD_SYNC_OBJECT_ID = 'ff808181a09d98f701a1b392719d5825';
