@@ -3,6 +3,8 @@ import { Palette, Settings2, Sliders, Check, Upload, Layers } from 'lucide-react
 import { renderStyledQRToCanvas } from '../utils/qrRenderer.ts';
 import confetti from 'canvas-confetti';
 import type { DynamicQRCode, QRStyleConfig } from '../types.ts';
+import { WhatsAppWelcomeEditor } from './WhatsAppWelcomeEditor.tsx';
+import { parseWhatsAppUrl } from '../utils/whatsappPresets.ts';
 
 interface CreateQRModalProps {
   isOpen: boolean;
@@ -648,9 +650,16 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="createTargetUrlInput" className="block text-xs font-semibold text-slate-800 mb-1">
-                    {isBatchMode ? 'Tautan Tujuan Awal (Sama untuk Seluruh Batch)' : 'Tautan Tujuan Awal'} <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="createTargetUrlInput" className="text-xs font-semibold text-slate-800">
+                      {isBatchMode ? 'Tautan Tujuan Awal (Sama untuk Seluruh Batch)' : 'Tautan Tujuan Awal'} <span className="text-rose-500">*</span>
+                    </label>
+                    {parseWhatsAppUrl(targetUrl).isWhatsApp && (
+                      <span className="text-[10px] font-bold text-[#075E54] bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                        💬 Mode Format WhatsApp Aktif
+                      </span>
+                    )}
+                  </div>
                   <input
                     id="createTargetUrlInput"
                     type="text"
@@ -664,6 +673,14 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                     {isBatchMode ? 'Nanti setelah dibuat, masing-masing QR dapat Anda ubah tautannya secara mandiri.' : 'Tautan ini dapat diubah kapan saja setelah QR code dicetak.'}
                   </p>
                 </div>
+
+                {/* WhatsApp Welcome Greeting Editor */}
+                {parseWhatsAppUrl(targetUrl).isWhatsApp && (
+                  <WhatsAppWelcomeEditor
+                    currentUrl={targetUrl}
+                    onUrlChange={(updatedUrl) => setTargetUrl(updatedUrl)}
+                  />
+                )}
 
                 <div>
                   <label htmlFor="createSlugInput" className="block text-xs font-semibold text-slate-800 mb-1">

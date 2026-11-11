@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Radio, User, LogOut, Sparkles, QrCode, KeyRound, Crown } from 'lucide-react';
+import { Plus, Radio, User, LogOut, Sparkles, QrCode, KeyRound, Crown, UserPlus, Shield } from 'lucide-react';
 import type { AuthUser } from '../types.ts';
 
 interface NavbarProps {
@@ -12,6 +12,7 @@ interface NavbarProps {
   currentUser?: AuthUser | null;
   onLogout?: () => void;
   onOpenChangeCredentials?: () => void;
+  onOpenAddUser?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -23,7 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   nfcCount,
   currentUser,
   onLogout,
-  onOpenChangeCredentials
+  onOpenChangeCredentials,
+  onOpenAddUser
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#104F38]/10">
@@ -138,11 +140,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <User className="w-3 h-3 text-[#104F38]/70" />
                 <span className="max-w-[100px] truncate">{currentUser.username}</span>
               </div>
+              {currentUser.username.toLowerCase() === 'admin' && onOpenAddUser && (
+                <button
+                  onClick={onOpenAddUser}
+                  className="px-2.5 py-1 text-[#104F38] bg-[#FFE600] hover:bg-[#F2DA00] border border-[#104F38]/30 flex items-center gap-1.5 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                  title="Tambah User Baru (Menu Dashboard Administrator)"
+                >
+                  <UserPlus className="w-3.5 h-3.5 text-[#104F38]" />
+                  <span>+ Tambah User</span>
+                </button>
+              )}
               {onOpenChangeCredentials && (
                 <button
                   onClick={onOpenChangeCredentials}
                   className="px-2 py-1 text-[#104F38] hover:bg-[#FFE600] border border-[#104F38]/20 flex items-center gap-1.5 text-xs font-bold transition-colors cursor-pointer"
-                  title="Ganti Username & Password"
+                  title="Ganti Password Akun (Username Terkunci)"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-[#104F38]" />
                   <span className="hidden sm:inline">Ganti Akun</span>

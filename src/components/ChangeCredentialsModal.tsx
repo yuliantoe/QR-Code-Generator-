@@ -17,6 +17,7 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
   authToken,
   onCredentialsUpdated
 }) => {
+  const isAdmin = currentUser.username.toLowerCase() === 'admin';
   const [currentPassword, setCurrentPassword] = useState('');
   const [newUsername, setNewUsername] = useState(currentUser.username);
   const [newPassword, setNewPassword] = useState('');
@@ -42,8 +43,21 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
       return;
     }
 
-    if (!newUsername.trim() || newUsername.trim().length < 3) {
-      setErrorMessage('Username baru minimal 3 karakter.');
+    // ATURAN KEAMANAN: User tidak bisa ganti username Administrator
+    if (isAdmin && newUsername.trim().toLowerCase() !== 'admin') {
+      setErrorMessage('Username Administrator sistem terkunci dan tidak dapat diubah.');
+      return;
+    }
+
+    if (!isAdmin && newUsername.trim().toLowerCase() === 'admin') {
+      setErrorMessage('Username "admin" dilindungi khusus untuk akun Administrator.');
+      return;
+    }
+
+    const finalTargetUsername = isAdmin ? 'admin' : newUsername.trim();
+
+    if (!finalTargetUsername || finalTargetUsername.length < 3) {
+      setErrorMessage('Username minimal 3 karakter.');
       return;
     }
 
@@ -68,14 +82,14 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
         },
         body: JSON.stringify({
           currentPassword,
-          newUsername: newUsername.trim(),
+          newUsername: finalTargetUsername,
           newPassword
         })
       });
 
       const json = await res.json();
       if (json.success && json.user) {
-        setSuccessMessage('Username dan password berhasil diubah!');
+        setSuccessMessage(isAdmin ? 'Password Administrator berhasil diperbarui!' : 'Username dan password berhasil diubah!');
         onCredentialsUpdated(json.user);
         localStorage.setItem('dinamis_auth_user', JSON.stringify(json.user));
         
@@ -108,10 +122,12 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-extrabold text-[#104F38]">
-                Ganti Username & Password
+                {isAdmin ? 'Ganti Password Administrator' : 'Ganti Username & Password'}
               </h3>
               <p className="text-[11px] text-[#104F38]/70 font-medium">
-                Perbarui data login akun administrator sistem
+                {isAdmin
+                  ? 'Perbarui password akun administrator (Username "admin" terkunci permanen)'
+                  : 'Perbarui data login akun Anda'}
               </p>
             </div>
           </div>
@@ -146,7 +162,8 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
           {/* Current Username Info */}
           <div className="p-3 bg-[#F8FAF9] border border-[#104F38]/15 text-xs flex items-center justify-between">
             <span className="text-[#104F38]/70">Akun Saat Ini:</span>
-            <span className="font-mono font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20">
+            <span className="font-mono font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20 flex items-center gap-1.5">
+              {isAdmin && <Lock className="w-3 h-3 text-[#104F38]" />}
               {currentUser.username}
             </span>
           </div>
@@ -177,22 +194,38 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
           </div>
 
           <div className="pt-2 border-t border-[#104F38]/10 space-y-3">
-            {/* 2. New Username */}
+            {/* 2. Username Field: Readonly & locked if Administrator */}
             <div>
               <label className="block text-xs font-bold text-[#104F38] mb-1">
-                Username Baru <span className="text-red-500">*</span>
+                {isAdmin ? 'Username Administrator (Terkunci)' : 'Username Baru'} <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-[#104F38]/50 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  required
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="Username baru (minimal 3 karakter)"
-                  className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-[#104F38]/20 focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 font-medium text-[#104F38]"
-                />
+                {isAdmin ? (
+                  <input
+                    type="text"
+                    disabled
+                    readOnly
+                    value="admin"
+                    className="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 border border-[#104F38]/20 font-bold text-[#104F38]/70 cursor-not-allowed select-none"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="Username baru (minimal 3 karakter)"
+                    className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-[#104F38]/20 focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 font-medium text-[#104F38]"
+                  />
+                )}
               </div>
+              {isAdmin && (
+                <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-semibold flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>Username Administrator tidak dapat diubah demi perlindungan hak akses sistem.</span>
+                </div>
+              )}
             </div>
 
             {/* 3. New Password */}

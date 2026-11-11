@@ -264,6 +264,8 @@ export interface StandDesignOptions {
   height?: number;
   showPlaceName?: boolean;
   watermark?: boolean;
+  customHeading?: string;
+  customTopBadge?: string;
 }
 
 /**
@@ -1639,40 +1641,36 @@ async function renderA6WhatsApp(
   ctx.font = `800 ${22 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('✓ LAYANAN BINTANG 5 • CHAT LANGSUNG', cutoutCx, 158 * scale);
+  const topPillText = options.customTopBadge || '✓ CHAT LANGSUNG & LAYANAN RESMI';
+  ctx.fillText(topPillText, cutoutCx, 158 * scale);
   ctx.restore();
 
-  // 5 Golden Yellow Stars (★★★★★) - Identik Google Review Stand
-  const starY = 700 * scale;
-  const starOuter = 40 * scale;
-  const starInner = 19 * scale;
-  const starSpacing = 78 * scale;
-  ctx.fillStyle = '#FBBC05';
-
-  const starsStartX = cutoutCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
+  // Text: Custom Heading for Bisnis / Cafe / Sekolah / Kampus / Resto
+  const headingText = options.customHeading || 'Hubungi & Pesan Menu di';
+  let headingFontSize = 52 * scale;
+  if (headingText.length > 32) {
+    headingFontSize = 38 * scale;
+  } else if (headingText.length > 25) {
+    headingFontSize = 44 * scale;
   }
-
-  // Text: "Bantu Kami / Chat Lewat"
   ctx.fillStyle = '#075E54';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `800 ${50 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
-  ctx.fillText('Hubungi & Pesan Menu di', cutoutCx, 820 * scale);
+  ctx.font = `800 ${headingFontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText(headingText, cutoutCx, 760 * scale);
 
-  ctx.font = `900 ${88 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `900 ${92 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#25D366';
-  ctx.fillText('WhatsApp', cutoutCx, 915 * scale);
+  ctx.fillText('WhatsApp', cutoutCx, 865 * scale);
 
   ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#475569';
-  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, 970 * scale);
+  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, 930 * scale);
 
   if (showPlaceName && placeName) {
-    ctx.font = `800 ${30 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#075E54';
-    ctx.fillText(placeName, cutoutCx, 1025 * scale);
+    ctx.fillText(placeName, cutoutCx, 995 * scale);
   }
 
   // Bottom Content: NFC & QR Code (Identik Google Review)
@@ -1733,31 +1731,34 @@ async function renderSquareWhatsApp(
     ctx.drawImage(waLogoImg, badgeCx - waSize / 2, badgeCy - waSize / 2, waSize, waSize);
   }
 
-  // 5 Golden Yellow Stars (★★★★★)
-  const starY = 415 * scale;
-  const starOuter = 26 * scale;
-  const starInner = 12 * scale;
-  const starSpacing = 52 * scale;
-  ctx.fillStyle = '#FBBC05';
-  const starsStartX = badgeCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
+  // Headings: Custom Heading for Bisnis / Cafe / Sekolah / Kampus / Resto
+  const squareHeadingText = options.customHeading
+    ? (options.customHeading.toUpperCase().includes('WHATSAPP')
+        ? options.customHeading.toUpperCase()
+        : `${options.customHeading.toUpperCase()} WHATSAPP`)
+    : 'CHAT & PESAN LEWAT WHATSAPP';
+
+  let squareFontSize = 46 * scale;
+  if (squareHeadingText.length > 35) {
+    squareFontSize = 34 * scale;
+  } else if (squareHeadingText.length > 26) {
+    squareFontSize = 39 * scale;
   }
 
   ctx.fillStyle = '#075E54';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
-  ctx.fillText('CHAT & PESAN LEWAT WHATSAPP', badgeCx, 495 * scale);
+  ctx.font = `800 ${squareFontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText(squareHeadingText, badgeCx, 460 * scale);
 
   ctx.font = `600 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#64748b';
-  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 535 * scale);
+  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 510 * scale);
 
   if (showPlaceName && placeName) {
     ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#25D366';
-    ctx.fillText(placeName, badgeCx, 575 * scale);
+    ctx.fillText(placeName, badgeCx, 560 * scale);
   }
 
   const bottomCenterY = 820 * scale;
@@ -1839,36 +1840,25 @@ async function renderA6Instagram(
   ctx.restore();
 
   // 5 Golden Yellow Stars (★★★★★) - Identik Google Review Stand
-  const starY = 700 * scale;
-  const starOuter = 40 * scale;
-  const starInner = 19 * scale;
-  const starSpacing = 78 * scale;
-  ctx.fillStyle = '#FBBC05';
-
-  const starsStartX = cutoutCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
-  }
-
-  // Headings (Identik Google Review)
+  // Headings (Stars removed for social templates)
   ctx.fillStyle = '#833AB4';
-  ctx.font = `800 ${50 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `800 ${52 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText('Ikuti & Tag Kami di', cutoutCx, 820 * scale);
+  ctx.fillText('Ikuti & Tag Kami di', cutoutCx, 760 * scale);
 
-  ctx.font = `900 ${88 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `900 ${92 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#E1306C';
-  ctx.fillText('Instagram', cutoutCx, 915 * scale);
+  ctx.fillText('Instagram', cutoutCx, 865 * scale);
 
   ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#475569';
-  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, 970 * scale);
+  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, 930 * scale);
 
   if (showPlaceName && placeName) {
-    ctx.font = `800 ${30 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#833AB4';
-    ctx.fillText(placeName, cutoutCx, 1025 * scale);
+    ctx.fillText(placeName, cutoutCx, 995 * scale);
   }
 
   const bottomCenterY = 1330 * scale;
@@ -1932,31 +1922,21 @@ async function renderSquareInstagram(
     ctx.drawImage(igLogoImg, badgeCx - igSize / 2, badgeCy - igSize / 2, igSize, igSize);
   }
 
-  // 5 Golden Yellow Stars (★★★★★)
-  const starY = 415 * scale;
-  const starOuter = 26 * scale;
-  const starInner = 12 * scale;
-  const starSpacing = 52 * scale;
-  ctx.fillStyle = '#FBBC05';
-  const starsStartX = badgeCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
-  }
-
+  // Headings (Stars removed for social templates)
   ctx.fillStyle = '#833AB4';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
-  ctx.fillText('FOLLOW KAMI DI INSTAGRAM', badgeCx, 495 * scale);
+  ctx.font = `800 ${46 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('FOLLOW KAMI DI INSTAGRAM', badgeCx, 460 * scale);
 
   ctx.font = `600 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#64748b';
-  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 535 * scale);
+  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 510 * scale);
 
   if (showPlaceName && placeName) {
     ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#E1306C';
-    ctx.fillText(placeName, badgeCx, 575 * scale);
+    ctx.fillText(placeName, badgeCx, 560 * scale);
   }
 
   const bottomCenterY = 820 * scale;
@@ -2042,43 +2022,31 @@ async function renderA6TikTok(
   ctx.fillText('🎵 TONTON KESERUAN & REVIEW VIRAL', cutoutCx, 158 * scale);
   ctx.restore();
 
-  // 5 Golden Yellow Stars (★★★★★) - Identik Google Review Stand
-  const starY = 700 * scale;
-  const starOuter = 40 * scale;
-  const starInner = 19 * scale;
-  const starSpacing = 78 * scale;
-  ctx.fillStyle = '#FBBC05';
-
-  const starsStartX = cutoutCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
-  }
-
-  // Headings (Identik Google Review)
-  const textCenterY = 820 * scale;
+  // Headings (Stars removed for social templates)
+  const textCenterY = 760 * scale;
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = `800 ${50 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `800 ${52 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillText('Tonton Video Viral Kami di', cutoutCx, textCenterY);
 
   // 3D chromatic drop text for "TikTok"
-  ctx.font = `900 ${88 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `900 ${92 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#00F2FE';
-  ctx.fillText('TikTok', cutoutCx - 4 * scale, textCenterY + 93 * scale);
+  ctx.fillText('TikTok', cutoutCx - 4 * scale, textCenterY + 103 * scale);
   ctx.fillStyle = '#FE2C55';
-  ctx.fillText('TikTok', cutoutCx + 4 * scale, textCenterY + 97 * scale);
+  ctx.fillText('TikTok', cutoutCx + 4 * scale, textCenterY + 107 * scale);
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('TikTok', cutoutCx, textCenterY + 95 * scale);
+  ctx.fillText('TikTok', cutoutCx, textCenterY + 105 * scale);
 
   ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#94a3b8';
-  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, textCenterY + 155 * scale);
+  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, textCenterY + 170 * scale);
 
   if (showPlaceName && placeName) {
-    ctx.font = `800 ${30 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#00F2FE';
-    ctx.fillText(placeName, cutoutCx, textCenterY + 210 * scale);
+    ctx.fillText(placeName, cutoutCx, textCenterY + 230 * scale);
   }
 
   const bottomCenterY = 1330 * scale;
@@ -2138,31 +2106,21 @@ async function renderSquareTikTok(
     ctx.drawImage(ttLogoImg, badgeCx - ttSize / 2, badgeCy - ttSize / 2, ttSize, ttSize);
   }
 
-  // 5 Golden Yellow Stars (★★★★★)
-  const starY = 415 * scale;
-  const starOuter = 26 * scale;
-  const starInner = 12 * scale;
-  const starSpacing = 52 * scale;
-  ctx.fillStyle = '#FBBC05';
-  const starsStartX = badgeCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
-  }
-
+  // Headings (Stars removed for social templates)
   ctx.fillStyle = '#FFFFFF';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
-  ctx.fillText('FOLLOW KAMI DI TIKTOK', badgeCx, 495 * scale);
+  ctx.font = `800 ${46 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('FOLLOW KAMI DI TIKTOK', badgeCx, 460 * scale);
 
   ctx.font = `600 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#94a3b8';
-  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 535 * scale);
+  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 510 * scale);
 
   if (showPlaceName && placeName) {
     ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#00F2FE';
-    ctx.fillText(placeName, badgeCx, 575 * scale);
+    ctx.fillText(placeName, badgeCx, 560 * scale);
   }
 
   const bottomCenterY = 820 * scale;
@@ -2238,38 +2196,26 @@ async function renderA6Facebook(
   ctx.fillText('👍 GABUNG DI KOMUNITAS KAMI', cutoutCx, 158 * scale);
   ctx.restore();
 
-  // 5 Golden Yellow Stars (★★★★★) - Identik Google Review Stand
-  const starY = 700 * scale;
-  const starOuter = 40 * scale;
-  const starInner = 19 * scale;
-  const starSpacing = 78 * scale;
-  ctx.fillStyle = '#FBBC05';
-
-  const starsStartX = cutoutCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
-  }
-
-  // Headings (Identik Google Review)
-  const textCenterY = 820 * scale;
+  // Headings (Stars removed for social templates)
+  const textCenterY = 760 * scale;
   ctx.fillStyle = '#0C4A9E';
-  ctx.font = `800 ${50 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `800 ${52 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
   ctx.fillText('Ikuti Komunitas Kami di', cutoutCx, textCenterY);
 
-  ctx.font = `900 ${88 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.font = `900 ${92 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#1877F2';
-  ctx.fillText('Facebook', cutoutCx, textCenterY + 95 * scale);
+  ctx.fillText('Facebook', cutoutCx, textCenterY + 105 * scale);
 
   ctx.font = `600 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#475569';
-  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, textCenterY + 155 * scale);
+  ctx.fillText('Pindai QR atau Tap NFC dengan Kamera HP Anda', cutoutCx, textCenterY + 170 * scale);
 
   if (showPlaceName && placeName) {
-    ctx.font = `800 ${30 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.font = `800 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#1877F2';
-    ctx.fillText(placeName, cutoutCx, textCenterY + 210 * scale);
+    ctx.fillText(placeName, cutoutCx, textCenterY + 230 * scale);
   }
 
   const bottomCenterY = 1330 * scale;
@@ -2328,31 +2274,21 @@ async function renderSquareFacebook(
     ctx.drawImage(fbLogoImg, badgeCx - fbSize / 2, badgeCy - fbSize / 2, fbSize, fbSize);
   }
 
-  // 5 Golden Yellow Stars (★★★★★)
-  const starY = 415 * scale;
-  const starOuter = 26 * scale;
-  const starInner = 12 * scale;
-  const starSpacing = 52 * scale;
-  ctx.fillStyle = '#FBBC05';
-  const starsStartX = badgeCx - 2 * starSpacing;
-  for (let i = 0; i < 5; i++) {
-    drawStar(ctx, starsStartX + i * starSpacing, starY, 5, starOuter, starInner);
-  }
-
+  // Headings (Stars removed for social templates)
   ctx.fillStyle = '#0C4A9E';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `800 ${44 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
-  ctx.fillText('IKUTI HALAMAN FACEBOOK KAMI', badgeCx, 495 * scale);
+  ctx.font = `800 ${46 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('IKUTI HALAMAN FACEBOOK KAMI', badgeCx, 460 * scale);
 
   ctx.font = `600 ${24 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillStyle = '#64748b';
-  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 535 * scale);
+  ctx.fillText('Pindai QR atau Dekatkan HP Anda (Tap NFC)', badgeCx, 510 * scale);
 
   if (showPlaceName && placeName) {
     ctx.font = `800 ${28 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.fillStyle = '#1877F2';
-    ctx.fillText(placeName, badgeCx, 575 * scale);
+    ctx.fillText(placeName, badgeCx, 560 * scale);
   }
 
   const bottomCenterY = 820 * scale;

@@ -10,26 +10,39 @@ import { ActivateNFCModal } from './components/ActivateNFCModal.tsx';
 import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
+import { AddUserModal } from './components/AddUserModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles, Crown } from 'lucide-react';
+import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles, Crown, UserPlus, ShieldCheck } from 'lucide-react';
 import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
 export default function App() {
-  // Authentication State
+  // Authentication State - Starts clean, requiring explicit login
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
+      const token = localStorage.getItem('dinamis_auth_token');
+      // If it's the old auto-injected default admin token, clear it so user sees clean login
+      if (!token || token === 'auth_admin_default') {
+        localStorage.removeItem('dinamis_auth_user');
+        localStorage.removeItem('dinamis_auth_token');
+        return null;
+      }
       const saved = localStorage.getItem('dinamis_auth_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
   });
   const [authToken, setAuthToken] = useState<string | null>(() => {
-    return localStorage.getItem('dinamis_auth_token') || null;
+    try {
+      const token = localStorage.getItem('dinamis_auth_token');
+      if (!token || token === 'auth_admin_default') return null;
+      return token;
+    } catch {}
+    return null;
   });
 
   const [isChangeCredentialsOpen, setIsChangeCredentialsOpen] = useState(false);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
   // Navigation tab state ('qr' | 'nfc' | 'stand-design')
   const [currentTab, setCurrentTab] = useState<'qr' | 'nfc' | 'stand-design'>('qr');
@@ -500,6 +513,7 @@ export default function App() {
         currentUser={currentUser}
         onLogout={handleLogout}
         onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
+        onOpenAddUser={() => setIsAddUserOpen(true)}
       />
 
       {/* Main Viewport Container */}
@@ -592,6 +606,30 @@ export default function App() {
                         ⚡ 15 QR Sekaligus
                       </button>
                     </div>
+
+                    {/* Administrator Panel: Tambah User Menu (Only for Admin) */}
+                    {currentUser?.username.toLowerCase() === 'admin' && (
+                      <div className="pt-2 flex flex-wrap items-center gap-2">
+                        <div className="inline-flex flex-wrap items-center gap-2 p-2 px-3 bg-[#F4FAF6] border border-[#104F38]/25 text-xs shadow-2xs">
+                          <span className="font-extrabold text-[#104F38] flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#104F38]" />
+                            Dashboard Administrator:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddUserOpen(true)}
+                            className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                          >
+                            <UserPlus className="w-3.5 h-3.5 text-[#FFE600]" />
+                            <span>+ Tambah User Baru</span>
+                          </button>
+                          <span className="text-[10px] text-[#104F38]/60 font-medium">
+                            (Username Administrator terkunci)
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 </div>
 
@@ -1051,6 +1089,7 @@ export default function App() {
             initialSelectedId={standDesignInitialId}
             onOpenCreateQR={() => setIsCreateOpen(true)}
             onOpenActivateNFC={() => setIsActivateNFCOpen(true)}
+            onUpdateQR={handleUpdateQR}
           />
         )}
 
@@ -1064,14 +1103,26 @@ export default function App() {
             <span aria-hidden="true">·</span>
             <span className="font-serif-italic">Keunggulan QR Dinamis & Stand NFC Google Review</span>
           </div>
-          <div className="text-[11px] text-[#104F38]/70 flex items-center gap-2">
+          <div className="text-[11px] text-[#104F38]/70 flex items-center gap-2 flex-wrap justify-center">
             <span>Masuk sebagai: <strong className="text-[#104F38]">{currentUser.username}</strong></span>
             <span>·</span>
+            {currentUser.username.toLowerCase() === 'admin' && (
+              <>
+                <button
+                  onClick={() => setIsAddUserOpen(true)}
+                  className="text-[#104F38] underline hover:text-black font-bold cursor-pointer flex items-center gap-1"
+                >
+                  <UserPlus className="w-3 h-3 text-[#104F38]" />
+                  Tambah User
+                </button>
+                <span>·</span>
+              </>
+            )}
             <button
               onClick={() => setIsChangeCredentialsOpen(true)}
               className="text-[#104F38] underline hover:text-black font-bold cursor-pointer"
             >
-              Ganti Username & Password
+              {currentUser.username.toLowerCase() === 'admin' ? 'Ganti Password Administrator' : 'Ganti Akun'}
             </button>
           </div>
         </div>
@@ -1136,6 +1187,15 @@ export default function App() {
           isOpen={!!editingNFCTag}
           onClose={() => setEditingNFCTag(null)}
           onUpdated={handleUpdatedNFCTag}
+        />
+      )}
+
+      {/* Add User Modal (Administrator Only) */}
+      {isAddUserOpen && currentUser && currentUser.username.toLowerCase() === 'admin' && (
+        <AddUserModal
+          isOpen={isAddUserOpen}
+          onClose={() => setIsAddUserOpen(false)}
+          authToken={authToken || ''}
         />
       )}
 

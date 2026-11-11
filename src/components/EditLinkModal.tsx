@@ -3,6 +3,8 @@ import { ExternalLink, Check, History, Sparkles, AlertCircle, ArrowRight, Tag, S
 import confetti from 'canvas-confetti';
 import { renderStyledQRToCanvas, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import type { DynamicQRCode, QRStyleConfig } from '../types.ts';
+import { WhatsAppWelcomeEditor } from './WhatsAppWelcomeEditor.tsx';
+import { parseWhatsAppUrl, buildWhatsAppUrl } from '../utils/whatsappPresets.ts';
 
 interface EditLinkModalProps {
   qr: DynamicQRCode;
@@ -28,6 +30,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [forceShowWaEditor, setForceShowWaEditor] = useState(false);
 
   // Preserve initial QR Code design exactly as generated initially
   const initialStyle: QRStyleConfig = {
@@ -48,6 +51,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       setUtmCampaign(qr.utm?.campaign || '');
       setFeedbackMessage(null);
       setErrorMessage(null);
+      setForceShowWaEditor(false);
       setActiveTab('content');
     }
   }, [qr, isOpen]);
@@ -282,9 +286,28 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                     <label className="text-xs font-semibold text-slate-800">
                       Tautan Tujuan Baru <span className="text-rose-500">*</span>
                     </label>
-                    <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Dialihkan Seketika
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!parseWhatsAppUrl(newUrl).isWhatsApp) {
+                            setNewUrl('https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20promo%20hari%20ini.');
+                          }
+                          setForceShowWaEditor(!forceShowWaEditor);
+                        }}
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                          (parseWhatsAppUrl(newUrl).isWhatsApp || forceShowWaEditor)
+                            ? 'bg-emerald-100 text-[#075E54] border-emerald-300'
+                            : 'bg-white text-slate-700 hover:bg-emerald-50 border-slate-300'
+                        }`}
+                      >
+                        <span>💬</span>
+                        <span>{(parseWhatsAppUrl(newUrl).isWhatsApp || forceShowWaEditor) ? 'Mode WhatsApp Aktif' : '+ Ubah ke WhatsApp'}</span>
+                      </button>
+                      <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Dialihkan Seketika
+                      </span>
+                    </div>
                   </div>
                   <input
                     type="text"
@@ -309,6 +332,14 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* WhatsApp Welcome Message Editor (Shows when URL is WhatsApp or toggled) */}
+                {(parseWhatsAppUrl(newUrl).isWhatsApp || forceShowWaEditor) && (
+                  <WhatsAppWelcomeEditor
+                    currentUrl={newUrl}
+                    onUrlChange={(updatedWaUrl) => setNewUrl(updatedWaUrl)}
+                  />
+                )}
 
                 {/* Optional Change Reason / Audit Notes */}
                 <div>

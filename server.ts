@@ -557,7 +557,7 @@ app.post('/api/auth/logout', (_req: Request, res: Response) => {
   res.json({ success: true, message: 'Berhasil keluar' });
 });
 
-// Authentication: Change Username and Password
+// Authentication: Change Username and Password (Admin username is strictly protected)
 app.post('/api/auth/change-credentials', async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -572,7 +572,7 @@ app.post('/api/auth/change-credentials', async (req: Request, res: Response) => 
     });
   }
 
-  const trimmedUsername = newUsername.trim();
+  const trimmedUsername = newUsername.trim().toLowerCase();
   if (trimmedUsername.length < 3) {
     return res.status(400).json({ success: false, error: 'Username baru minimal 3 karakter.' });
   }
@@ -588,14 +588,121 @@ app.post('/api/auth/change-credentials', async (req: Request, res: Response) => 
     return res.status(401).json({ success: false, error: 'Password saat ini tidak sesuai.' });
   }
 
-  await db.updateUser(user.username, newPassword, trimmedUsername, user.name);
+  // ATURAN KEAMANAN: User tidak bisa ganti username Administrator
+  if (user.username.toLowerCase() === 'admin' && trimmedUsername !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Username Administrator terkunci demi keamanan sistem dan tidak dapat diubah.'
+    });
+  }
+
+  if (user.username.toLowerCase() !== 'admin' && trimmedUsername === 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Username "admin" dilindungi sebagai Administrator sistem.'
+    });
+  }
+
+  const finalUsername = user.username.toLowerCase() === 'admin' ? 'admin' : trimmedUsername;
+  await db.updateUser(user.username, newPassword, finalUsername, user.name);
 
   return res.json({
     success: true,
-    message: 'Username dan password berhasil diperbarui.',
+    message: user.username.toLowerCase() === 'admin' ? 'Password Administrator berhasil diperbarui (Username terkunci).' : 'Username dan password berhasil diperbarui.',
     user: {
-      username: trimmedUsername,
+      username: finalUsername,
       name: user.name || 'Administrator'
+    }
+  });
+});
+
+// Admin Dashboard: List All Users
+app.get('/api/admin/users', async (_req: Request, res: Response) => {
+  try {
+    const users = await db.getUsers();
+    const sanitized = users.map(u => ({
+      username: u.username,
+      name: u.name,
+      email: u.email || '',
+      phone: u.phone || '',
+      plan: u.plan || 'trial',
+      trialExpiresAt: u.trialExpiresAt,
+      subscriptionExpiresAt: u.subscriptionExpiresAt,
+      isWatermarkActive: u.isWatermarkActive !== undefined ? u.isWatermarkActive : (u.plan === 'trial'),
+      createdAt: u.createdAt || new Date().toISOString()
+    }));
+    return res.json({ success: true, data: sanitized });
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    return res.status(500).json({ success: false, error: 'Gagal memuat daftar user.' });
+  }
+});
+
+// Admin Dashboard: Add New User
+app.post('/api/admin/users', async (req: Request, res: Response) => {
+  const { username, password, name, plan, isWatermarkActive } = req.body;
+  if (!username || !password || !name) {
+    return res.status(400).json({
+      success: false,
+      error: 'Nama lengkap, username, dan password wajib diisi.'
+    });
+  }
+
+  const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  if (cleanUsername.length < 3) {
+    return res.status(400).json({
+      success: false,
+      error: 'Username minimal 3 karakter huruf/angka tanpa spasi.'
+    });
+  }
+
+  if (cleanUsername === 'admin') {
+    return res.status(400).json({
+      success: false,
+      error: 'Username "admin" tidak dapat dibuat ulang karena merupakan akun bawaan Administrator.'
+    });
+  }
+
+  if (password.length < 4) {
+    return res.status(400).json({
+      success: false,
+      error: 'Password minimal 4 karakter.'
+    });
+  }
+
+  const existing = await db.getUserByUsername(cleanUsername);
+  if (existing) {
+    return res.status(409).json({
+      success: false,
+      error: `Username "${cleanUsername}" sudah digunakan oleh user lain.`
+    });
+  }
+
+  const selectedPlan = plan === 'trial' ? 'trial' : (plan === 'yearly' ? 'yearly' : 'monthly');
+  const watermarkStatus = isWatermarkActive !== undefined ? Boolean(isWatermarkActive) : (selectedPlan === 'trial');
+
+  const newUser = await db.createUser({
+    username: cleanUsername,
+    password,
+    name: name.trim(),
+    email: '',
+    phone: '',
+    plan: selectedPlan,
+    trialExpiresAt: selectedPlan === 'trial' ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() : null,
+    subscriptionExpiresAt: selectedPlan !== 'trial' ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null,
+    isWatermarkActive: watermarkStatus,
+    createdAt: new Date().toISOString()
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: `User baru "${newUser.username}" berhasil ditambahkan ke sistem.`,
+    user: {
+      username: newUser.username,
+      name: newUser.name,
+      plan: newUser.plan,
+      isWatermarkActive: newUser.isWatermarkActive,
+      createdAt: newUser.createdAt
     }
   });
 });

@@ -28,6 +28,8 @@ import {
   type StandFormatSize
 } from '../utils/googleReviewStandRenderer.ts';
 import type { DynamicQRCode, NFCTag } from '../types.ts';
+import { WhatsAppWelcomeEditor } from './WhatsAppWelcomeEditor.tsx';
+import { parseWhatsAppUrl, buildWhatsAppUrl, WHATSAPP_HEADING_PRESETS } from '../utils/whatsappPresets.ts';
 
 interface StandDesignViewProps {
   qrcodes: DynamicQRCode[];
@@ -35,12 +37,16 @@ interface StandDesignViewProps {
   initialSelectedId?: string;
   onOpenCreateQR?: () => void;
   onOpenActivateNFC?: () => void;
+  onUpdateQR?: (updatedQR: DynamicQRCode) => void;
 }
 
 export const StandDesignView: React.FC<StandDesignViewProps> = ({
   qrcodes,
   nfcTags,
-  initialSelectedId
+  initialSelectedId,
+  onOpenCreateQR,
+  onOpenActivateNFC,
+  onUpdateQR
 }) => {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -203,6 +209,87 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   const activeRegCode = selectedItem?.code || 'QR 001';
 
+  // WhatsApp Custom Welcome Message & Heading state for Stand Customization
+  const isSelectedWhatsApp = selectedTemplate.includes('whatsapp') || (selectedItem && parseWhatsAppUrl(selectedItem.rawUrl).isWhatsApp);
+  const [waLiveUrl, setWaLiveUrl] = useState<string>('');
+  const [waSaving, setWaSaving] = useState<boolean>(false);
+  const [waSavedMessage, setWaSavedMessage] = useState<string | null>(null);
+  const [waHeadingText, setWaHeadingText] = useState<string>('Hubungi & Pesan Menu di');
+  const [waTopBadgeText, setWaTopBadgeText] = useState<string>('✓ CHAT LANGSUNG & LAYANAN RESMI');
+
+  useEffect(() => {
+    if (selectedItem?.rawUrl) {
+      if (parseWhatsAppUrl(selectedItem.rawUrl).isWhatsApp) {
+        setWaLiveUrl(selectedItem.rawUrl);
+      } else if (selectedTemplate.includes('whatsapp')) {
+        setWaLiveUrl('https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20promo%20hari%20ini.');
+      }
+    }
+  }, [selectedItem?.id, selectedItem?.rawUrl, selectedTemplate]);
+
+  const handleSaveWhatsAppToQR = async () => {
+    if (!selectedItem || selectedItem.type !== 'qr' || !waLiveUrl) return;
+    const qrObj = qrcodes.find(q => q.id === selectedItem.id);
+    if (!qrObj) return;
+
+    setWaSaving(true);
+    setWaSavedMessage(null);
+    try {
+      const now = new Date().toISOString();
+      const updatedQR: DynamicQRCode = {
+        ...qrObj,
+        targetUrl: waLiveUrl,
+        updatedAt: now,
+        urlHistory: [
+          {
+            url: waLiveUrl,
+            changedAt: now,
+            reason: 'Pembaruan Pesan Sambutan WhatsApp Welcome'
+          },
+          ...(qrObj.urlHistory || [])
+        ]
+      };
+
+      if (qrObj.slug) {
+        const cleanSlug = qrObj.slug.toLowerCase().trim();
+        fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`)
+          .then(r => r.json())
+          .then(obj => {
+            const currentData = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
+            currentData[cleanSlug] = waLiveUrl;
+            return fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: 'dinamis_qr', data: currentData })
+            });
+          })
+          .catch(() => {});
+      }
+
+      await fetch(`/api/qrcodes/${qrObj.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: qrObj.title,
+          targetUrl: waLiveUrl,
+          reason: 'Pembaruan Pesan Sambutan WhatsApp Welcome',
+          style: qrObj.style,
+          qrData: updatedQR
+        })
+      });
+
+      if (onUpdateQR) {
+        onUpdateQR(updatedQR);
+      }
+      setWaSavedMessage('✓ Pesan sambutan WhatsApp berhasil disimpan & disinkronkan ke cloud!');
+      setTimeout(() => setWaSavedMessage(null), 4000);
+    } catch (e) {
+      console.warn('Save WA link error:', e);
+    } finally {
+      setWaSaving(false);
+    }
+  };
+
   // Render to canvas
   const renderCanvas = async () => {
     if (!previewCanvasRef.current) return;
@@ -219,7 +306,9 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
         showPlaceName,
         width: dims.width,
         height: dims.height,
-        watermark: false
+        watermark: false,
+        customHeading: waHeadingText,
+        customTopBadge: waTopBadgeText
       });
     } catch (e) {
       console.error(e);
@@ -230,7 +319,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   useEffect(() => {
     renderCanvas();
-  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, selectedItem?.rawUrl, selectedItem?.url]);
+  }, [selectedTemplate, formatSize, activeQRText, activeRegCode, placeName, themeColor, showPlaceName, selectedItem?.rawUrl, selectedItem?.url, waHeadingText, waTopBadgeText]);
 
   const handleDownloadHD = async (isPrintQuality: boolean = true) => {
     if (urlMode === 'dynamic') {
@@ -250,7 +339,9 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
       showPlaceName,
       width: dims.width,
       height: dims.height,
-      watermark: false
+      watermark: false,
+      customHeading: waHeadingText,
+      customTopBadge: waTopBadgeText
     });
 
     const safeTitle = (placeName || 'stand-google-review')
@@ -328,7 +419,9 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
             showPlaceName,
             width: dims.width,
             height: dims.height,
-            watermark: false
+            watermark: false,
+            customHeading: waHeadingText,
+            customTopBadge: waTopBadgeText
           });
 
           standsToPrint.push({
@@ -379,7 +472,9 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
           showPlaceName,
           width: dims.width,
           height: dims.height,
-          watermark: false
+          watermark: false,
+          customHeading: waHeadingText,
+          customTopBadge: waTopBadgeText
         });
 
         const safeCode = item.code.replace(/\s+/g, '-');
@@ -1233,6 +1328,101 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               )}
             </div>
 
+            {/* Custom WhatsApp Heading for Bisnis, Cafe, Sekolah, Kampus & Resto */}
+            {selectedTemplate.includes('whatsapp') && (
+              <div className="space-y-3 pt-3 border-t border-[#104F38]/10 bg-emerald-50/60 p-3.5 border border-emerald-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">💬</span>
+                    <label className="text-xs font-black text-[#075E54]">
+                      Pilihan Teks Ajakan Stand WhatsApp (Custom Heading):
+                    </label>
+                  </div>
+                  <span className="text-[9.5px] font-bold bg-[#25D366] text-white px-2 py-0.5 rounded-full">
+                    Live Cetak
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-800 leading-tight">
+                  Ubah teks <em>&quot;Hubungi & Pesan Menu di&quot;</em> sesuai bidang usaha Anda (Bisnis, Cafe, Sekolah, Kampus, atau Restoran).
+                </p>
+
+                {/* Sektor Presets */}
+                <div className="space-y-1.5">
+                  <span className="text-[10.5px] font-bold text-slate-700 block">
+                    Pilihan Siap Pakai per Sektor (1-Klik Pilih):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                    {WHATSAPP_HEADING_PRESETS.map((hp) => {
+                      const isSelected = waHeadingText.trim().toLowerCase() === hp.headingText.trim().toLowerCase();
+                      return (
+                        <button
+                          key={hp.id}
+                          type="button"
+                          onClick={() => {
+                            setWaHeadingText(hp.headingText);
+                            if (hp.topBadgeText) setWaTopBadgeText(hp.topBadgeText);
+                          }}
+                          className={`p-2 text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-emerald-100 border-[#25D366] ring-1 ring-[#25D366] font-bold text-[#075E54] shadow-xs'
+                              : 'bg-white hover:bg-emerald-50/80 border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[9px] font-black text-emerald-800 uppercase tracking-wide bg-emerald-100/70 px-1.5 py-0.2 rounded-sm">
+                              {hp.sectorLabel}
+                            </span>
+                            {isSelected && <span className="text-[9px] font-extrabold text-[#075E54]">✓ Terpilih</span>}
+                          </div>
+                          <span className="text-[11px] font-medium leading-snug">
+                            &ldquo;{hp.headingText}&rdquo;
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Free Text Input for Heading */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-[#075E54]">
+                      Ketik Bebas Teks Heading Stand Sendiri:
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {waHeadingText.length} huruf
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={waHeadingText}
+                    onChange={(e) => setWaHeadingText(e.target.value)}
+                    placeholder="Contoh: Hubungi & Konsultasi Layanan di / Pesan Kopi di"
+                    className="w-full px-3 py-2 text-xs bg-white border border-emerald-300 rounded-none focus:outline-none focus:ring-2 focus:ring-[#25D366] font-bold text-slate-900 shadow-2xs"
+                  />
+                  <p className="text-[10px] text-emerald-700/80 mt-1">
+                    Teks ini langsung muncul di atas tulisan &quot;WhatsApp&quot; pada lembar cetak akrilik fisik Anda.
+                  </p>
+                </div>
+
+                {/* Optional Pill Banner for A6 */}
+                {selectedTemplate === 'a6-whatsapp' && (
+                  <div className="pt-2 border-t border-emerald-200/60">
+                    <label className="block text-[11px] font-bold text-[#075E54] mb-1">
+                      Kustom Teks Lencana Lengkung Atas (Pill Banner A6):
+                    </label>
+                    <input
+                      type="text"
+                      value={waTopBadgeText}
+                      onChange={(e) => setWaTopBadgeText(e.target.value)}
+                      placeholder="✓ CHAT LANGSUNG & LAYANAN RESMI"
+                      className="w-full px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-none focus:outline-none focus:ring-2 focus:ring-[#25D366] text-slate-900 font-mono text-[11px]"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Template specs callout & Platform Tips */}
             <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/15 text-xs text-[#104F38]/80 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-[#104F38]">
@@ -1245,10 +1435,10 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 {STAND_TEMPLATES.find(t => t.id === selectedTemplate)?.description}
               </p>
 
-              {/* Dynamic Platform Tip */}
+            {/* Dynamic Platform Tip */}
               {selectedTemplate.includes('whatsapp') && (
                 <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-none text-[10.5px] mt-1.5">
-                  💬 <strong>Tips Stand WhatsApp:</strong> Letakkan di atas meja makan/kasir agar pelanggan dapat langsung chat pelayan atau order tanpa perlu menyimpan nomor telepon terlebih dahulu.
+                  💬 <strong>Tips Stand WhatsApp:</strong> Letakkan di atas meja kafe, kasir resto, lobi kantor bisnis, atau loket pendaftaran sekolah/kampus agar pengunjung dapat langsung chat CS atau panitia tanpa perlu simpan kontak terlebih dahulu.
                 </div>
               )}
               {selectedTemplate.includes('instagram') && (
@@ -1272,6 +1462,49 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 </div>
               )}
             </div>
+
+            {/* WhatsApp Custom Welcome Greeting Panel */}
+            {isSelectedWhatsApp && (
+              <div className="p-3.5 bg-white border border-[#104F38]/20 rounded-xl space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">💬</span>
+                    <span className="text-xs font-black text-[#075E54]">
+                      Kustomisasi Tampilan Awal & Pesan Sambutan WhatsApp
+                    </span>
+                  </div>
+                  <span className="text-[9.5px] bg-[#25D366] text-white px-2 py-0.5 rounded-full font-bold">
+                    Stand WhatsApp
+                  </span>
+                </div>
+
+                <WhatsAppWelcomeEditor
+                  currentUrl={waLiveUrl || (selectedItem ? selectedItem.rawUrl : '')}
+                  onUrlChange={(updatedUrl) => setWaLiveUrl(updatedUrl)}
+                />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                  {waSavedMessage ? (
+                    <span className="text-xs text-emerald-800 font-bold bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300">
+                      {waSavedMessage}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-500">
+                      Klik simpan untuk memperbarui tautan tujuan QR code di cloud.
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSaveWhatsAppToQR}
+                    disabled={waSaving || !selectedItem || selectedItem.type !== 'qr'}
+                    className="px-3.5 py-2 text-xs font-bold bg-[#104F38] hover:bg-[#0c3c2b] text-[#FFE600] rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    <span>{waSaving ? 'Menyimpan...' : '💾 Simpan Pesan Sambutan ke QR'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Reset */}
             <div className="pt-2 border-t border-[#104F38]/10">
