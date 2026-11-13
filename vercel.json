@@ -3,27 +3,27 @@
   "rewrites": [
     {
       "source": "/r/:slug",
-      "destination": "/api/r?slug=:slug"
+      "destination": "/api/index.ts?slug=:slug"
     },
     {
       "source": "/r/:slug/",
-      "destination": "/api/r?slug=:slug"
+      "destination": "/api/index.ts?slug=:slug"
     },
     {
       "source": "/r/(.*)",
-      "destination": "/api/r"
+      "destination": "/api/index.ts"
     },
     {
       "source": "/r",
-      "destination": "/api/r"
+      "destination": "/api/index.ts"
     },
     {
       "source": "/nfc/:id",
-      "destination": "/api/nfc?id=:id"
+      "destination": "/api/index.ts?nfcId=:id"
     },
     {
       "source": "/nfc/(.*)",
-      "destination": "/api/nfc"
+      "destination": "/api/index.ts"
     },
     {
       "source": "/api/(.*)",

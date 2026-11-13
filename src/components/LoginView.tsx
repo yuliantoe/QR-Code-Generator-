@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { AuthUser } from '../types.ts';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AuthUser, token: string) => void;
+  sessionExpiredMessage?: string | null;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, sessionExpiredMessage }) => {
   // Form fields start clean & empty - user must input explicitly
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -126,6 +127,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             Sistem Manajemen QR Dinamis & Stand Meja Akrilik
           </p>
         </div>
+
+        {/* Session Inactivity Timeout Notification (3 Menit Inactive) */}
+        {sessionExpiredMessage && !errorMessage && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold flex items-start gap-2.5 shadow-2xs">
+            <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-extrabold text-amber-900">Sesi Berakhir Otomatis</div>
+              <div className="text-[11px] text-amber-800 font-medium mt-0.5 leading-snug">{sessionExpiredMessage}</div>
+            </div>
+          </div>
+        )}
 
         {/* Error notification */}
         {errorMessage && (

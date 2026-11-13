@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from './components/Navbar.tsx';
 import { QRCard } from './components/QRCard.tsx';
 import { EditLinkModal } from './components/EditLinkModal.tsx';
@@ -16,15 +16,40 @@ import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRig
 import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000;
+const SESSION_EXPIRED_NOTICE =
+  'Website tidak dipakai selama 3 menit. Demi keamanan, Anda telah otomatis keluar. Silakan masukkan username dan password Anda kembali.';
+
+function hasStoredSessionTimedOut(): boolean {
+  try {
+    const token = localStorage.getItem('dinamis_auth_token');
+    if (!token || token === 'auth_admin_default') return false;
+    const lastStr = localStorage.getItem('dinamis_last_activity');
+    if (!lastStr) return false;
+    const lastTime = parseInt(lastStr, 10);
+    if (isNaN(lastTime)) return false;
+    return Date.now() - lastTime >= INACTIVITY_TIMEOUT_MS;
+  } catch {
+    return false;
+  }
+}
+
 export default function App() {
+  // Inactivity Auto-Logout Timeout: 3 Menit (180.000 ms)
+  const lastActivityRef = useRef<number>(Date.now());
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(() => {
+    return hasStoredSessionTimedOut() ? SESSION_EXPIRED_NOTICE : null;
+  });
+
   // Authentication State - Starts clean, requiring explicit login
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
       const token = localStorage.getItem('dinamis_auth_token');
-      // If it's the old auto-injected default admin token, clear it so user sees clean login
-      if (!token || token === 'auth_admin_default') {
+      // Clear default auto-token or expired 3-minute idle session immediately on load
+      if (!token || token === 'auth_admin_default' || hasStoredSessionTimedOut()) {
         localStorage.removeItem('dinamis_auth_user');
         localStorage.removeItem('dinamis_auth_token');
+        localStorage.removeItem('dinamis_last_activity');
         return null;
       }
       const saved = localStorage.getItem('dinamis_auth_user');
@@ -35,7 +60,7 @@ export default function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => {
     try {
       const token = localStorage.getItem('dinamis_auth_token');
-      if (!token || token === 'auth_admin_default') return null;
+      if (!token || token === 'auth_admin_default' || hasStoredSessionTimedOut()) return null;
       return token;
     } catch {}
     return null;
@@ -131,59 +156,48 @@ export default function App() {
   const [isActivateNFCOpen, setIsActivateNFCOpen] = useState(false);
   const [editingNFCTag, setEditingNFCTag] = useState<NFCTag | null>(null);
 
-  // Instant client-side redirect fallback if phone visits /r/:slug or /nfc/:id and SPA index.html is served
+  // Client-side redirect fallback if /r/:slug or /nfc/:id serves SPA index.html
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const pathname = window.location.pathname;
 
     if (pathname.startsWith('/r/')) {
-      const pathSlug = pathname.replace(/^\/r\//, '').split('/')[0].split('?')[0].toLowerCase().trim();
+      const pathSlug = decodeURIComponent(pathname.replace(/^\/r\//, '').split('/')[0].split('?')[0])
+        .replace(/\.png$/i, '')
+        .toLowerCase()
+        .trim();
       if (pathSlug) {
-        // 1. Try local cache
-        try {
-          const cached = localStorage.getItem('dinamis_qrcodes_cache');
-          if (cached) {
-            const list = JSON.parse(cached);
-            const found = list.find((q: any) => q.slug?.toLowerCase() === pathSlug);
-            if (found?.targetUrl) {
-              window.location.replace(found.targetUrl);
-              return;
+        const redirectFromLocalCache = () => {
+          try {
+            const cached = localStorage.getItem('dinamis_qrcodes_cache');
+            if (cached) {
+              const list = JSON.parse(cached);
+              const found = list.find((q: any) => q.slug?.toLowerCase().trim() === pathSlug);
+              if (found?.targetUrl) {
+                window.location.replace(found.targetUrl);
+              }
             }
-          }
-        } catch {}
+          } catch {}
+        };
 
-        // 2. Try API endpoint
-        fetch(`/api/qrcodes/slug/${pathSlug}`)
+        // Query authoritative server API first with no-store so newly updated links take effect immediately
+        fetch(`/api/qrcodes/slug/${encodeURIComponent(pathSlug)}?t=${Date.now()}`, { cache: 'no-store' })
           .then(res => res.json())
           .then(json => {
             if (json.success && json.data?.targetUrl) {
               window.location.replace(json.data.targetUrl);
             } else {
-              // 3. Fallback to direct cloud sync object
-              return fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825')
-                .then(r => r.json())
-                .then(obj => {
-                  if (obj?.data?.[pathSlug]) {
-                    window.location.replace(obj.data[pathSlug]);
-                  }
-                });
+              redirectFromLocalCache();
             }
           })
           .catch(() => {
-            fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825')
-              .then(r => r.json())
-              .then(obj => {
-                if (obj?.data?.[pathSlug]) {
-                  window.location.replace(obj.data[pathSlug]);
-                }
-              })
-              .catch(() => {});
+            redirectFromLocalCache();
           });
       }
     } else if (pathname.startsWith('/nfc/') || pathname.startsWith('/n/')) {
       const nfcId = pathname.replace(/^\/(nfc|n)\//, '').split('/')[0].split('?')[0].trim();
       if (nfcId) {
-        fetch(`/api/nfc/${nfcId}/test-tap`, { method: 'POST' })
+        fetch(`/api/nfc/${encodeURIComponent(nfcId)}/test-tap`, { method: 'POST' })
           .then(res => res.json())
           .then(json => {
             if (json.success && json.targetUrl) {
@@ -268,7 +282,7 @@ export default function App() {
     }
   };
 
-  // Auto sync all loaded QR slugs to cloud sync store for Vercel
+  // Auto sync loaded QR codes to server persistence (Postgres / KV / serverless cache)
   useEffect(() => {
     if (qrcodes.length > 0) {
       const slugMap: Record<string, string> = {};
@@ -280,22 +294,8 @@ export default function App() {
       fetch('/api/qrcodes/sync-cloud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slugMap })
+        body: JSON.stringify({ slugMap, qrcodes })
       }).catch(() => {});
-
-      // Direct client push as well
-      fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`)
-        .then(r => r.json())
-        .then(obj => {
-          const current = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
-          const merged = { ...current, ...slugMap };
-          return fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'dinamis_qr', data: merged })
-          });
-        })
-        .catch(() => {});
     }
   }, [qrcodes.length]);
 
@@ -328,12 +328,7 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = (user: AuthUser, token: string) => {
-    setCurrentUser(user);
-    setAuthToken(token);
-  };
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async (isAutoTimeout = false) => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch (e) {
@@ -341,9 +336,138 @@ export default function App() {
     }
     localStorage.removeItem('dinamis_auth_token');
     localStorage.removeItem('dinamis_auth_user');
+    localStorage.removeItem('dinamis_last_activity');
     setCurrentUser(null);
     setAuthToken(null);
+    if (isAutoTimeout) {
+      setSessionExpiredMessage(SESSION_EXPIRED_NOTICE);
+    } else {
+      setSessionExpiredMessage(null);
+    }
+  }, []);
+
+  const handleLoginSuccess = (user: AuthUser, token: string) => {
+    setCurrentUser(user);
+    setAuthToken(token);
+    setSessionExpiredMessage(null);
+    const now = Date.now();
+    lastActivityRef.current = now;
+    try {
+      localStorage.setItem('dinamis_last_activity', String(now));
+    } catch {}
   };
+
+  // 3-Minute Inactivity Auto-Logout Effect
+  useEffect(() => {
+    if (!currentUser || !authToken) return;
+
+    // Check existing activity timestamp first before resetting, in case session was idle >= 3 min
+    const now = Date.now();
+    try {
+      const existingStored = localStorage.getItem('dinamis_last_activity');
+      if (existingStored) {
+        const parsed = parseInt(existingStored, 10);
+        if (!isNaN(parsed) && now - parsed >= INACTIVITY_TIMEOUT_MS) {
+          handleLogout(true);
+          return;
+        }
+      }
+      localStorage.setItem('dinamis_last_activity', String(now));
+    } catch {}
+    lastActivityRef.current = now;
+
+    // Throttled event handler for user activity
+    const handleUserActivity = () => {
+      const currentTime = Date.now();
+      if (currentTime - lastActivityRef.current >= 1000) {
+        lastActivityRef.current = currentTime;
+        try {
+          localStorage.setItem('dinamis_last_activity', String(currentTime));
+        } catch {}
+      }
+    };
+
+    const activityEvents: (keyof WindowEventMap)[] = [
+      'mousemove',
+      'mousedown',
+      'pointerdown',
+      'keydown',
+      'touchstart',
+      'scroll',
+      'click'
+    ];
+
+    activityEvents.forEach((evt) => {
+      window.addEventListener(evt, handleUserActivity, { passive: true });
+    });
+
+    // Check periodically if 3 minutes have elapsed
+    const intervalTimer = setInterval(() => {
+      const currentTime = Date.now();
+      let lastTime = lastActivityRef.current;
+      try {
+        const stored = localStorage.getItem('dinamis_last_activity');
+        if (stored) {
+          const parsed = parseInt(stored, 10);
+          if (!isNaN(parsed) && parsed > lastTime) {
+            lastTime = parsed;
+            lastActivityRef.current = parsed;
+          }
+        }
+      } catch {}
+
+      if (currentTime - lastTime >= INACTIVITY_TIMEOUT_MS) {
+        handleLogout(true);
+      }
+    }, 1000);
+
+    // Check immediately when tab becomes visible or window gains focus
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        const currentTime = Date.now();
+        let lastTime = lastActivityRef.current;
+        try {
+          const stored = localStorage.getItem('dinamis_last_activity');
+          if (stored) {
+            const parsed = parseInt(stored, 10);
+            if (!isNaN(parsed)) lastTime = parsed;
+          }
+        } catch {}
+
+        if (currentTime - lastTime >= INACTIVITY_TIMEOUT_MS) {
+          handleLogout(true);
+        } else {
+          handleUserActivity();
+        }
+      }
+    };
+
+    // Sync logout / activity updates across browser tabs
+    const handleStorageSync = (e: StorageEvent) => {
+      if (e.key === 'dinamis_auth_token' && !e.newValue) {
+        setCurrentUser(null);
+        setAuthToken(null);
+        setSessionExpiredMessage(SESSION_EXPIRED_NOTICE);
+      } else if (e.key === 'dinamis_last_activity' && e.newValue) {
+        const parsed = parseInt(e.newValue, 10);
+        if (!isNaN(parsed)) lastActivityRef.current = parsed;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('storage', handleStorageSync);
+
+    return () => {
+      activityEvents.forEach((evt) => {
+        window.removeEventListener(evt, handleUserActivity);
+      });
+      clearInterval(intervalTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.removeEventListener('storage', handleStorageSync);
+    };
+  }, [currentUser, authToken, handleLogout]);
 
   // QR Handlers with immediate LocalStorage sync
   const handleUpdateQR = (updated: DynamicQRCode) => {
@@ -482,7 +606,12 @@ export default function App() {
 
   // If not logged in, render dedicated secure Login Screen
   if (!currentUser || !authToken) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <LoginView
+        onLoginSuccess={handleLoginSuccess}
+        sessionExpiredMessage={sessionExpiredMessage}
+      />
+    );
   }
 
   // Filtered QR Codes
@@ -511,7 +640,7 @@ export default function App() {
         activeCount={qrcodes.length}
         nfcCount={nfcTags.length}
         currentUser={currentUser}
-        onLogout={handleLogout}
+        onLogout={() => handleLogout(false)}
         onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
         onOpenAddUser={() => setIsAddUserOpen(true)}
       />

@@ -113,6 +113,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
 
     try {
       const payload = {
+        slug: qr.slug,
         title: title.trim() || qr.title,
         targetUrl: formattedUrl,
         reason: reason.trim() || 'Pembaruan tautan tujuan langsung',
@@ -125,23 +126,6 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
         qrData: localUpdatedQR
       };
 
-      // Direct browser cloud sync as dual-safety layer for Vercel Serverless
-      if (qr.slug) {
-        const cleanSlug = qr.slug.toLowerCase().trim();
-        fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`)
-          .then(r => r.json())
-          .then(obj => {
-            const currentData = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
-            currentData[cleanSlug] = formattedUrl;
-            return fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: 'dinamis_qr', data: currentData })
-            });
-          })
-          .catch(() => {});
-      }
-
       const res = await fetch(`/api/qrcodes/${qr.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -149,20 +133,29 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       });
 
       const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
+      if (contentType.includes('application/json')) {
         const json = await res.json();
-        if (json.success && json.data) {
+        if (!res.ok || !json.success) {
+          setErrorMessage(json.error || 'Gagal menyimpan pembaruan ke server.');
+          setIsSubmitting(false);
+          return;
+        }
+        if (json.data) {
           finalQR = {
             ...json.data,
             style: json.data.style || initialStyle
           };
         }
+      } else if (!res.ok) {
+        setErrorMessage('Server mengembalikan kesalahan saat memperbarui tautan.');
+        setIsSubmitting(false);
+        return;
       }
     } catch (err) {
       console.warn('Network sync warning, saving via local cache:', err);
     }
 
-    // Always apply updated data to React state & localStorage
+    // Apply updated data to React state & localStorage
     onUpdate(finalQR);
 
     try {

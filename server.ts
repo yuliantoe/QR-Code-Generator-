@@ -33,11 +33,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // Restore original path if Vercel rewritten URL to /api/index.ts or /api/[...all].ts
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  const matchedPath = (req.headers['x-matched-path'] || req.headers['x-vercel-matched-path'] || req.headers['x-forwarded-url']) as string;
-  if (matchedPath && (req.url === '/api/index.ts' || req.url === '/api' || req.url.startsWith('/api/index.ts?') || req.url.startsWith('/api/[...all].ts'))) {
-    const queryIdx = req.url.indexOf('?');
-    const queryString = queryIdx !== -1 ? req.url.substring(queryIdx) : '';
-    req.url = matchedPath + (matchedPath.includes('?') ? '' : queryString);
+  const querySlug = typeof req.query?.slug === 'string' ? req.query.slug.trim() : '';
+  const queryNfcId = typeof req.query?.nfcId === 'string' ? req.query.nfcId.trim() : '';
+  const queryIdx = req.url.indexOf('?');
+  const queryString = queryIdx !== -1 ? req.url.substring(queryIdx) : '';
+
+  if (querySlug && (req.path === '/api/index.ts' || req.path === '/api' || req.path === '/api/r' || req.path === '/r')) {
+    req.url = `/r/${encodeURIComponent(querySlug)}${queryString}`;
+  } else if (queryNfcId && (req.path === '/api/index.ts' || req.path === '/api' || req.path === '/api/nfc' || req.path === '/nfc')) {
+    req.url = `/nfc/${encodeURIComponent(queryNfcId)}${queryString}`;
+  } else {
+    const matchedPath = (req.headers['x-matched-path'] || req.headers['x-vercel-matched-path'] || req.headers['x-forwarded-url']) as string;
+    if (matchedPath && (req.path === '/api/index.ts' || req.path === '/api' || req.path.startsWith('/api/[...all]'))) {
+      req.url = matchedPath + (matchedPath.includes('?') ? '' : queryString);
+    }
   }
   next();
 });
@@ -83,7 +92,14 @@ app.get(['/r/:slug', '/r/:slug/*', '/r', '/api/r', '/api/index.ts', '/api', '/']
   if (!rawSlug) {
     return next();
   }
-  const slug = rawSlug.trim().toLowerCase();
+  let decodedSlug = String(rawSlug);
+  try {
+    decodedSlug = decodeURIComponent(decodedSlug);
+  } catch {}
+  const slug = decodedSlug.trim().toLowerCase().replace(/\.png$/i, '').replace(/\/+$/, '');
+  if (!slug) {
+    return next();
+  }
   const qr = await db.getQRCodeBySlug(slug);
 
   if (!qr) {
@@ -211,29 +227,39 @@ app.get(['/r/:slug', '/r/:slug/*', '/r', '/api/r', '/api/index.ts', '/api', '/']
     `);
   }
 
-  // Record scan analytics
+  // Record scan analytics (never block redirect if analytics persistence fails)
   const ua = req.headers['user-agent'];
   const { device, os, browser } = parseUserAgent(ua);
   const referer = (req.headers['referer'] || req.headers['referrer'] || 'Direct / Scan Fisik') as string;
 
   const nowIso = new Date().toISOString();
-  qr.totalScans = (qr.totalScans || 0) + 1;
-  qr.lastScannedAt = nowIso;
-  await db.saveQRCode(qr);
+  try {
+    const updatedForScan: DynamicQRCode = {
+      ...qr,
+      totalScans: (qr.totalScans || 0) + 1,
+      lastScannedAt: nowIso
+    };
+    await db.saveQRCode(updatedForScan);
 
-  const scanRecord: ScanRecord = {
-    id: 'scan-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-    qrId: qr.id,
-    timestamp: nowIso,
-    device,
-    os,
-    browser,
-    referer
-  };
-  await db.addScan(scanRecord);
+    const scanRecord: ScanRecord = {
+      id: 'scan-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      qrId: qr.id,
+      timestamp: nowIso,
+      device,
+      os,
+      browser,
+      referer
+    };
+    await db.addScan(scanRecord);
+  } catch (scanErr) {
+    console.warn('[Redirect] Non-blocking analytics error:', scanErr);
+  }
 
-  // Construct destination URL with UTM params if configured
-  let destinationUrl = qr.targetUrl.trim();
+  // Construct destination URL with protocol check & UTM params if configured
+  let destinationUrl = (qr.targetUrl || '').trim();
+  if (destinationUrl && !/^https?:\/\//i.test(destinationUrl)) {
+    destinationUrl = 'https://' + destinationUrl;
+  }
   if (qr.utm && (qr.utm.source || qr.utm.medium || qr.utm.campaign)) {
     try {
       const urlObj = new URL(destinationUrl);
@@ -252,7 +278,7 @@ app.get(['/r/:slug', '/r/:slug/*', '/r', '/api/r', '/api/index.ts', '/api', '/']
     }
   }
 
-  // Send no-cache headers so browsers, edge CDNs (Vercel/Cloudflare) and QR scanner apps always perform fresh redirect
+  // Send strict no-cache headers so browsers, edge CDNs (Vercel/Cloudflare) and QR scanner apps always perform fresh redirect
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -1048,12 +1074,14 @@ app.post('/api/qrcodes/batch', async (req: Request, res: Response) => {
 
 // List all QR codes
 app.get('/api/qrcodes', async (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const qrcodes = await db.getQRCodes();
   res.json({ success: true, data: qrcodes });
 });
 
 // Get single QR code
 app.get('/api/qrcodes/:id', async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const { id } = req.params;
   const qr = await db.getQRCodeById(id);
   if (!qr) {
@@ -1064,6 +1092,7 @@ app.get('/api/qrcodes/:id', async (req: Request, res: Response) => {
 
 // Get QR code by slug
 app.get('/api/qrcodes/slug/:slug', async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const { slug } = req.params;
   const qr = await db.getQRCodeBySlug(slug);
   if (!qr) {
@@ -1072,12 +1101,10 @@ app.get('/api/qrcodes/slug/:slug', async (req: Request, res: Response) => {
   res.json({ success: true, data: qr });
 });
 
-// Bulk sync slugs to cloud for Vercel Serverless
+// Bulk sync slugs / QR codes to server persistence (Postgres / Vercel KV / local cache)
 app.post('/api/qrcodes/sync-cloud', async (req: Request, res: Response) => {
-  const { slugMap } = req.body;
-  if (slugMap && typeof slugMap === 'object') {
-    await syncAllSlugsToCloud(slugMap);
-  }
+  const { slugMap, qrcodes } = req.body;
+  await syncAllSlugsToCloud(slugMap || {}, Array.isArray(qrcodes) ? qrcodes : undefined);
   res.json({ success: true, message: 'Cloud sync updated' });
 });
 
@@ -1168,23 +1195,35 @@ app.post('/api/qrcodes', async (req: Request, res: Response) => {
 app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, targetUrl, status, tags, notes, style, password, expiryDate, utm, reason, qrData } = req.body;
+    const { title, targetUrl, slug, status, tags, notes, style, password, expiryDate, utm, reason, qrData } = req.body;
 
     let current = await db.getQRCodeById(id);
+    if (!current && (slug || qrData?.slug)) {
+      current = await db.getQRCodeBySlug(String(slug || qrData.slug));
+    }
+
     const now = new Date().toISOString();
     let urlChanged = false;
 
+    const normalizeUrl = (raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) return trimmed;
+      return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    };
+
     if (!current) {
-      // If not in database or serverless instance cache, recover from client qrData
+      // Recover from client qrData if serverless cold start didn't have this QR in local cache yet
       if (qrData) {
+        const finalTarget = normalizeUrl(targetUrl || qrData.targetUrl || 'https://google.com');
         current = {
           ...qrData,
           id,
-          targetUrl: targetUrl ? targetUrl.trim() : (qrData.targetUrl || 'https://google.com'),
+          slug: String(slug || qrData.slug || id).trim().toLowerCase(),
+          targetUrl: finalTarget,
           updatedAt: now,
           urlHistory: [
             {
-              url: targetUrl ? targetUrl.trim() : (qrData.targetUrl || 'https://google.com'),
+              url: finalTarget,
               changedAt: now,
               reason: reason || 'Pembaruan tautan tujuan'
             },
@@ -1196,23 +1235,24 @@ app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
         return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
       }
     } else {
-      if (targetUrl && targetUrl.trim() !== current.targetUrl) {
+      const normalizedNewUrl = targetUrl ? normalizeUrl(targetUrl) : '';
+      if (normalizedNewUrl && normalizedNewUrl !== current.targetUrl) {
         urlChanged = true;
         current.urlHistory = current.urlHistory || [];
         current.urlHistory.unshift({
-          url: targetUrl.trim(),
+          url: normalizedNewUrl,
           changedAt: now,
           reason: reason || 'Pembaruan tautan tujuan'
         });
-        current.targetUrl = targetUrl.trim();
+        current.targetUrl = normalizedNewUrl;
       }
 
-      if (title !== undefined) current.title = title.trim();
+      if (title !== undefined) current.title = String(title).trim();
       if (status !== undefined) current.status = status;
       if (tags !== undefined) current.tags = Array.isArray(tags) ? tags : [];
       if (notes !== undefined) current.notes = notes;
       if (style !== undefined) current.style = { ...(current.style || {}), ...style };
-      if (password !== undefined) current.password = password ? password.trim() : undefined;
+      if (password !== undefined) current.password = password ? String(password).trim() : undefined;
       if (expiryDate !== undefined) current.expiryDate = expiryDate || undefined;
       if (utm !== undefined) current.utm = utm || undefined;
       current.updatedAt = now;
@@ -1222,12 +1262,9 @@ app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'QR Code tidak ditemukan' });
     }
 
-    try {
-      await db.saveQRCode(current);
-    } catch (saveErr) {
-      console.warn('[QR] Warning saving updated QR code to DB:', saveErr);
-    }
+    await db.saveQRCode(current);
 
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     return res.json({
       success: true,
       data: current,
@@ -1396,37 +1433,59 @@ async function startServer() {
   const distPath = path.resolve(__dirname, 'dist');
   const indexHtmlPath = path.resolve(distPath, 'index.html');
 
-  if (process.env.NODE_ENV === 'production') {
-    if (fs.existsSync(indexHtmlPath)) {
-      app.use(express.static(distPath));
-      app.get('*', (_req: Request, res: Response) => {
-        res.sendFile(indexHtmlPath);
-      });
-    } else {
-      console.warn('dist/index.html not found in production, mounting Vite middleware fallback');
-      const vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa'
-      });
-      app.use(vite.middlewares);
-    }
-  } else {
-    try {
-      const vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa'
-      });
-      app.use(vite.middlewares);
-    } catch (viteErr) {
-      console.warn('Vite middleware warning in dev, trying static dist fallback:', viteErr);
+  let frontendHandler: ((req: Request, res: Response, next: NextFunction) => void) | null = null;
+
+  const frontendReadyPromise = (async () => {
+    if (process.env.NODE_ENV === 'production') {
       if (fs.existsSync(indexHtmlPath)) {
-        app.use(express.static(distPath));
-        app.get('*', (_req: Request, res: Response) => {
-          res.sendFile(indexHtmlPath);
+        const staticMw = express.static(distPath);
+        frontendHandler = (req, res, next) => {
+          staticMw(req, res, (err) => {
+            if (err) return next(err);
+            res.sendFile(indexHtmlPath);
+          });
+        };
+      } else {
+        console.warn('dist/index.html not found in production, mounting Vite middleware fallback');
+        const vite = await createViteServer({
+          server: { middlewareMode: true, hmr: false },
+          appType: 'spa'
         });
+        frontendHandler = vite.middlewares;
+      }
+    } else {
+      try {
+        const vite = await createViteServer({
+          server: { middlewareMode: true, hmr: false },
+          appType: 'spa'
+        });
+        frontendHandler = vite.middlewares;
+      } catch (viteErr) {
+        console.warn('Vite middleware warning in dev, trying static dist fallback:', viteErr);
+        if (fs.existsSync(indexHtmlPath)) {
+          const staticMw = express.static(distPath);
+          frontendHandler = (req, res, next) => {
+            staticMw(req, res, (err) => {
+              if (err) return next(err);
+              res.sendFile(indexHtmlPath);
+            });
+          };
+        }
       }
     }
-  }
+  })();
+
+  app.use(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await frontendReadyPromise;
+      if (frontendHandler) {
+        return frontendHandler(req, res, next);
+      }
+    } catch (err) {
+      return next(err);
+    }
+    return next();
+  });
 
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`DinamisQR server running on http://0.0.0.0:${PORT}`);

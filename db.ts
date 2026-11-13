@@ -58,6 +58,38 @@ const initialUsers: UserRecord[] = [
 
 const initialQRCodes: DynamicQRCode[] = [
   {
+    id: 'qr-meja-01',
+    code: 'QR 001',
+    slug: 'menu-meja-01',
+    title: 'Stand Meja 01 (Akrilik Kasir / Meja)',
+    targetUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
+    status: 'active',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    tags: ['Meja Makan', 'Stand Meja', 'Menu PDF'],
+    notes: 'Dicetak di stand akrilik meja 01.',
+    totalScans: 842,
+    lastScannedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    urlHistory: [
+      {
+        url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
+        changedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+        reason: 'Menu Musim Hujan Awal'
+      }
+    ],
+    style: {
+      fgColor: '#104F38',
+      bgColor: '#ffffff',
+      dotStyle: 'rounded',
+      cornerStyle: 'rounded',
+      frameStyle: 'bottom-banner',
+      frameText: 'PINDAI SAYA',
+      frameColor: '#104F38',
+      frameTextColor: '#ffffff',
+      logoType: 'none'
+    }
+  },
+  {
     id: 'qr-menu-resto',
     code: 'QR 001',
     slug: 'menu-resto',
@@ -316,6 +348,52 @@ const initialNFCTags = [
   }
 ];
 
+// ----------------------------------------------------
+// UPSTASH / VERCEL KV REST CLIENT (Zero-dependency persistence for Vercel)
+// ----------------------------------------------------
+const KV_REST_URL = (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '').trim().replace(/\/$/, '');
+const KV_REST_TOKEN = (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
+const isKVConfigured = Boolean(KV_REST_URL && KV_REST_TOKEN && KV_REST_URL.startsWith('http'));
+
+async function kvCommand(args: (string | number)[]): Promise<any | null> {
+  if (!isKVConfigured) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(KV_REST_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${KV_REST_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(args),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.result ?? null;
+  } catch (err) {
+    console.warn('[KV] Command failed:', err);
+    return null;
+  }
+}
+
+async function kvGetJson<T>(key: string): Promise<T | null> {
+  const raw = await kvCommand(['GET', key]);
+  if (!raw || typeof raw !== 'string') return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function kvSetJson(key: string, value: unknown): Promise<boolean> {
+  const res = await kvCommand(['SET', key, JSON.stringify(value)]);
+  return res === 'OK';
+}
+
 // Validate and sanitize PostgreSQL connection string to prevent invalid strings (like "database", "base", etc.)
 function parseAndValidatePostgresUrl(): { url: string | null; invalidReason: string | null; rawFound: string | null } {
   const rawCandidates = [
@@ -334,7 +412,6 @@ function parseAndValidatePostgresUrl(): { url: string | null; invalidReason: str
 
     rawFound = `${key}=${trimmed.length > 20 ? trimmed.substring(0, 15) + '...' : trimmed}`;
 
-    // Common user mistakes when setting environment variables
     if (
       trimmed.toLowerCase() === 'database' ||
       trimmed.toLowerCase() === 'base' ||
@@ -371,7 +448,6 @@ function parseAndValidatePostgresUrl(): { url: string | null; invalidReason: str
     }
   }
 
-  // Check individual Vercel Postgres variables if full URL is not set
   if (process.env.POSTGRES_HOST && process.env.POSTGRES_USER && process.env.POSTGRES_DATABASE) {
     const host = process.env.POSTGRES_HOST.trim();
     if (host && host !== 'base' && host !== 'database') {
@@ -427,7 +503,6 @@ async function initPostgresTables(): Promise<boolean> {
   try {
     const client = await pool.connect();
     try {
-      // Create users table with subscription plan and trial columns
       await client.query(`
         CREATE TABLE IF NOT EXISTS dinamis_users (
           username VARCHAR(100) PRIMARY KEY,
@@ -444,7 +519,6 @@ async function initPostgresTables(): Promise<boolean> {
         );
       `);
 
-      // Ensure new columns exist for existing tables
       await client.query(`
         ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
         ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
@@ -455,7 +529,6 @@ async function initPostgresTables(): Promise<boolean> {
         ALTER TABLE dinamis_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
       `);
 
-      // Create qrcodes table
       await client.query(`
         CREATE TABLE IF NOT EXISTS dinamis_qrcodes (
           id VARCHAR(100) PRIMARY KEY,
@@ -471,7 +544,6 @@ async function initPostgresTables(): Promise<boolean> {
         ALTER TABLE dinamis_qrcodes ADD COLUMN IF NOT EXISTS code VARCHAR(50);
       `);
 
-      // Create scans table
       await client.query(`
         CREATE TABLE IF NOT EXISTS dinamis_scans (
           id VARCHAR(100) PRIMARY KEY,
@@ -484,7 +556,6 @@ async function initPostgresTables(): Promise<boolean> {
         );
       `);
 
-      // Create nfc tags table
       await client.query(`
         CREATE TABLE IF NOT EXISTS dinamis_nfc_tags (
           id VARCHAR(100) PRIMARY KEY,
@@ -500,7 +571,6 @@ async function initPostgresTables(): Promise<boolean> {
         );
       `);
 
-      // Seed initial users if empty
       const userCheck = await client.query('SELECT COUNT(*) FROM dinamis_users');
       if (parseInt(userCheck.rows[0].count, 10) === 0) {
         const defaultUser = initialUsers[0];
@@ -511,19 +581,19 @@ async function initPostgresTables(): Promise<boolean> {
         console.log('[DB] User admin default berhasil di-seed ke Vercel Postgres.');
       }
 
-      // Seed initial QR codes if empty
       const qrCheck = await client.query('SELECT COUNT(*) FROM dinamis_qrcodes');
       if (parseInt(qrCheck.rows[0].count, 10) === 0) {
         for (const qr of initialQRCodes) {
           await client.query(
-            'INSERT INTO dinamis_qrcodes (id, code, slug, title, target_url, status, data, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-            [qr.id, qr.code, qr.slug, qr.title, qr.targetUrl, qr.status, JSON.stringify(qr), qr.createdAt, qr.updatedAt]
+            `INSERT INTO dinamis_qrcodes (id, code, slug, title, target_url, status, data, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             ON CONFLICT (slug) DO NOTHING`,
+            [qr.id, qr.code, qr.slug.toLowerCase(), qr.title, qr.targetUrl, qr.status, JSON.stringify(qr), qr.createdAt, qr.updatedAt]
           );
         }
         console.log('[DB] Data QR Code awal berhasil di-seed ke Vercel Postgres.');
       }
 
-      // Seed initial NFC tags if empty
       const nfcCheck = await client.query('SELECT COUNT(*) FROM dinamis_nfc_tags');
       if (parseInt(nfcCheck.rows[0].count, 10) === 0) {
         for (const nfc of initialNFCTags) {
@@ -554,7 +624,6 @@ function ensurePostgres(): Promise<boolean> {
   if (!pool) return Promise.resolve(false);
   if (isPostgresReady) return Promise.resolve(true);
 
-  // If previous connection attempt failed recently, avoid blocking user requests with slow timeouts
   const now = Date.now();
   if (lastPostgresError && (now - lastInitAttemptTime < 15000)) {
     return Promise.resolve(false);
@@ -584,8 +653,8 @@ function readJsonFile<T>(filePath: string, fallback: T): T {
       const content = fs.readFileSync(filePath, 'utf-8');
       return JSON.parse(content);
     }
-  } catch (err) {
-    // If running in read-only environment without /tmp setup
+  } catch {
+    // Running in read-only environment without /tmp setup
   }
   return fallback;
 }
@@ -593,24 +662,20 @@ function readJsonFile<T>(filePath: string, fallback: T): T {
 function writeJsonFile<T>(filePath: string, data: T): void {
   try {
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    // Silently continue with memory fallback
+  } catch {
+    // Continue with memory/KV fallback
   }
 }
 
-// ----------------------------------------------------
-// SERVERLESS CLOUD SYNC FOR DYNAMIC QR REDIRECTIONS
-// ----------------------------------------------------
-const CLOUD_SYNC_OBJECT_ID = 'ff808181a09d98f701a1b392719d5825';
-
-const BASE_SLUG_MAP: Record<string, string> = {
-  'menu-resto': 'https://restoran-nusantara-2026.com/menu',
+// Static default fallback map used ONLY if slug does not exist in DB/KV/JSON/Memory
+const DEFAULT_FALLBACK_SLUG_MAP: Record<string, string> = {
+  'menu-meja-01': 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
+  'menu-resto': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=1200&auto=format&fit=crop',
   'qr-001': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
   'review': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
   'google-review': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
   'kopi-speciality': 'https://shopee.co.id',
   'kartu-nama-ceo': 'https://wa.me/6281234567890',
-  'dummy-test': 'https://search.google.com/local/writereview?placeid=ChIJE9fYc0pfZS4R0zV64ObvPoM',
   'wa-order': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
   'whatsapp': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
   'qr-004': 'https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info',
@@ -625,143 +690,133 @@ const BASE_SLUG_MAP: Record<string, string> = {
   'qr-007': 'https://facebook.com/restoran.official'
 };
 
-const localSlugCache: Record<string, string> = {};
+function mergeQRCodesPreserveLatest(base: DynamicQRCode[], incoming: DynamicQRCode[]): DynamicQRCode[] {
+  const bySlug = new Map<string, DynamicQRCode>();
+
+  const upsertItem = (item: DynamicQRCode) => {
+    if (!item || !item.slug) return;
+    const key = item.slug.trim().toLowerCase();
+    const existing = bySlug.get(key);
+    if (!existing) {
+      bySlug.set(key, item);
+      return;
+    }
+    const existingTime = new Date(existing.updatedAt || existing.createdAt || 0).getTime();
+    const incomingTime = new Date(item.updatedAt || item.createdAt || 0).getTime();
+    if (incomingTime >= existingTime) {
+      bySlug.set(key, item);
+    }
+  };
+
+  base.forEach(upsertItem);
+  incoming.forEach(upsertItem);
+  return Array.from(bySlug.values());
+}
+
+async function syncQRToKV(qr: DynamicQRCode): Promise<void> {
+  if (!isKVConfigured || !qr?.slug) return;
+  const cleanSlug = qr.slug.trim().toLowerCase();
+  await kvSetJson(`dinamis:qr:slug:${cleanSlug}`, qr);
+
+  const list = (await kvGetJson<DynamicQRCode[]>('dinamis:qrcodes:all')) || [];
+  const idx = list.findIndex(item => item.id === qr.id || item.slug.trim().toLowerCase() === cleanSlug);
+  if (idx !== -1) {
+    list[idx] = qr;
+  } else {
+    list.unshift(qr);
+  }
+  await kvSetJson('dinamis:qrcodes:all', list);
+}
 
 async function syncSlugToCloud(slug: string, targetUrl: string): Promise<boolean> {
   if (!slug || !targetUrl) return false;
-  const cleanSlug = slug.toLowerCase().trim();
+  const cleanSlug = slug.trim().toLowerCase();
   const trimmedUrl = targetUrl.trim();
 
-  localSlugCache[cleanSlug] = trimmedUrl;
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2500);
-    const getRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    let currentMap: Record<string, string> = { ...BASE_SLUG_MAP, ...localSlugCache };
-    if (getRes.ok) {
-      const obj = await getRes.json();
-      if (obj && obj.data && typeof obj.data === 'object') {
-        currentMap = { ...currentMap, ...obj.data };
-      }
-    }
-
-    // Preserve memory and initial slugs so they are never wiped
-    for (const q of memoryQRCodes) {
-      if (q.slug && q.targetUrl) {
-        currentMap[q.slug.toLowerCase().trim()] = q.targetUrl.trim();
-      }
-    }
-    currentMap[cleanSlug] = trimmedUrl;
-
-    const putController = new AbortController();
-    const putTimeout = setTimeout(() => putController.abort(), 3500);
-    const putRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'dinamis_qr',
-        data: currentMap
-      }),
-      signal: putController.signal
-    });
-    clearTimeout(putTimeout);
-    return putRes.ok;
-  } catch (err) {
-    console.warn('[CloudSync] Warning syncing slug to cloud:', err);
-    return false;
+  const existing = await db.getQRCodeBySlug(cleanSlug);
+  if (existing && existing.targetUrl !== trimmedUrl) {
+    const now = new Date().toISOString();
+    existing.targetUrl = trimmedUrl;
+    existing.updatedAt = now;
+    existing.urlHistory = [
+      { url: trimmedUrl, changedAt: now, reason: 'Sinkronisasi tautan' },
+      ...(existing.urlHistory || [])
+    ];
+    await db.saveQRCode(existing);
+    return true;
   }
+  return Boolean(existing);
 }
 
-async function syncAllSlugsToCloud(slugMap: Record<string, string>): Promise<boolean> {
+async function syncAllSlugsToCloud(
+  slugMap: Record<string, string>,
+  fullQRs?: DynamicQRCode[]
+): Promise<boolean> {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-    const getRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    let currentMap: Record<string, string> = { ...BASE_SLUG_MAP, ...localSlugCache };
-    if (getRes.ok) {
-      const obj = await getRes.json();
-      if (obj && obj.data && typeof obj.data === 'object') {
-        currentMap = { ...currentMap, ...obj.data };
+    if (Array.isArray(fullQRs) && fullQRs.length > 0) {
+      const existing = await db.getQRCodes();
+      const existingBySlug = new Map(existing.map(q => [q.slug.trim().toLowerCase(), q]));
+      for (const incoming of fullQRs) {
+        if (!incoming?.slug || !incoming?.targetUrl) continue;
+        const cleanSlug = incoming.slug.trim().toLowerCase();
+        const serverItem = existingBySlug.get(cleanSlug);
+        const serverTime = serverItem ? new Date(serverItem.updatedAt || serverItem.createdAt || 0).getTime() : 0;
+        const incomingTime = new Date(incoming.updatedAt || incoming.createdAt || 0).getTime();
+        if (!serverItem || incomingTime > serverTime) {
+          await db.saveQRCode(incoming);
+        }
       }
+      return true;
     }
 
-    for (const [k, v] of Object.entries(slugMap)) {
-      if (k && v && typeof v === 'string') {
-        const clean = k.toLowerCase().trim();
-        currentMap[clean] = v.trim();
-        localSlugCache[clean] = v.trim();
+    if (slugMap && typeof slugMap === 'object') {
+      const existing = await db.getQRCodes();
+      for (const [rawSlug, rawUrl] of Object.entries(slugMap)) {
+        if (!rawSlug || typeof rawUrl !== 'string' || !rawUrl.trim()) continue;
+        const cleanSlug = rawSlug.trim().toLowerCase();
+        const found = existing.find(q => q.slug.trim().toLowerCase() === cleanSlug);
+        if (!found) {
+          const now = new Date().toISOString();
+          await db.saveQRCode({
+            id: `qr-sync-${cleanSlug}`,
+            code: `QR-${cleanSlug.toUpperCase().slice(0, 8)}`,
+            slug: cleanSlug,
+            title: `QR Code #${cleanSlug}`,
+            targetUrl: rawUrl.trim(),
+            status: 'active',
+            createdAt: now,
+            updatedAt: now,
+            tags: ['Synced'],
+            notes: 'Disinkronkan dari dashboard.',
+            totalScans: 0,
+            lastScannedAt: null,
+            urlHistory: [{ url: rawUrl.trim(), changedAt: now, reason: 'Sinkronisasi awal' }],
+            style: {
+              fgColor: '#104F38',
+              bgColor: '#ffffff',
+              dotStyle: 'rounded',
+              cornerStyle: 'rounded',
+              frameStyle: 'bottom-banner',
+              frameText: 'PINDAI SAYA',
+              frameColor: '#104F38',
+              frameTextColor: '#ffffff',
+              logoType: 'none'
+            }
+          });
+        }
       }
+      return true;
     }
-
-    const putController = new AbortController();
-    const putTimeout = setTimeout(() => putController.abort(), 4000);
-    const putRes = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'dinamis_qr',
-        data: currentMap
-      }),
-      signal: putController.signal
-    });
-    clearTimeout(putTimeout);
-    return putRes.ok;
-  } catch {
+    return false;
+  } catch (err) {
+    console.warn('[DB] syncAllSlugsToCloud warning:', err);
     return false;
   }
 }
 
 async function getCloudUrlForSlug(slug: string): Promise<string | null> {
-  if (!slug) return null;
-  const cleanSlug = slug.toLowerCase().trim();
-
-  if (localSlugCache[cleanSlug]) {
-    return localSlugCache[cleanSlug];
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_SYNC_OBJECT_ID}`, {
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.data && typeof json.data === 'object') {
-        if (json.data[cleanSlug] && typeof json.data[cleanSlug] === 'string') {
-          const url = json.data[cleanSlug].trim();
-          localSlugCache[cleanSlug] = url;
-          return url;
-        }
-        // Normalized / dash-tolerant search
-        const strippedTarget = cleanSlug.replace(/[^a-z0-9]/g, '');
-        for (const [k, v] of Object.entries(json.data)) {
-          if (typeof v === 'string' && v.trim()) {
-            const strippedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (strippedK === strippedTarget && strippedTarget.length >= 2) {
-              const url = v.trim();
-              localSlugCache[cleanSlug] = url;
-              return url;
-            }
-          }
-        }
-      }
-    }
-  } catch {
-    // Non-blocking fallback
-  }
-  return BASE_SLUG_MAP[cleanSlug] || null;
+  const qr = await db.getQRCodeBySlug(slug);
+  return qr?.targetUrl || null;
 }
 
 // ----------------------------------------------------
@@ -786,15 +841,18 @@ export const db = {
       } catch (e: any) {
         message = `Error database: ${e?.message || 'Unknown'}`;
       }
+    } else if (isKVConfigured) {
+      message = 'Terhubung ke Vercel KV / Upstash Redis REST.';
     } else if (postgresConfigInvalidReason) {
       message = postgresConfigInvalidReason;
     }
 
     return {
-      connected: isPgConfigured && pgConnected,
-      type: pgConnected ? 'vercel-postgres' : (isServerless ? 'serverless-cache' : 'local-file'),
+      connected: (isPgConfigured && pgConnected) || isKVConfigured,
+      type: pgConnected ? 'vercel-postgres' : (isKVConfigured ? 'vercel-kv' : (isServerless ? 'serverless-cache' : 'local-file')),
       message,
       configuredConnectionString: Boolean(postgresConnectionString),
+      configuredKV: isKVConfigured,
       invalidReason: postgresConfigInvalidReason || null,
       rawEnvDetected: rawEnvDetected || null,
       lastError: lastPostgresError || null
@@ -818,6 +876,14 @@ export const db = {
         }
       } catch (err) {
         console.error('[DB] getUsers error:', err);
+      }
+    }
+
+    if (isKVConfigured) {
+      const kvUsers = await kvGetJson<UserRecord[]>('dinamis:users:all');
+      if (kvUsers && kvUsers.length > 0) {
+        memoryUsers = kvUsers;
+        return kvUsers;
       }
     }
 
@@ -876,6 +942,7 @@ export const db = {
     }
     memoryUsers = users;
     writeJsonFile(USERS_FILE, users);
+    if (isKVConfigured) await kvSetJson('dinamis:users:all', users);
     return newUser;
   },
 
@@ -887,11 +954,11 @@ export const db = {
     if (ok && pool) {
       try {
         const res = await pool.query(
-          `UPDATE dinamis_users 
-           SET plan = $1, 
-               subscription_expires_at = $2, 
-               is_watermark_active = false, 
-               updated_at = NOW() 
+          `UPDATE dinamis_users
+           SET plan = $1,
+               subscription_expires_at = $2,
+               is_watermark_active = false,
+               updated_at = NOW()
            WHERE LOWER(username) = LOWER($3)
            RETURNING username, name, email, phone, plan, trial_expires_at as "trialExpiresAt", subscription_expires_at as "subscriptionExpiresAt", is_watermark_active as "isWatermarkActive"`,
           [plan, expiresAt, username.trim()]
@@ -916,6 +983,7 @@ export const db = {
       users[idx].updatedAt = new Date().toISOString();
       memoryUsers = users;
       writeJsonFile(USERS_FILE, users);
+      if (isKVConfigured) await kvSetJson('dinamis:users:all', users);
       return users[idx];
     }
     return null;
@@ -927,7 +995,6 @@ export const db = {
       try {
         const targetUsername = newUsername || username;
         if (newUsername && newUsername !== username) {
-          // Username change
           await pool.query(
             'UPDATE dinamis_users SET username = $1, password = COALESCE($2, password), name = COALESCE($3, name), updated_at = NOW() WHERE username = $4',
             [targetUsername, newPassword || null, name || null, username]
@@ -952,6 +1019,7 @@ export const db = {
       if (name) users[idx].name = name;
       memoryUsers = users;
       writeJsonFile(USERS_FILE, users);
+      if (isKVConfigured) await kvSetJson('dinamis:users:all', users);
       return true;
     }
     return false;
@@ -962,14 +1030,32 @@ export const db = {
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        const res = await pool.query('SELECT data FROM dinamis_qrcodes ORDER BY created_at DESC');
-        return res.rows.map(r => r.data);
+        const res = await pool.query('SELECT data, target_url, status, updated_at FROM dinamis_qrcodes ORDER BY created_at DESC');
+        if (res.rows.length > 0) {
+          const rows = res.rows.map(r => ({
+            ...r.data,
+            targetUrl: r.target_url || r.data?.targetUrl,
+            status: r.status || r.data?.status || 'active',
+            updatedAt: r.data?.updatedAt || (r.updated_at instanceof Date ? r.updated_at.toISOString() : r.updated_at)
+          }));
+          memoryQRCodes = rows;
+          return rows;
+        }
       } catch (err) {
         console.error('[DB] getQRCodes error:', err);
       }
     }
 
-    const loaded = readJsonFile(QR_FILE, memoryQRCodes);
+    if (isKVConfigured) {
+      const kvList = await kvGetJson<DynamicQRCode[]>('dinamis:qrcodes:all');
+      if (kvList && kvList.length > 0) {
+        const merged = mergeQRCodesPreserveLatest(initialQRCodes, kvList);
+        memoryQRCodes = merged;
+        return merged;
+      }
+    }
+
+    const loaded = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
     memoryQRCodes = loaded.length ? loaded : initialQRCodes;
     return memoryQRCodes;
   },
@@ -978,8 +1064,14 @@ export const db = {
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        const res = await pool.query('SELECT data FROM dinamis_qrcodes WHERE id = $1', [id]);
-        return res.rows[0]?.data || null;
+        const res = await pool.query('SELECT data, target_url, status FROM dinamis_qrcodes WHERE id = $1', [id]);
+        if (res.rows[0]?.data) {
+          return {
+            ...res.rows[0].data,
+            targetUrl: res.rows[0].target_url || res.rows[0].data.targetUrl,
+            status: res.rows[0].status || res.rows[0].data.status || 'active'
+          };
+        }
       } catch (err) {
         console.error('[DB] getQRCodeById error:', err);
       }
@@ -990,65 +1082,108 @@ export const db = {
   },
 
   async getQRCodeBySlug(slug: string): Promise<DynamicQRCode | null> {
-    const cleanSlug = (slug || '').trim().toLowerCase();
+    let decodedSlug = slug || '';
+    try {
+      decodedSlug = decodeURIComponent(decodedSlug);
+    } catch {}
+    const cleanSlug = decodedSlug.trim().toLowerCase().replace(/\.png$/i, '').replace(/\/+$/, '');
     if (!cleanSlug) return null;
 
+    // 1. Check PostgreSQL first (authoritative)
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        const res = await pool.query('SELECT data FROM dinamis_qrcodes WHERE LOWER(slug) = LOWER($1)', [cleanSlug]);
+        const res = await pool.query(
+          'SELECT data, target_url, status FROM dinamis_qrcodes WHERE LOWER(slug) = LOWER($1) LIMIT 1',
+          [cleanSlug]
+        );
         if (res.rows[0]?.data) {
-          return res.rows[0].data;
+          return {
+            ...res.rows[0].data,
+            targetUrl: res.rows[0].target_url || res.rows[0].data.targetUrl,
+            status: res.rows[0].status || res.rows[0].data.status || 'active'
+          };
+        }
+
+        // Dash/punctuation tolerant search in Postgres
+        const strippedTarget = cleanSlug.replace(/[^a-z0-9]/g, '');
+        if (strippedTarget.length >= 2) {
+          const fuzzyRes = await pool.query(
+            "SELECT data, target_url, status FROM dinamis_qrcodes WHERE regexp_replace(LOWER(slug), '[^a-z0-9]', '', 'g') = $1 LIMIT 1",
+            [strippedTarget]
+          );
+          if (fuzzyRes.rows[0]?.data) {
+            return {
+              ...fuzzyRes.rows[0].data,
+              targetUrl: fuzzyRes.rows[0].target_url || fuzzyRes.rows[0].data.targetUrl,
+              status: fuzzyRes.rows[0].status || fuzzyRes.rows[0].data.status || 'active'
+            };
+          }
         }
       } catch (err) {
         console.error('[DB] getQRCodeBySlug error:', err);
       }
     }
 
-    const all = await this.getQRCodes();
-    let found = all.find(q => q.slug.toLowerCase() === cleanSlug) || null;
-
-    // Check cloud sync store (fallback for serverless instances like Vercel without persistent Postgres)
-    try {
-      const cloudUrl = await getCloudUrlForSlug(slug.toLowerCase());
-      if (cloudUrl) {
-        if (found) {
-          found = {
-            ...found,
-            targetUrl: cloudUrl
-          };
-        } else {
-          found = {
-            id: 'qr-' + slug.toLowerCase(),
-            code: 'QR-' + slug.toUpperCase(),
-            slug: slug.toLowerCase(),
-            title: `QR Code #${slug}`,
-            targetUrl: cloudUrl,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            tags: ['Cloud Synced'],
-            notes: 'Tautan disinkronkan otomatis dari cloud sync.',
-            totalScans: 0,
-            lastScannedAt: null,
-            urlHistory: [{ url: cloudUrl, changedAt: new Date().toISOString(), reason: 'Cloud Sync Serverless' }],
-            style: {
-              fgColor: '#104F38',
-              bgColor: '#ffffff',
-              dotStyle: 'rounded',
-              cornerStyle: 'rounded',
-              frameStyle: 'bottom-banner',
-              frameText: 'PINDAI SAYA',
-              frameColor: '#104F38',
-              frameTextColor: '#ffffff',
-              logoType: 'none'
-            }
-          };
-        }
+    // 2. Check Vercel KV / Upstash Redis direct slug key & full list
+    if (isKVConfigured) {
+      const kvDirect = await kvGetJson<DynamicQRCode>(`dinamis:qr:slug:${cleanSlug}`);
+      if (kvDirect && kvDirect.targetUrl) {
+        return kvDirect;
       }
-    } catch {}
+      const kvAll = await kvGetJson<DynamicQRCode[]>('dinamis:qrcodes:all');
+      if (kvAll && kvAll.length > 0) {
+        const foundKV = kvAll.find(q => q.slug?.toLowerCase().trim() === cleanSlug);
+        if (foundKV) return foundKV;
+      }
+    }
 
-    if (!found && (cleanSlug.includes('review') || cleanSlug.includes('google'))) {
+    // 3. Check local file (/tmp or data/qrcodes.json) and memory cache
+    const loaded = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
+    if (loaded.length > 0) {
+      memoryQRCodes = loaded;
+    }
+    let found = memoryQRCodes.find(q => q.slug?.toLowerCase().trim() === cleanSlug) || null;
+    if (!found) {
+      const strippedTarget = cleanSlug.replace(/[^a-z0-9]/g, '');
+      if (strippedTarget.length >= 2) {
+        found = memoryQRCodes.find(q => (q.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '') === strippedTarget) || null;
+      }
+    }
+    if (found) return found;
+
+    // 4. Static fallback map only if not found anywhere in persistent stores
+    const fallbackUrl = DEFAULT_FALLBACK_SLUG_MAP[cleanSlug];
+    if (fallbackUrl) {
+      return {
+        id: 'qr-' + cleanSlug,
+        code: 'QR-' + cleanSlug.toUpperCase(),
+        slug: cleanSlug,
+        title: `QR Code #${cleanSlug}`,
+        targetUrl: fallbackUrl,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        tags: ['Default'],
+        notes: 'Tautan default sistem.',
+        totalScans: 0,
+        lastScannedAt: null,
+        urlHistory: [{ url: fallbackUrl, changedAt: new Date().toISOString(), reason: 'Default' }],
+        style: {
+          fgColor: '#104F38',
+          bgColor: '#ffffff',
+          dotStyle: 'rounded',
+          cornerStyle: 'rounded',
+          frameStyle: 'bottom-banner',
+          frameText: 'PINDAI SAYA',
+          frameColor: '#104F38',
+          frameTextColor: '#ffffff',
+          logoType: 'none'
+        }
+      };
+    }
+
+    if (cleanSlug.includes('review') || cleanSlug.includes('google')) {
       const reviewUrl = 'https://search.google.com/local/writereview?placeid=ChIJ_8pMXbpfZS4Rlo0DNUQ77ro';
       return {
         id: 'qr-review',
@@ -1078,43 +1213,95 @@ export const db = {
       };
     }
 
-    return found;
+    return null;
   },
 
   async saveQRCode(qr: DynamicQRCode): Promise<void> {
-    // Await cloud sync so serverless lambda does not terminate before HTTP PUT finishes
-    try {
-      await syncSlugToCloud(qr.slug, qr.targetUrl);
-    } catch {}
+    const cleanSlug = (qr.slug || '').trim().toLowerCase();
+    const normalizedQR: DynamicQRCode = {
+      ...qr,
+      slug: cleanSlug || qr.slug,
+      targetUrl: (qr.targetUrl || '').trim()
+    };
 
+    // Persist to PostgreSQL if connected, avoiding UNIQUE(slug) 23505 conflicts
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        await pool.query(
-          `INSERT INTO dinamis_qrcodes (id, code, slug, title, target_url, status, data, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-           ON CONFLICT (id) DO UPDATE
-           SET code = EXCLUDED.code,
-               slug = EXCLUDED.slug,
-               title = EXCLUDED.title,
-               target_url = EXCLUDED.target_url,
-               status = EXCLUDED.status,
-               data = EXCLUDED.data,
-               updated_at = EXCLUDED.updated_at`,
-          [qr.id, qr.code || null, qr.slug, qr.title, qr.targetUrl, qr.status, JSON.stringify(qr), qr.createdAt, qr.updatedAt]
+        const existingRes = await pool.query(
+          'SELECT id FROM dinamis_qrcodes WHERE id = $1 OR LOWER(slug) = LOWER($2) LIMIT 1',
+          [normalizedQR.id, normalizedQR.slug]
         );
-        return;
+
+        if (existingRes.rows.length > 0) {
+          const existingId = existingRes.rows[0].id;
+          await pool.query(
+            `UPDATE dinamis_qrcodes
+             SET id = $1,
+                 code = $2,
+                 slug = $3,
+                 title = $4,
+                 target_url = $5,
+                 status = $6,
+                 data = $7,
+                 updated_at = $8
+             WHERE id = $9`,
+            [
+              normalizedQR.id,
+              normalizedQR.code || null,
+              normalizedQR.slug,
+              normalizedQR.title,
+              normalizedQR.targetUrl,
+              normalizedQR.status,
+              JSON.stringify(normalizedQR),
+              normalizedQR.updatedAt || new Date().toISOString(),
+              existingId
+            ]
+          );
+        } else {
+          await pool.query(
+            `INSERT INTO dinamis_qrcodes (id, code, slug, title, target_url, status, data, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             ON CONFLICT (slug) DO UPDATE
+             SET code = EXCLUDED.code,
+                 title = EXCLUDED.title,
+                 target_url = EXCLUDED.target_url,
+                 status = EXCLUDED.status,
+                 data = EXCLUDED.data,
+                 updated_at = EXCLUDED.updated_at`,
+            [
+              normalizedQR.id,
+              normalizedQR.code || null,
+              normalizedQR.slug,
+              normalizedQR.title,
+              normalizedQR.targetUrl,
+              normalizedQR.status,
+              JSON.stringify(normalizedQR),
+              normalizedQR.createdAt || new Date().toISOString(),
+              normalizedQR.updatedAt || new Date().toISOString()
+            ]
+          );
+        }
       } catch (err) {
-        console.error('[DB] saveQRCode error:', err);
+        console.error('[DB] saveQRCode Postgres error:', err);
       }
     }
 
-    const list = await this.getQRCodes();
-    const idx = list.findIndex(q => q.id === qr.id);
+    // Persist to Vercel KV / Upstash Redis if configured
+    if (isKVConfigured) {
+      await syncQRToKV(normalizedQR);
+    }
+
+    // Always update memory and local/tmp JSON file so same-instance reads are immediately fresh
+    const currentList = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
+    const list = currentList.length ? [...currentList] : [...memoryQRCodes];
+    const idx = list.findIndex(
+      q => q.id === normalizedQR.id || q.slug?.toLowerCase().trim() === normalizedQR.slug
+    );
     if (idx !== -1) {
-      list[idx] = qr;
+      list[idx] = normalizedQR;
     } else {
-      list.unshift(qr);
+      list.unshift(normalizedQR);
     }
     memoryQRCodes = list;
     writeJsonFile(QR_FILE, list);
@@ -1127,23 +1314,41 @@ export const db = {
   },
 
   async deleteQRCode(id: string): Promise<boolean> {
+    let deletedFromPg = false;
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
-        const res = await pool.query('DELETE FROM dinamis_qrcodes WHERE id = $1', [id]);
-        return (res.rowCount || 0) > 0;
+        const res = await pool.query('DELETE FROM dinamis_qrcodes WHERE id = $1 RETURNING slug', [id]);
+        deletedFromPg = (res.rowCount || 0) > 0;
+        if (isKVConfigured && res.rows[0]?.slug) {
+          await kvCommand(['DEL', `dinamis:qr:slug:${String(res.rows[0].slug).toLowerCase().trim()}`]);
+        }
       } catch (err) {
         console.error('[DB] deleteQRCode error:', err);
       }
     }
 
-    let list = await this.getQRCodes();
-    const exists = list.some(q => q.id === id);
-    if (!exists) return false;
-    list = list.filter(q => q.id !== id);
-    memoryQRCodes = list;
-    writeJsonFile(QR_FILE, list);
-    return true;
+    let list = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
+    const target = list.find(q => q.id === id);
+    const existsInFile = Boolean(target);
+    if (existsInFile) {
+      list = list.filter(q => q.id !== id);
+      memoryQRCodes = list;
+      writeJsonFile(QR_FILE, list);
+    }
+
+    if (isKVConfigured) {
+      const kvList = (await kvGetJson<DynamicQRCode[]>('dinamis:qrcodes:all')) || [];
+      const kvTarget = kvList.find(q => q.id === id);
+      if (kvTarget) {
+        await kvCommand(['DEL', `dinamis:qr:slug:${kvTarget.slug.toLowerCase().trim()}`]);
+        await kvSetJson('dinamis:qrcodes:all', kvList.filter(q => q.id !== id));
+      } else if (target) {
+        await kvCommand(['DEL', `dinamis:qr:slug:${target.slug.toLowerCase().trim()}`]);
+      }
+    }
+
+    return deletedFromPg || existsInFile;
   },
 
   // SCANS
@@ -1163,6 +1368,14 @@ export const db = {
         }));
       } catch (err) {
         console.error('[DB] getScans error:', err);
+      }
+    }
+
+    if (isKVConfigured) {
+      const kvScans = await kvGetJson<ScanRecord[]>('dinamis:scans:all');
+      if (kvScans) {
+        memoryScans = kvScans;
+        return kvScans;
       }
     }
 
@@ -1190,6 +1403,7 @@ export const db = {
     const trimmed = scans.slice(-2000);
     memoryScans = trimmed;
     writeJsonFile(SCANS_FILE, trimmed);
+    if (isKVConfigured) await kvSetJson('dinamis:scans:all', trimmed);
   },
 
   // NFC TAGS
@@ -1198,9 +1412,17 @@ export const db = {
     if (ok && pool) {
       try {
         const res = await pool.query('SELECT data FROM dinamis_nfc_tags ORDER BY created_at DESC');
-        return res.rows.map(r => r.data);
+        if (res.rows.length > 0) return res.rows.map(r => r.data);
       } catch (err) {
         console.error('[DB] getNFCTags error:', err);
+      }
+    }
+
+    if (isKVConfigured) {
+      const kvNfc = await kvGetJson<any[]>('dinamis:nfc:all');
+      if (kvNfc && kvNfc.length > 0) {
+        memoryNFCTags = kvNfc;
+        return kvNfc;
       }
     }
 
@@ -1214,7 +1436,7 @@ export const db = {
     if (ok && pool) {
       try {
         const res = await pool.query('SELECT data FROM dinamis_nfc_tags WHERE id = $1', [id]);
-        return res.rows[0]?.data || null;
+        if (res.rows[0]?.data) return res.rows[0].data;
       } catch (err) {
         console.error('[DB] getNFCTagById error:', err);
       }
@@ -1242,7 +1464,6 @@ export const db = {
                updated_at = EXCLUDED.updated_at`,
           [tag.id, tag.tagUid, tag.placeName, tag.googleReviewUrl, tag.pin, tag.status, tag.totalTaps || 0, JSON.stringify(tag), tag.createdAt, tag.updatedAt]
         );
-        return;
       } catch (err) {
         console.error('[DB] saveNFCTag error:', err);
       }
@@ -1257,14 +1478,16 @@ export const db = {
     }
     memoryNFCTags = tags;
     writeJsonFile(NFC_FILE, tags);
+    if (isKVConfigured) await kvSetJson('dinamis:nfc:all', tags);
   },
 
   async deleteNFCTag(id: string): Promise<boolean> {
+    let deletedPg = false;
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
         const res = await pool.query('DELETE FROM dinamis_nfc_tags WHERE id = $1', [id]);
-        return (res.rowCount || 0) > 0;
+        deletedPg = (res.rowCount || 0) > 0;
       } catch (err) {
         console.error('[DB] deleteNFCTag error:', err);
       }
@@ -1272,13 +1495,14 @@ export const db = {
 
     let tags = await this.getNFCTags();
     const exists = tags.some(t => t.id === id);
-    if (!exists) return false;
-    tags = tags.filter(t => t.id !== id);
-    memoryNFCTags = tags;
-    writeJsonFile(NFC_FILE, tags);
-    return true;
+    if (exists) {
+      tags = tags.filter(t => t.id !== id);
+      memoryNFCTags = tags;
+      writeJsonFile(NFC_FILE, tags);
+      if (isKVConfigured) await kvSetJson('dinamis:nfc:all', tags);
+    }
+    return deletedPg || exists;
   }
 };
 
 export { syncSlugToCloud, syncAllSlugsToCloud, getCloudUrlForSlug };
-

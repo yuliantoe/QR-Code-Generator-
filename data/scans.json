@@ -151,5 +151,50 @@
     "os": "Unknown OS",
     "browser": "Browser",
     "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794566257703-8uhe6",
+    "qrId": "qr-wa-order",
+    "timestamp": "2026-11-13T10:37:37.702Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794566257749-d1pl0",
+    "qrId": "qr-wa-order",
+    "timestamp": "2026-11-13T10:37:37.749Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794566257757-pj7w0",
+    "qrId": "qr-wa-order",
+    "timestamp": "2026-11-13T10:37:37.757Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794566257766-sjzcn",
+    "qrId": "qr-wa-order",
+    "timestamp": "2026-11-13T10:37:37.766Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794566257779-ar6ds",
+    "qrId": "qr-wa-order",
+    "timestamp": "2026-11-13T10:37:37.778Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
   }
 ]

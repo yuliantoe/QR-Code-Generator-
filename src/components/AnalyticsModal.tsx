@@ -44,7 +44,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [downloadMode, setDownloadMode] = useState<'direct' | 'dynamic'>('direct');
+  const [downloadMode, setDownloadMode] = useState<'direct' | 'dynamic'>('dynamic');
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const redirectUrl = `${origin}/r/${qr.slug}`;
   const effectiveQRUrl = downloadMode === 'direct' ? (qr.targetUrl || redirectUrl) : redirectUrl;
@@ -337,27 +337,6 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <button
                       type="button"
-                      onClick={() => setDownloadMode('direct')}
-                      className={`p-2.5 text-left rounded-lg border transition-all cursor-pointer ${
-                        downloadMode === 'direct'
-                          ? 'border-[#104F38] bg-[#FFE600] text-[#104F38] font-black shadow-xs ring-2 ring-[#104F38]'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="font-extrabold flex items-center justify-between">
-                        <span>1. Tautan Baru Langsung</span>
-                        {downloadMode === 'direct' && <span className="text-[9px] bg-[#104F38] text-white px-1 py-0.2">Aktif</span>}
-                      </div>
-                      <p className="text-[10px] text-[#104F38]/80 font-normal mt-0.5 leading-snug">
-                        QR fisik langsung membuka URL tujuan baru seketika.
-                      </p>
-                      <div className="text-[9.5px] font-mono font-bold truncate mt-1 bg-white/80 px-1 py-0.5 border border-[#104F38]/20">
-                        {qr.targetUrl}
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
                       onClick={() => setDownloadMode('dynamic')}
                       className={`p-2.5 text-left rounded-lg border transition-all cursor-pointer ${
                         downloadMode === 'dynamic'
@@ -366,16 +345,37 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                       }`}
                     >
                       <div className="font-extrabold flex items-center justify-between">
-                        <span>2. Tautan Dinamis Cloud</span>
+                        <span>1. Tautan Dinamis Cloud</span>
                         {downloadMode === 'dynamic' && <span className="text-[9px] bg-[#FFE600] text-[#104F38] px-1 py-0.2">Aktif</span>}
                       </div>
-                      <p className={`text-[10px] font-normal mt-0.5 leading-snug ${downloadMode === 'dynamic' ? 'text-white/80' : 'text-slate-500'}`}>
-                        QR fisik memuat URL pendek awan (/r/...).
+                      <p className={`text-[10px] font-normal mt-0.5 leading-snug ${downloadMode === 'dynamic' ? 'text-white/85' : 'text-slate-500'}`}>
+                        Direkomendasikan untuk cetak fisik: ganti link kapan saja tanpa cetak ulang QR.
                       </p>
                       <div className={`text-[9.5px] font-mono font-bold truncate mt-1 px-1 py-0.5 border ${
                         downloadMode === 'dynamic' ? 'bg-white/10 text-[#FFE600] border-white/20' : 'bg-white text-slate-700 border-slate-200'
                       }`}>
                         /r/{qr.slug}
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDownloadMode('direct')}
+                      className={`p-2.5 text-left rounded-lg border transition-all cursor-pointer ${
+                        downloadMode === 'direct'
+                          ? 'border-[#104F38] bg-[#FFE600] text-[#104F38] font-black shadow-xs ring-2 ring-[#104F38]'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-extrabold flex items-center justify-between">
+                        <span>2. Tautan Langsung (Statis)</span>
+                        {downloadMode === 'direct' && <span className="text-[9px] bg-[#104F38] text-white px-1 py-0.2">Aktif</span>}
+                      </div>
+                      <p className="text-[10px] text-[#104F38]/80 font-normal mt-0.5 leading-snug">
+                        QR langsung memuat URL saat ini (tidak mengikuti perubahan link).
+                      </p>
+                      <div className="text-[9.5px] font-mono font-bold truncate mt-1 bg-white/80 px-1 py-0.5 border border-[#104F38]/20">
+                        {qr.targetUrl}
                       </div>
                     </button>
                   </div>

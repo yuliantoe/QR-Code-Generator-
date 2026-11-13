@@ -122,47 +122,28 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'syncing' | 'synced'>('idle');
 
-  // Dedicated sync function for active slug in cloud sync store
-  const syncCurrentSlugToCloud = async (force: boolean = false) => {
+  // Dedicated sync function for active slug in server persistence
+  const syncCurrentSlugToCloud = async () => {
     if (!selectedItem || selectedItem.type !== 'qr' || !selectedItem.url || !selectedItem.rawUrl) return;
     const slug = selectedItem.url.split('/r/')[1]?.split('?')[0]?.toLowerCase().trim();
     if (!slug) return;
 
     setCloudSyncStatus('syncing');
     try {
-      // Dual-dispatch to backend endpoint
-      fetch('/api/qrcodes/sync-cloud', {
+      await fetch('/api/qrcodes/sync-cloud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slugMap: { [slug]: selectedItem.rawUrl.trim() } })
-      }).catch(() => {});
-
-      // Direct cloud object sync to api.restful-api.dev
-      const getRes = await fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`);
-      let current: Record<string, string> = {};
-      if (getRes.ok) {
-        const obj = await getRes.json();
-        if (obj?.data && typeof obj.data === 'object') {
-          current = obj.data;
-        }
-      }
-      if (force || current[slug] !== selectedItem.rawUrl.trim()) {
-        current[slug] = selectedItem.rawUrl.trim();
-        await fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'dinamis_qr', data: current })
-        });
-      }
+      });
       setCloudSyncStatus('synced');
     } catch {
       setCloudSyncStatus('synced');
     }
   };
 
-  // Auto sync and activate selected item's slug in cloud sync store for Vercel
+  // Auto sync and activate selected item's slug in server store
   useEffect(() => {
-    syncCurrentSlugToCloud(false);
+    syncCurrentSlugToCloud();
   }, [selectedItem?.id, selectedItem?.rawUrl, selectedItem?.url]);
 
   // Active Template State (Defaults to A6 Blue Cutout from user request)
@@ -229,7 +210,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   const handleSaveWhatsAppToQR = async () => {
     if (!selectedItem || selectedItem.type !== 'qr' || !waLiveUrl) return;
-    const qrObj = qrcodes.find(q => q.id === selectedItem.id);
+    const qrObj = qrcodes.find(q => `qr-${q.id}` === selectedItem.id || q.id === selectedItem.id);
     if (!qrObj) return;
 
     setWaSaving(true);
@@ -250,26 +231,11 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
         ]
       };
 
-      if (qrObj.slug) {
-        const cleanSlug = qrObj.slug.toLowerCase().trim();
-        fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`)
-          .then(r => r.json())
-          .then(obj => {
-            const currentData = (obj && obj.data && typeof obj.data === 'object') ? obj.data : {};
-            currentData[cleanSlug] = waLiveUrl;
-            return fetch(`https://api.restful-api.dev/objects/ff808181a09d98f701a1b392719d5825`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: 'dinamis_qr', data: currentData })
-            });
-          })
-          .catch(() => {});
-      }
-
-      await fetch(`/api/qrcodes/${qrObj.id}`, {
+      const res = await fetch(`/api/qrcodes/${qrObj.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          slug: qrObj.slug,
           title: qrObj.title,
           targetUrl: waLiveUrl,
           reason: 'Pembaruan Pesan Sambutan WhatsApp Welcome',
@@ -278,10 +244,13 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
         })
       });
 
+      const json = await res.json().catch(() => null);
+      const savedQR = json?.success && json?.data ? json.data : updatedQR;
+
       if (onUpdateQR) {
-        onUpdateQR(updatedQR);
+        onUpdateQR(savedQR);
       }
-      setWaSavedMessage('✓ Pesan sambutan WhatsApp berhasil disimpan & disinkronkan ke cloud!');
+      setWaSavedMessage('✓ Pesan sambutan WhatsApp berhasil disimpan & disinkronkan!');
       setTimeout(() => setWaSavedMessage(null), 4000);
     } catch (e) {
       console.warn('Save WA link error:', e);
@@ -323,7 +292,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
   const handleDownloadHD = async (isPrintQuality: boolean = true) => {
     if (urlMode === 'dynamic') {
-      await syncCurrentSlugToCloud(true);
+      await syncCurrentSlugToCloud();
     }
 
     const offscreen = document.createElement('canvas');
@@ -1018,7 +987,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                       type="button"
                       onClick={() => {
                         setUrlMode('dynamic');
-                        syncCurrentSlugToCloud(true);
+                        syncCurrentSlugToCloud();
                       }}
                       className={`p-2.5 text-left border transition-all cursor-pointer flex flex-col justify-between ${
                         urlMode === 'dynamic'
@@ -1103,7 +1072,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                           </span>
                           <button
                             type="button"
-                            onClick={() => syncCurrentSlugToCloud(true)}
+                            onClick={() => syncCurrentSlugToCloud()}
                             className="text-[9px] underline font-bold text-[#104F38] hover:text-black cursor-pointer"
                           >
                             {cloudSyncStatus === 'syncing' ? 'Menyinkronkan...' : 'Sinkronkan Ulang'}
