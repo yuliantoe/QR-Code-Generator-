@@ -109,14 +109,24 @@
     "targetUrl": "https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info",
     "status": "active",
     "createdAt": "2026-11-10T09:19:40.540Z",
-    "updatedAt": "2026-11-13T10:37:37.772Z",
+    "updatedAt": "2026-11-13T10:44:43.422Z",
     "tags": [
       "Cloud Synced"
     ],
     "notes": "Tautan disinkronkan otomatis dari cloud sync.",
-    "totalScans": 6,
-    "lastScannedAt": "2026-11-13T10:37:37.778Z",
+    "totalScans": 7,
+    "lastScannedAt": "2026-11-13T10:44:43.408Z",
     "urlHistory": [
+      {
+        "url": "https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info",
+        "changedAt": "2026-11-13T10:44:43.422Z",
+        "reason": "Tautan WhatsApp CS & Pesan Meja"
+      },
+      {
+        "url": "https://example.com/vercel-rewrite-ok",
+        "changedAt": "2026-11-13T10:44:43.398Z",
+        "reason": "Vercel rewrite test"
+      },
       {
         "url": "https://wa.me/6281234567890?text=Halo%20Admin%2C%20saya%20mau%20pesan%20menu%20dan%20tanya%20info",
         "changedAt": "2026-11-13T10:37:37.772Z",

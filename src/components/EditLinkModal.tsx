@@ -136,7 +136,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       if (contentType.includes('application/json')) {
         const json = await res.json();
         if (!res.ok || !json.success) {
-          setErrorMessage(json.error || 'Gagal menyimpan pembaruan ke server.');
+          setErrorMessage(json.error || `Gagal menyimpan pembaruan ke server (HTTP ${res.status}).`);
           setIsSubmitting(false);
           return;
         }
@@ -147,7 +147,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
           };
         }
       } else if (!res.ok) {
-        setErrorMessage('Server mengembalikan kesalahan saat memperbarui tautan.');
+        setErrorMessage(`Server mengembalikan kesalahan (HTTP ${res.status}) saat memperbarui tautan.`);
         setIsSubmitting(false);
         return;
       }

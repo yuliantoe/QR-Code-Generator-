@@ -3,31 +3,35 @@
   "rewrites": [
     {
       "source": "/r/:slug",
-      "destination": "/api/index.ts?slug=:slug"
+      "destination": "/api/index.ts?__path=/r/:slug&slug=:slug"
     },
     {
       "source": "/r/:slug/",
-      "destination": "/api/index.ts?slug=:slug"
+      "destination": "/api/index.ts?__path=/r/:slug&slug=:slug"
     },
     {
       "source": "/r/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/index.ts?__path=/r/$1"
     },
     {
       "source": "/r",
-      "destination": "/api/index.ts"
+      "destination": "/api/index.ts?__path=/r"
     },
     {
       "source": "/nfc/:id",
-      "destination": "/api/index.ts?nfcId=:id"
+      "destination": "/api/index.ts?__path=/nfc/:id&nfcId=:id"
     },
     {
       "source": "/nfc/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/index.ts?__path=/nfc/$1"
+    },
+    {
+      "source": "/n/:id",
+      "destination": "/api/index.ts?__path=/n/:id&nfcId=:id"
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "destination": "/api/index.ts?__path=/api/$1"
     },
     {
       "source": "/(.*)",

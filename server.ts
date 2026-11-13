@@ -1,6 +1,5 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -28,28 +27,85 @@ function resolvePort(): number {
 }
 const PORT = resolvePort();
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+const jsonParser = express.json({ limit: '10mb' });
+const urlencodedParser = express.urlencoded({ extended: true });
 
-// Restore original path if Vercel rewritten URL to /api/index.ts or /api/[...all].ts
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // On Vercel Node runtime, req.body may already be pre-parsed as object, string, or Buffer
+  if (Buffer.isBuffer(req.body)) {
+    try {
+      const str = req.body.toString('utf-8').trim();
+      req.body = str ? JSON.parse(str) : {};
+    } catch {
+      req.body = {};
+    }
+    return next();
+  }
+  if (typeof req.body === 'string') {
+    try {
+      req.body = req.body.trim() ? JSON.parse(req.body) : {};
+    } catch {
+      req.body = {};
+    }
+    return next();
+  }
+  if (req.body !== undefined && req.body !== null && typeof req.body === 'object') {
+    return next();
+  }
+  return jsonParser(req, res, (err) => {
+    if (err) return next(err);
+    return urlencodedParser(req, res, next);
+  });
+});
+
+// Restore original path when Vercel rewrites to /api/index.ts or /api/[...all].ts
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  const querySlug = typeof req.query?.slug === 'string' ? req.query.slug.trim() : '';
-  const queryNfcId = typeof req.query?.nfcId === 'string' ? req.query.nfcId.trim() : '';
-  const queryIdx = req.url.indexOf('?');
-  const queryString = queryIdx !== -1 ? req.url.substring(queryIdx) : '';
+  const rawUrl = req.url || '/';
+  const qIndex = rawUrl.indexOf('?');
+  const rawPath = qIndex !== -1 ? rawUrl.slice(0, qIndex) : rawPathFallback(rawUrl);
+  const searchParams = new URLSearchParams(qIndex !== -1 ? rawUrl.slice(qIndex + 1) : '');
 
-  if (querySlug && (req.path === '/api/index.ts' || req.path === '/api' || req.path === '/api/r' || req.path === '/r')) {
-    req.url = `/r/${encodeURIComponent(querySlug)}${queryString}`;
-  } else if (queryNfcId && (req.path === '/api/index.ts' || req.path === '/api' || req.path === '/api/nfc' || req.path === '/nfc')) {
-    req.url = `/nfc/${encodeURIComponent(queryNfcId)}${queryString}`;
+  const rewritePath = (searchParams.get('__path') || (typeof req.query?.__path === 'string' ? req.query.__path : '')).trim();
+  const querySlug = (searchParams.get('slug') || (typeof req.query?.slug === 'string' ? req.query.slug : '')).trim();
+  const queryNfcId = (searchParams.get('nfcId') || (typeof req.query?.nfcId === 'string' ? req.query.nfcId : '')).trim();
+
+  if (
+    rewritePath &&
+    rewritePath.startsWith('/') &&
+    !rewritePath.startsWith('/api/index.ts') &&
+    !rewritePath.startsWith('/api/[...all]')
+  ) {
+    searchParams.delete('__path');
+    if (rewritePath.startsWith('/r/')) searchParams.delete('slug');
+    if (rewritePath.startsWith('/nfc/') || rewritePath.startsWith('/n/')) searchParams.delete('nfcId');
+    const cleanQuery = searchParams.toString();
+    req.url = rewritePath + (cleanQuery ? (rewritePath.includes('?') ? '&' : '?') + cleanQuery : '');
+  } else if (querySlug && (rawPath === '/api/index.ts' || rawPath === '/api' || rawPath === '/api/r' || rawPath === '/r')) {
+    searchParams.delete('__path');
+    const cleanQuery = searchParams.toString();
+    req.url = `/r/${encodeURIComponent(querySlug)}${cleanQuery ? '?' + cleanQuery : ''}`;
+  } else if (queryNfcId && (rawPath === '/api/index.ts' || rawPath === '/api' || rawPath === '/api/nfc' || rawPath === '/nfc')) {
+    searchParams.delete('__path');
+    const cleanQuery = searchParams.toString();
+    req.url = `/nfc/${encodeURIComponent(queryNfcId)}${cleanQuery ? '?' + cleanQuery : ''}`;
   } else {
     const matchedPath = (req.headers['x-matched-path'] || req.headers['x-vercel-matched-path'] || req.headers['x-forwarded-url']) as string;
-    if (matchedPath && (req.path === '/api/index.ts' || req.path === '/api' || req.path.startsWith('/api/[...all]'))) {
-      req.url = matchedPath + (matchedPath.includes('?') ? '' : queryString);
+    if (
+      matchedPath &&
+      !matchedPath.startsWith('/api/index.ts') &&
+      !matchedPath.startsWith('/api/[...all]') &&
+      (rawPath === '/api/index.ts' || rawPath === '/api' || rawPath.startsWith('/api/[...all]'))
+    ) {
+      const cleanQuery = searchParams.toString();
+      req.url = matchedPath + (cleanQuery ? (matchedPath.includes('?') ? '&' : '?') + cleanQuery : '');
     }
   }
   next();
 });
+
+function rawPathFallback(u: string): string {
+  return u || '/';
+}
 
 // Helper: Parse user agent for device and browser stats
 function parseUserAgent(uaString: string | undefined): { device: 'mobile' | 'desktop' | 'tablet' | 'unknown'; os: string; browser: string } {
@@ -1423,9 +1479,27 @@ app.get('/api/stats/overview', async (_req: Request, res: Response) => {
   });
 });
 
+// JSON 404 fallback for unmatched /api/* routes (never return HTML error pages for API calls)
+app.all('/api/*', (req: Request, res: Response) => {
+  return res.status(404).json({
+    success: false,
+    error: `Endpoint API tidak ditemukan: ${req.method} ${req.path}`
+  });
+});
+
+// Express JSON error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[Server Error]', err);
+  if (res.headersSent) return;
+  return res.status(err?.status || 500).json({
+    success: false,
+    error: err?.message || 'Terjadi kesalahan internal server'
+  });
+});
+
 // Mount Vite in local development or serve static assets in production
 async function startServer() {
-  // If running in Vercel Serverless environment, do not start local HTTP listener
+  // If running in Vercel Serverless environment, do not start local HTTP listener or load Vite
   if (process.env.VERCEL) {
     return;
   }
@@ -1447,6 +1521,7 @@ async function startServer() {
         };
       } else {
         console.warn('dist/index.html not found in production, mounting Vite middleware fallback');
+        const { createServer: createViteServer } = await import('vite');
         const vite = await createViteServer({
           server: { middlewareMode: true, hmr: false },
           appType: 'spa'
@@ -1455,6 +1530,7 @@ async function startServer() {
       }
     } else {
       try {
+        const { createServer: createViteServer } = await import('vite');
         const vite = await createViteServer({
           server: { middlewareMode: true, hmr: false },
           appType: 'spa'
