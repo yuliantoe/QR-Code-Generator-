@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, MapPin, ExternalLink, ShieldCheck, Check, ArrowRight, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
+import { Lock, MapPin, ExternalLink, Check, AlertTriangle, RefreshCw, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { NFCTag } from '../types.ts';
 
@@ -130,32 +130,38 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#0a2318]/75 overflow-y-auto">
+      <div
+        className="relative w-full max-w-lg bg-white rounded-none shadow-xl border border-[#104F38]/30 overflow-hidden my-auto max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true"
+      >
         
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#104F38]/15 flex items-center justify-between bg-[#F4FAF6] shrink-0">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">
+            <div className="flex items-center gap-2 text-xs font-mono text-[#104F38]/75">
+              <span className="font-bold text-[#104F38]">
                 NFC Tag ID: {tag.id}
               </span>
-              <span className="text-xs text-slate-500 font-mono">UID: {tag.tagUid}</span>
+              <span aria-hidden="true">·</span>
+              <span>UID: {tag.tagUid}</span>
             </div>
-            <h2 className="text-base font-bold text-slate-900 mt-1">
+            <h2 className="text-base font-extrabold text-[#104F38] mt-1">
               Ubah Data NFC Tag Google Review
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100"
+            aria-label="Tutup modal ubah NFC Tag"
+            className="text-[#104F38]/60 hover:text-[#104F38] p-1.5 rounded-none hover:bg-white cursor-pointer transition-colors"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Security Alert */}
-        <div className="mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
+        <div className="mx-4 sm:mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-none flex items-start gap-2.5 text-xs text-amber-900">
           <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
           <span>
             Perubahan diarahkan langsung tanpa perlu menulis ulang chip fisik NFC. Masukkan <strong>PIN NFC Tag</strong> yang Anda buat untuk verifikasi.
@@ -163,7 +169,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
         </div>
 
         {errorMessage && (
-          <div className="mx-6 mt-3 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
+          <div className="mx-4 sm:mx-6 mt-3 p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-none font-medium">
             {errorMessage}
           </div>
         )}
@@ -173,45 +179,53 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
           {/* Nama Tempat */}
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-bold text-slate-800">
+              <label htmlFor="editNfcPlaceName" className="block text-xs font-bold text-[#104F38]">
                 Nama Tempat di Google Review
               </label>
               {isLookingUp && (
-                <span className="text-[10px] text-sky-600 flex items-center gap-1">
+                <span className="text-[10px] text-[#104F38]/70 flex items-center gap-1">
                   <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Mencari...
                 </span>
               )}
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#104F38]/50">
                 <MapPin className="w-4 h-4" />
               </div>
               <input
+                id="editNfcPlaceName"
                 type="text"
                 required
                 value={placeName}
                 onChange={(e) => handlePlaceNameChange(e.target.value)}
                 onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-                className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900 font-medium"
+                className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] text-[#104F38] font-medium"
               />
             </div>
 
             {/* Suggestions */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden divide-y divide-slate-100">
-                <div className="px-3 py-1 bg-slate-50 text-[10px] font-bold text-slate-500 flex justify-between">
+              <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-[#104F38]/25 rounded-none shadow-lg overflow-hidden divide-y divide-[#104F38]/10">
+                <div className="px-3 py-1.5 bg-[#F4FAF6] text-[10px] font-bold text-[#104F38]/75 flex justify-between items-center">
                   <span>Saran Tempat Google:</span>
-                  <button type="button" onClick={() => setShowSuggestions(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSuggestions(false)}
+                    className="text-[#104F38]/60 hover:text-[#104F38] cursor-pointer"
+                    aria-label="Tutup saran tempat"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 {suggestions.map((item, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSelectSuggestion(item)}
-                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-sky-50 hover:text-sky-900 flex items-center justify-between"
+                    className="w-full text-left px-3 py-2 text-xs text-[#104F38] hover:bg-[#F4FAF6] flex items-center justify-between cursor-pointer"
                   >
                     <span className="truncate">{item.placeName}</span>
-                    <span className="text-[10px] text-sky-600 bg-sky-50 px-1 py-0.5 rounded">Gunakan</span>
+                    <span className="text-[10px] font-bold text-[#104F38] shrink-0">Gunakan</span>
                   </button>
                 ))}
               </div>
@@ -219,21 +233,22 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
           </div>
 
           {/* Tautan Google Review */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-800">
+          <div className="p-3 bg-[#F4FAF6] rounded-none border border-[#104F38]/20 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <label htmlFor="editNfcReviewUrl" className="block text-xs font-bold text-[#104F38]">
                 Tautan Google Review (Tujuan Dinamis)
               </label>
               <button
                 type="button"
                 onClick={handleApplyAutoReviewUrl}
-                className="text-[11px] font-semibold text-sky-600 hover:text-sky-800 flex items-center gap-1"
+                className="text-[11px] font-bold text-[#104F38] hover:underline flex items-center gap-1 cursor-pointer whitespace-nowrap"
               >
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                Otomatiskan dari Nama Tempat
+                <RefreshCw className="w-3 h-3" />
+                <span>Otomatiskan dari Nama Tempat</span>
               </button>
             </div>
             <input
+              id="editNfcReviewUrl"
               type="text"
               required
               value={googleReviewUrl}
@@ -241,18 +256,18 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
                 setGoogleReviewUrl(e.target.value);
                 setIsAutoUrl(false);
               }}
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono text-slate-900"
+              className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
             />
             <div className="flex items-center justify-between text-[11px] pt-1">
-              <span className="text-slate-500">
-                {isAutoUrl ? '✓ Terhubung otomatis dari nama tempat' : 'Tautan saat ini'}
+              <span className="text-[#104F38]/75">
+                {isAutoUrl ? 'Terhubung otomatis dari nama tempat' : 'Tautan saat ini'}
               </span>
               {googleReviewUrl && (
                 <a
                   href={googleReviewUrl.startsWith('http') ? googleReviewUrl : `https://${googleReviewUrl}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sky-600 hover:text-sky-800 font-semibold flex items-center gap-1"
+                  className="text-[#104F38] hover:underline font-bold flex items-center gap-1"
                 >
                   <ExternalLink className="w-3 h-3" /> Tes Buka Review
                 </a>
@@ -261,48 +276,51 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
           </div>
 
           {/* PIN Verification (Required) */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+          <div className="p-3.5 bg-[#F4FAF6] rounded-none border border-[#104F38]/20 space-y-3">
             <div>
-              <label className="block text-xs font-bold text-slate-900 mb-1">
-                Masukkan PIN NFC Tag Anda <span className="text-rose-500">*</span>
+              <label htmlFor="editNfcCurrentPin" className="block text-xs font-bold text-[#104F38] mb-1">
+                Masukkan PIN NFC Tag Anda <span className="text-rose-600">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#104F38]/50">
                   <Lock className="w-3.5 h-3.5" />
                 </div>
                 <input
+                  id="editNfcCurrentPin"
                   type="password"
                   required
                   placeholder="Masukkan PIN saat aktivasi tag..."
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
+                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#104F38]/15">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                <label htmlFor="editNfcNewPin" className="block text-[11px] font-bold text-[#104F38] mb-1">
                   Ubah ke PIN Baru (Opsional)
                 </label>
                 <input
+                  id="editNfcNewPin"
                   type="password"
                   placeholder="Kosongkan jika PIN tetap"
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg font-mono"
+                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none font-mono text-[#104F38]"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                <label htmlFor="editNfcStatus" className="block text-[11px] font-bold text-[#104F38] mb-1">
                   Status Tag NFC
                 </label>
                 <select
+                  id="editNfcStatus"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as any)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
+                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38]"
                 >
                   <option value="active">Aktif (Bisa Di-tap)</option>
                   <option value="locked">Dikunci (Nonaktif Sementara)</option>
@@ -312,30 +330,31 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="editNfcNotes" className="block text-xs font-bold text-[#104F38] mb-1">
               Catatan Penempatan Stand
             </label>
             <input
+              id="editNfcNotes"
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl"
+              className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38]"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#104F38]/15">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-xl"
+              className="px-4 py-2 text-xs font-semibold text-[#104F38]/75 hover:text-[#104F38] bg-white border border-[#104F38]/20 rounded-none cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !pin.trim()}
-              className="px-6 py-2 bg-[#FFE600] hover:bg-[#F2DA00] disabled:bg-stone-200 text-[#104F38] border border-[#104F38]/20 text-xs font-bold rounded-none shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-6 py-2 bg-[#FFE600] hover:bg-[#F2DA00] disabled:bg-stone-200 text-[#104F38] border border-[#104F38]/25 text-xs font-bold rounded-none transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               {isSubmitting ? (
                 <span>Memverifikasi...</span>

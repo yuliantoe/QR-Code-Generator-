@@ -108,14 +108,14 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-4">
-      <div className="bg-white max-w-md w-full border border-[#104F38]/30 shadow-xl relative overflow-hidden">
-        
-        {/* Wireframe Bracket Accent Top-Left */}
-        <div className="absolute -left-2 -top-2 w-6 h-6 border-t-2 border-l-2 border-[#104F38]/40" />
-
+    <div className="fixed inset-0 z-50 bg-[#0a2318]/75 flex items-center justify-center p-4">
+      <div
+        className="bg-white max-w-md w-full border border-[#104F38]/30 shadow-xl relative overflow-hidden rounded-none"
+        role="dialog"
+        aria-modal="true"
+      >
         {/* Modal Header */}
-        <div className="p-5 sm:p-6 border-b border-[#104F38]/10 flex items-center justify-between bg-[#F4FAF6]">
+        <div className="p-5 sm:p-6 border-b border-[#104F38]/15 flex items-center justify-between bg-[#F4FAF6]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-[#104F38] text-white flex items-center justify-center border border-[#104F38]">
               <KeyRound className="w-5 h-5 text-[#FFE600]" />
@@ -124,7 +124,7 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
               <h3 className="text-base font-extrabold text-[#104F38]">
                 {isAdmin ? 'Ganti Password Administrator' : 'Ganti Username & Password'}
               </h3>
-              <p className="text-[11px] text-[#104F38]/70 font-medium">
+              <p className="text-[11px] text-[#104F38]/75 font-medium">
                 {isAdmin
                   ? 'Perbarui password akun administrator (Username "admin" terkunci permanen)'
                   : 'Perbarui data login akun Anda'}
@@ -134,6 +134,7 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
 
           <button
             onClick={onClose}
+            aria-label="Tutup modal ubah kredensial"
             className="text-[#104F38]/60 hover:text-[#104F38] p-1.5 transition-colors cursor-pointer"
             title="Tutup"
           >
@@ -185,8 +186,9 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
               />
               <button
                 type="button"
+                aria-label={showCurrentPass ? 'Sembunyikan password saat ini' : 'Lihat password saat ini'}
                 onClick={() => setShowCurrentPass(!showCurrentPass)}
-                className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38]"
+                className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38] cursor-pointer"
               >
                 {showCurrentPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -245,8 +247,9 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
                 />
                 <button
                   type="button"
+                  aria-label={showNewPass ? 'Sembunyikan password baru' : 'Lihat password baru'}
                   onClick={() => setShowNewPass(!showNewPass)}
-                  className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38]"
+                  className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38] cursor-pointer"
                 >
                   {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -270,8 +273,9 @@ export const ChangeCredentialsModal: React.FC<ChangeCredentialsModalProps> = ({
                 />
                 <button
                   type="button"
+                  aria-label={showConfirmPass ? 'Sembunyikan konfirmasi password' : 'Lihat konfirmasi password'}
                   onClick={() => setShowConfirmPass(!showConfirmPass)}
-                  className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38]"
+                  className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38] cursor-pointer"
                 >
                   {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

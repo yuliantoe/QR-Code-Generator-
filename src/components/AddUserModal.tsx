@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Users, User, Lock, Eye, EyeOff, Check, X, Shield, ShieldCheck, Sparkles, AlertTriangle, Copy, CheckCheck } from 'lucide-react';
+import { UserPlus, Users, User, Lock, Eye, EyeOff, Check, X, Shield, AlertTriangle, Copy, CheckCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { AuthUser, SubscriptionPlan } from '../types.ts';
 
@@ -207,35 +207,31 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white max-w-xl w-full border border-[#104F38]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Wireframe Bracket Accent Top-Left */}
-        <div className="absolute -left-2 -top-2 w-6 h-6 border-t-2 border-l-2 border-[#104F38]/50" />
-
+    <div className="fixed inset-0 z-50 bg-[#0a2318]/75 flex items-center justify-center p-3 sm:p-4">
+      <div
+        className="bg-white max-w-xl w-full border border-[#104F38]/30 shadow-xl relative overflow-hidden flex flex-col max-h-[90vh] rounded-none"
+        role="dialog"
+        aria-modal="true"
+      >
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-[#104F38]/10 flex items-center justify-between bg-[#F4FAF6]">
+        <div className="p-4 sm:p-5 border-b border-[#104F38]/15 flex items-center justify-between bg-[#F4FAF6]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 bg-[#104F38] text-white flex items-center justify-center border border-[#104F38]">
               <UserPlus className="w-5 h-5 text-[#FFE600]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-[#104F38]">
-                  Manajemen User & Hak Akses
-                </h3>
-                <span className="text-[10px] uppercase font-bold bg-[#FFE600] text-[#104F38] px-1.5 py-0.2 border border-[#104F38]/20">
-                  Panel Admin
-                </span>
-              </div>
-              <p className="text-[11px] text-[#104F38]/70 font-medium">
-                Tambah akun baru untuk staf/karyawan (Username Administrator terkunci)
+              <h3 className="text-base font-extrabold text-[#104F38]">
+                Manajemen User &amp; Hak Akses
+              </h3>
+              <p className="text-[11px] text-[#104F38]/75 font-medium">
+                Panel Admin · Tambah akun staf baru (Username Administrator terkunci)
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
+            aria-label="Tutup modal manajemen user"
             className="text-[#104F38]/60 hover:text-[#104F38] p-1.5 transition-colors cursor-pointer"
             title="Tutup"
           >
@@ -268,7 +264,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
             }`}
           >
             <Users className="w-4 h-4 text-[#104F38]" />
-            <span>Daftar User Terdaftar ({users.length})</span>
+            <span className="tabular-nums">Daftar User Terdaftar ({users.length})</span>
           </button>
         </div>
 
@@ -356,6 +352,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-2.5 text-[#104F38]/50 hover:text-[#104F38] cursor-pointer"
                   >
@@ -390,7 +387,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                         className="text-[#104F38]"
                       />
                     </div>
-                    <span className="text-[10px] text-emerald-800 font-semibold">✓ Bebas Watermark</span>
+                    <span className="text-[10px] text-[#104F38] font-semibold">Bebas Watermark</span>
                   </label>
 
                   <label
@@ -413,7 +410,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                         className="text-[#104F38]"
                       />
                     </div>
-                    <span className="text-[10px] text-emerald-800 font-semibold">✓ Bebas Watermark (1 Thn)</span>
+                    <span className="text-[10px] text-[#104F38] font-semibold">Bebas Watermark (1 Thn)</span>
                   </label>
 
                   <label
@@ -452,13 +449,13 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsWatermarkActive(!isWatermarkActive)}
-                  className={`px-3 py-1 text-xs font-extrabold border transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-bold border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                     !isWatermarkActive
-                      ? 'bg-emerald-700 text-white border-emerald-800'
+                      ? 'bg-[#104F38] text-white border-[#104F38]'
                       : 'bg-amber-100 text-amber-900 border-amber-300'
                   }`}
                 >
-                  {!isWatermarkActive ? '✓ Bebas Watermark' : 'Watermark Aktif'}
+                  {!isWatermarkActive ? 'Bebas Watermark' : 'Watermark Aktif'}
                 </button>
               </div>
 
@@ -518,20 +515,21 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-extrabold text-xs text-[#104F38]">
                               {u.name}
                             </span>
-                            <span className="font-mono text-[11px] bg-slate-100 text-[#104F38] px-1.5 py-0.2 border border-[#104F38]/15">
+                            <span className="font-mono text-[11px] text-[#104F38]/75">
                               @{u.username}
                             </span>
+                            <span aria-hidden="true" className="text-[#104F38]/30">·</span>
                             {isSuperAdmin ? (
-                              <span className="text-[9px] font-bold uppercase bg-[#FFE600] text-[#104F38] px-1.5 py-0.2 border border-[#104F38]/30 flex items-center gap-1">
+                              <span className="text-[10px] font-bold text-[#104F38] flex items-center gap-1">
                                 <Lock className="w-2.5 h-2.5" />
                                 Super Admin (Username Terkunci)
                               </span>
                             ) : (
-                              <span className="text-[9px] font-bold uppercase bg-emerald-100 text-emerald-900 px-1.5 py-0.2">
+                              <span className="text-[10px] font-bold text-[#104F38]">
                                 User Aktif
                               </span>
                             )}
@@ -539,8 +537,8 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
 
                           <div className="text-[10px] text-[#104F38]/70 mt-1 flex items-center gap-2">
                             <span>Paket: <strong className="uppercase">{u.plan}</strong></span>
-                            <span>·</span>
-                            <span>{u.isWatermarkActive ? 'Watermark Aktif' : '✓ Bebas Watermark'}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{u.isWatermarkActive ? 'Watermark Aktif' : 'Bebas Watermark'}</span>
                           </div>
                         </div>
                       </div>

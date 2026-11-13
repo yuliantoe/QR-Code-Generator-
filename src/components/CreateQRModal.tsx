@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Palette, Settings2, Sliders, Check, Upload, Layers } from 'lucide-react';
+import { Palette, Settings2, Sliders, Check, Upload, Layers, AlertCircle, X, Utensils, MessageSquare, Camera, Globe, Wifi, ShoppingCart, MapPin, Minus } from 'lucide-react';
 import { renderStyledQRToCanvas } from '../utils/qrRenderer.ts';
 import confetti from 'canvas-confetti';
 import type { DynamicQRCode, QRStyleConfig } from '../types.ts';
@@ -383,56 +383,65 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#0a2318]/75 overflow-y-auto">
+      <div
+        className="relative w-full max-w-4xl bg-white rounded-none shadow-xl border border-[#104F38]/30 overflow-hidden my-auto max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true"
+      >
         
         {/* Modal Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#104F38]/15 flex items-center justify-between bg-[#F4FAF6] shrink-0">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">
+            <h2 className="text-base sm:text-lg font-extrabold text-[#104F38]">
               {isBatchMode ? `Buat Sekaligus ${batchCount} QR Code Dinamis` : 'Buat QR Code Dinamis Baru'}
             </h2>
-            <p className="text-[11px] sm:text-xs text-slate-500">
+            <p className="text-[11px] sm:text-xs text-[#104F38]/75">
               Link tujuan dapat diubah kapan saja di kemudian hari tanpa perlu mencetak ulang fisik QR.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
+            aria-label="Tutup modal buat QR"
+            className="text-[#104F38]/60 hover:text-[#104F38] p-1.5 rounded-none hover:bg-white cursor-pointer transition-colors"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* 2-Column Layout: Form and Live Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-100 overflow-y-auto flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-[#104F38]/15 overflow-y-auto flex-1">
           
           {/* Left Column: Form Controls */}
           <div className="md:col-span-7 p-4 sm:p-6 space-y-4 sm:space-y-5">
 
             {/* Error Message Alert */}
             {errorMessage && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center justify-between gap-2 animate-in fade-in">
-                <span className="font-medium">⚠️ {errorMessage}</span>
+              <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-none flex items-center justify-between gap-2 animate-in fade-in">
+                <span className="font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{errorMessage}</span>
+                </span>
                 <button
                   type="button"
+                  aria-label="Tutup pesan galat"
                   onClick={() => setErrorMessage('')}
-                  className="text-rose-500 hover:text-rose-800 font-bold p-1 cursor-pointer"
+                  className="text-rose-600 hover:text-rose-900 font-bold p-1 cursor-pointer"
                 >
-                  ✕
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
 
             {/* Mode Switcher: Single vs Batch */}
-            <div className="p-1 bg-slate-100 rounded-xl flex items-center gap-1">
+            <div className="p-1 bg-[#F4FAF6] border border-[#104F38]/15 rounded-none flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setIsBatchMode(false)}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-colors cursor-pointer whitespace-nowrap ${
                   !isBatchMode
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#104F38] text-white'
+                    : 'text-[#104F38]/75 hover:text-[#104F38]'
                 }`}
               >
                 1 QR Tunggal
@@ -451,10 +460,10 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                     setTargetUrl('https://google.com');
                   }
                 }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`flex-1 py-1.5 text-xs font-bold rounded-none transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   isBatchMode
-                    ? 'bg-sky-600 text-white shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-[#104F38] text-white'
+                    : 'text-[#104F38]/75 hover:text-[#104F38]'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
@@ -463,41 +472,41 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100/80 rounded-xl">
+            <div className="flex items-center gap-1 p-1 bg-[#F4FAF6] border border-[#104F38]/15 rounded-none">
               <button
                 type="button"
                 onClick={() => setActiveTab('content')}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-none transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   activeTab === 'content'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-[#104F38] border border-[#104F38]/20 font-bold'
+                    : 'text-[#104F38]/70 hover:text-[#104F38]'
                 }`}
               >
                 <Sliders className="w-3.5 h-3.5" />
-                <span>1. Tautan & Data</span>
+                <span>1. Tautan &amp; Data</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('design')}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-none transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   activeTab === 'design'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-[#104F38] border border-[#104F38]/20 font-bold'
+                    : 'text-[#104F38]/70 hover:text-[#104F38]'
                 }`}
               >
                 <Palette className="w-3.5 h-3.5" />
-                <span>2. Desain & Logo</span>
+                <span>2. Desain &amp; Logo</span>
               </button>
 
               {!isBatchMode && (
                 <button
                   type="button"
                   onClick={() => setActiveTab('options')}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-none transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                     activeTab === 'options'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#104F38] border border-[#104F38]/20 font-bold'
+                      : 'text-[#104F38]/70 hover:text-[#104F38]'
                   }`}
                 >
                   <Settings2 className="w-3.5 h-3.5" />
@@ -511,33 +520,30 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
               <div className="space-y-4">
 
                 {/* Kode Otomatis Sesuai Urutan Daftar */}
-                <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#104F38] animate-pulse" />
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-[#104F38]/60 block leading-tight">
-                        Kode Registrasi Otomatis:
-                      </span>
-                      <strong className="font-mono text-xs sm:text-sm font-extrabold text-[#104F38]">
-                        {isBatchMode
-                          ? `${autoGeneratedCode} s/d QR ${String(nextSeqNum + batchCount - 1).padStart(3, '0')}`
-                          : code}
-                      </strong>
-                    </div>
+                <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 flex items-center justify-between gap-3 text-xs rounded-none">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-[#104F38]/65 block leading-tight">
+                      Kode Registrasi Otomatis
+                    </span>
+                    <strong className="font-mono tabular-nums text-xs sm:text-sm font-extrabold text-[#104F38]">
+                      {isBatchMode
+                        ? `${autoGeneratedCode} s/d QR ${String(nextSeqNum + batchCount - 1).padStart(3, '0')}`
+                        : code}
+                    </strong>
                   </div>
-                  <span className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-0.5 border border-[#104F38]/20 shrink-0 font-mono">
+                  <span className="text-[11px] font-bold bg-[#FFE600] text-[#104F38] px-2.5 py-0.5 border border-[#104F38]/20 shrink-0 font-mono tabular-nums">
                     Urutan #{nextSeqNum}
                   </span>
                 </div>
 
                 {/* Batch Quantity Selector if Batch Mode */}
                 {isBatchMode && (
-                  <div className="p-4 bg-sky-50 border-2 border-sky-300 rounded-xl space-y-3">
+                  <div className="p-4 bg-[#F4FAF6] border border-[#104F38]/25 rounded-none space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-sky-950">
-                        Pilih Jumlah Sekali Generate:
+                      <label className="block text-xs font-bold text-[#104F38]">
+                        Pilih Jumlah Sekali Generate
                       </label>
-                      <span className="text-[10px] font-bold bg-sky-200 text-sky-900 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-[#104F38]/70">
                         Pilihan Cepat
                       </span>
                     </div>
@@ -548,29 +554,29 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                           key={cnt}
                           type="button"
                           onClick={() => setBatchCount(cnt)}
-                          className={`py-2.5 px-3 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                          className={`py-2.5 px-3 rounded-none text-xs font-extrabold transition-colors cursor-pointer flex flex-col items-center justify-center gap-0.5 border tabular-nums ${
                             batchCount === cnt
-                              ? 'bg-[#104F38] text-white shadow-md ring-2 ring-[#FFE600]'
-                              : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+                              ? 'bg-[#104F38] text-white border-[#104F38]'
+                              : 'bg-white text-[#104F38] border-[#104F38]/20 hover:border-[#104F38]'
                           }`}
                         >
                           <span className="text-sm">{cnt} QR Code</span>
-                          <span className={`text-[10px] font-normal ${batchCount === cnt ? 'text-[#FFE600]' : 'text-slate-500'}`}>
+                          <span className={`text-[10px] font-normal ${batchCount === cnt ? 'text-[#FFE600]' : 'text-[#104F38]/65'}`}>
                             {cnt === 5 ? 'Meja #01 - #05' : cnt === 10 ? 'Meja #01 - #10' : 'Meja #01 - #15'}
                           </span>
                         </button>
                       ))}
                     </div>
 
-                    <div className="bg-white p-2.5 rounded-lg border border-sky-200 text-xs text-sky-950 space-y-1">
-                      <div className="flex items-center justify-between font-mono font-bold text-[11px]">
+                    <div className="bg-white p-2.5 rounded-none border border-[#104F38]/15 text-xs text-[#104F38] space-y-1">
+                      <div className="flex items-center justify-between font-mono tabular-nums font-bold text-[11px]">
                         <span>Rentang Kode Registrasi:</span>
                         <span className="bg-[#FFE600] text-[#104F38] px-2 py-0.5 font-black">
                           {autoGeneratedCode} s/d QR {String(nextSeqNum + batchCount - 1).padStart(3, '0')}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-600 leading-tight">
-                        Total <strong>{batchCount} QR Code</strong> unik dan terdaftar otomatis dengan nama <strong>"{title || 'Meja Restoran'} #01"</strong> s/d <strong>"#{String(batchCount).padStart(2, '0')}"</strong>.
+                      <p className="text-[11px] text-[#104F38]/75 leading-tight">
+                        Total <strong className="tabular-nums">{batchCount} QR Code</strong> unik dan terdaftar otomatis dengan nama <strong>&ldquo;{title || 'Meja Restoran'} #01&rdquo;</strong> s/d <strong>&ldquo;#{String(batchCount).padStart(2, '0')}&rdquo;</strong>.
                       </p>
                     </div>
 
@@ -579,19 +585,19 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                       type="button"
                       onClick={() => handleSubmit()}
                       disabled={isSubmitting}
-                      className="w-full py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 font-extrabold text-xs rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:translate-y-0.5"
+                      className="w-full py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/25 font-extrabold text-xs rounded-none transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Check className="w-4 h-4 text-[#104F38]" />
                       <span>
-                        {isSubmitting ? 'Sedang Memproses...' : `⚡ Buat Sekaligus ${batchCount} QR Sekarang`}
+                        {isSubmitting ? 'Sedang Memproses...' : `Buat Sekaligus ${batchCount} QR Sekarang`}
                       </span>
                     </button>
                   </div>
                 )}
 
                 <div>
-                  <label htmlFor="createTitleInput" className="block text-xs font-semibold text-slate-800 mb-1">
-                    {isBatchMode ? 'Nama Dasar / Kelompok' : 'Judul / Nama Media Cetak'} <span className="text-rose-500">*</span>
+                  <label htmlFor="createTitleInput" className="block text-xs font-bold text-[#104F38] mb-1">
+                    {isBatchMode ? 'Nama Dasar / Kelompok' : 'Judul / Nama Media Cetak'} <span className="text-rose-600">*</span>
                   </label>
                   <input
                     id="createTitleInput"
@@ -600,63 +606,63 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                     placeholder={isBatchMode ? 'Contoh: Meja Restoran / Stiker Kemasan' : 'Contoh: Meja Akrilik 01 / Kemasan Kopi'}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900"
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] text-[#104F38]"
                   />
                   {isBatchMode && (
-                    <div className="text-[11px] text-slate-500 mt-1">
-                      Contoh hasil: <strong className="text-slate-800">{title ? `${title} #01, ${title} #02 ... ${title} #${String(batchCount).padStart(2, '0')}` : 'Meja Restoran #01, #02, ...'}</strong>
+                    <div className="text-[11px] text-[#104F38]/70 mt-1">
+                      Contoh hasil: <strong className="text-[#104F38]">{title ? `${title} #01, ${title} #02 ... ${title} #${String(batchCount).padStart(2, '0')}` : 'Meja Restoran #01, #02, ...'}</strong>
                     </div>
                   )}
                 </div>
 
                 {/* Quick 1-Click Social Media Presets */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 rounded-none space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
-                      <span>⚡ Preset Cepat Media Sosial (1-Klik Isi Langsung):</span>
+                    <span className="text-[11px] font-bold text-[#104F38]">
+                      Preset Cepat Media Sosial (1-Klik Isi Langsung)
                     </span>
-                    <span className="text-[9.5px] font-semibold text-slate-500">Auto Isi Tautan & Desain</span>
+                    <span className="text-[10px] font-semibold text-[#104F38]/65">Auto Isi Tautan &amp; Desain</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
                     <button
                       type="button"
                       onClick={() => applySocialPreset('whatsapp')}
-                      className="py-1.5 px-2 bg-white hover:bg-emerald-50 text-[#075E54] border border-emerald-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                      className="py-1.5 px-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none font-bold text-[11px] flex items-center justify-center transition-colors cursor-pointer"
                     >
-                      <span>💬 WhatsApp</span>
+                      <span>WhatsApp</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => applySocialPreset('instagram')}
-                      className="py-1.5 px-2 bg-white hover:bg-pink-50 text-[#C13584] border border-pink-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                      className="py-1.5 px-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none font-bold text-[11px] flex items-center justify-center transition-colors cursor-pointer"
                     >
-                      <span>📸 Instagram</span>
+                      <span>Instagram</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => applySocialPreset('tiktok')}
-                      className="py-1.5 px-2 bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                      className="py-1.5 px-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none font-bold text-[11px] flex items-center justify-center transition-colors cursor-pointer"
                     >
-                      <span>🎵 TikTok</span>
+                      <span>TikTok</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => applySocialPreset('facebook')}
-                      className="py-1.5 px-2 bg-white hover:bg-blue-50 text-[#1877F2] border border-blue-300 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1 shadow-2xs transition-all cursor-pointer"
+                      className="py-1.5 px-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none font-bold text-[11px] flex items-center justify-center transition-colors cursor-pointer"
                     >
-                      <span>📘 Facebook</span>
+                      <span>Facebook</span>
                     </button>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label htmlFor="createTargetUrlInput" className="text-xs font-semibold text-slate-800">
-                      {isBatchMode ? 'Tautan Tujuan Awal (Sama untuk Seluruh Batch)' : 'Tautan Tujuan Awal'} <span className="text-rose-500">*</span>
+                    <label htmlFor="createTargetUrlInput" className="text-xs font-bold text-[#104F38]">
+                      {isBatchMode ? 'Tautan Tujuan Awal (Sama untuk Seluruh Batch)' : 'Tautan Tujuan Awal'} <span className="text-rose-600">*</span>
                     </label>
                     {parseWhatsAppUrl(targetUrl).isWhatsApp && (
-                      <span className="text-[10px] font-bold text-[#075E54] bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
-                        💬 Mode Format WhatsApp Aktif
+                      <span className="text-[10px] font-bold text-[#104F38]">
+                        Mode Format WhatsApp Aktif
                       </span>
                     )}
                   </div>
@@ -667,9 +673,9 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                     placeholder="https://restoran.com/menu.pdf atau link WhatsApp/Website"
                     value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono text-slate-900"
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-[#104F38]/65 mt-1">
                     {isBatchMode ? 'Nanti setelah dibuat, masing-masing QR dapat Anda ubah tautannya secara mandiri.' : 'Tautan ini dapat diubah kapan saja setelah QR code dicetak.'}
                   </p>
                 </div>
@@ -683,11 +689,11 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                 )}
 
                 <div>
-                  <label htmlFor="createSlugInput" className="block text-xs font-semibold text-slate-800 mb-1">
+                  <label htmlFor="createSlugInput" className="block text-xs font-bold text-[#104F38] mb-1">
                     {isBatchMode ? 'Awalan Kode URL Pendek' : 'Kode URL Pendek Permanen'}
                   </label>
                   <div className="flex items-center">
-                    <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-xs text-slate-500 font-mono">
+                    <span className="px-3 py-2 bg-[#F4FAF6] border border-r-0 border-[#104F38]/25 rounded-none text-xs text-[#104F38]/75 font-mono">
                       /r/
                     </span>
                     <input
@@ -696,26 +702,27 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                       placeholder={isBatchMode ? 'meja' : 'menu-restoran-meja'}
                       value={slug}
                       onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-r-xl focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono text-slate-900"
+                      className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
                     />
                   </div>
                   {isBatchMode && (
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      Menghasilkan: <code className="font-mono text-slate-700">/r/{slug || 'kode'}-01</code> s/d <code className="font-mono text-slate-700">/r/{slug || 'kode'}-{String(batchCount).padStart(2, '0')}</code>
+                    <p className="text-[11px] text-[#104F38]/65 mt-1">
+                      Menghasilkan: <code className="font-mono text-[#104F38]">/r/{slug || 'kode'}-01</code> s/d <code className="font-mono text-[#104F38]">/r/{slug || 'kode'}-{String(batchCount).padStart(2, '0')}</code>
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1">
+                  <label htmlFor="createNotesInput" className="block text-xs font-bold text-[#104F38] mb-1">
                     Catatan Internal (Opsional)
                   </label>
                   <textarea
+                    id="createNotesInput"
                     rows={2}
                     placeholder="Dicetak pada stiker vinyl tahan air atau akrilik bening..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] text-[#104F38]"
                   />
                 </div>
               </div>
@@ -726,7 +733,7 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
               <div className="space-y-4">
                 {/* Palette Presets */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  <label className="block text-xs font-bold text-[#104F38] mb-1.5">
                     Pilihan Palet Warna Siap Cetak
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -742,17 +749,17 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                             frameColor: p.frame
                           }));
                         }}
-                        className={`p-2 rounded-xl border text-left flex items-center gap-2 text-xs transition-all ${
+                        className={`p-2 rounded-none border text-left flex items-center gap-2 text-xs transition-colors cursor-pointer ${
                           style.fgColor === p.fg
-                            ? 'border-sky-600 bg-sky-50/50 ring-1 ring-sky-600'
-                            : 'border-slate-200 hover:border-slate-300'
+                            ? 'border-[#104F38] bg-[#F4FAF6] ring-1 ring-[#104F38]'
+                            : 'border-[#104F38]/20 hover:border-[#104F38]/50'
                         }`}
                       >
                         <span
-                          className="w-4 h-4 rounded-full border border-black/10 shrink-0"
+                          className="w-4 h-4 rounded-none border border-black/15 shrink-0"
                           style={{ backgroundColor: p.fg }}
                         />
-                        <span className="truncate font-medium text-slate-800">{p.name}</span>
+                        <span className="truncate font-semibold text-[#104F38]">{p.name}</span>
                       </button>
                     ))}
                   </div>
@@ -761,13 +768,13 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                 {/* Dot Style & Corner Style */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-800 mb-1">
+                    <label className="block text-xs font-bold text-[#104F38] mb-1">
                       Gaya Titik QR
                     </label>
                     <select
                       value={style.dotStyle}
                       onChange={(e) => setStyle(prev => ({ ...prev, dotStyle: e.target.value as any }))}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl"
+                      className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38]"
                     >
                       <option value="rounded">Rounded (Halus Modern)</option>
                       <option value="dots">Dots (Titik Bulat)</option>
@@ -776,13 +783,13 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-800 mb-1">
+                    <label className="block text-xs font-bold text-[#104F38] mb-1">
                       Gaya Sudut Mata
                     </label>
                     <select
                       value={style.cornerStyle}
                       onChange={(e) => setStyle(prev => ({ ...prev, cornerStyle: e.target.value as any }))}
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl"
+                      className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38]"
                     >
                       <option value="rounded">Rounded Corner</option>
                       <option value="square">Square Corner</option>
@@ -792,15 +799,15 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                 </div>
 
                 {/* Frame Style & Banner Text */}
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
-                  <label className="block text-xs font-semibold text-slate-900">
+                <div className="p-3 bg-[#F4FAF6] rounded-none border border-[#104F38]/20 space-y-2.5">
+                  <label className="block text-xs font-bold text-[#104F38]">
                     Bingkai CTA / Ajakan Bertindak
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <select
                       value={style.frameStyle}
                       onChange={(e) => setStyle(prev => ({ ...prev, frameStyle: e.target.value as any }))}
-                      className="px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg"
+                      className="px-3 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38]"
                     >
                       <option value="none">Tanpa Bingkai</option>
                       <option value="bottom-banner">Banner Bawah</option>
@@ -813,52 +820,52 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                       placeholder="PINDAI SAYA / LIHAT MENU"
                       value={style.frameText || ''}
                       onChange={(e) => setStyle(prev => ({ ...prev, frameText: e.target.value }))}
-                      className="px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg font-bold"
+                      className="px-3 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none font-bold text-[#104F38]"
                     />
                   </div>
                 </div>
 
                 {/* Center Logo Selection */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                  <label className="block text-xs font-bold text-[#104F38] mb-1.5">
                     Ikon / Logo di Tengah QR
                   </label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {[
-                      { id: 'none', label: 'Tanpa Logo', icon: '—' },
-                      { id: 'menu', label: 'Menu Resto', icon: '🍽️' },
-                      { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
-                      { id: 'instagram', label: 'Instagram', icon: '📷' },
-                      { id: 'web', label: 'Website', icon: '🌐' },
-                      { id: 'wifi', label: 'WiFi Tamu', icon: '📶' },
-                      { id: 'cart', label: 'Belanja', icon: '🛒' },
-                      { id: 'map', label: 'Lokasi Map', icon: '📍' },
-                    ].map(item => (
+                      { id: 'none', label: 'Tanpa Logo', Icon: Minus },
+                      { id: 'menu', label: 'Menu Resto', Icon: Utensils },
+                      { id: 'whatsapp', label: 'WhatsApp', Icon: MessageSquare },
+                      { id: 'instagram', label: 'Instagram', Icon: Camera },
+                      { id: 'web', label: 'Website', Icon: Globe },
+                      { id: 'wifi', label: 'WiFi Tamu', Icon: Wifi },
+                      { id: 'cart', label: 'Belanja', Icon: ShoppingCart },
+                      { id: 'map', label: 'Lokasi Map', Icon: MapPin },
+                    ].map(({ id, label, Icon }) => (
                       <button
-                        key={item.id}
+                        key={id}
                         type="button"
                         onClick={() => {
-                          if (item.id === 'none') {
+                          if (id === 'none') {
                             setStyle(prev => ({ ...prev, logoType: 'none', logo: '' }));
                           } else {
-                            setStyle(prev => ({ ...prev, logoType: 'preset', logo: item.id }));
+                            setStyle(prev => ({ ...prev, logoType: 'preset', logo: id }));
                           }
                         }}
-                        className={`p-1.5 rounded-lg border text-center text-xs transition-colors ${
-                          (item.id === 'none' && style.logoType === 'none') ||
-                          (style.logoType === 'preset' && style.logo === item.id)
-                            ? 'border-sky-600 bg-sky-50 text-sky-900 font-semibold'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                        className={`p-2 rounded-none border text-center text-xs transition-colors flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                          (id === 'none' && style.logoType === 'none') ||
+                          (style.logoType === 'preset' && style.logo === id)
+                            ? 'border-[#104F38] bg-[#F4FAF6] text-[#104F38] font-bold ring-1 ring-[#104F38]'
+                            : 'border-[#104F38]/20 hover:border-[#104F38]/50 text-[#104F38]/80'
                         }`}
                       >
-                        <span className="block text-sm mb-0.5">{item.icon}</span>
-                        <span className="text-[10px] truncate block">{item.label}</span>
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="text-[10px] truncate block w-full">{label}</span>
                       </button>
                     ))}
                   </div>
 
-                  <div className="mt-2 flex items-center gap-2">
-                    <label className="text-xs text-sky-600 hover:text-sky-800 flex items-center gap-1 cursor-pointer font-medium">
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <label className="text-xs text-[#104F38] hover:underline flex items-center gap-1.5 cursor-pointer font-semibold">
                       <Upload className="w-3.5 h-3.5" />
                       <span>Atau unggah logo kustom (PNG transparan)</span>
                       <input
@@ -877,7 +884,7 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
             {activeTab === 'options' && !isBatchMode && (
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="createPasswordInput" className="block text-xs font-semibold text-slate-800 mb-1">
+                  <label htmlFor="createPasswordInput" className="block text-xs font-bold text-[#104F38] mb-1">
                     Proteksi Kata Sandi (Opsional)
                   </label>
                   <input
@@ -886,15 +893,15 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                     placeholder="Kosongkan jika terbuka untuk umum"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl"
+                    className="w-full px-3.5 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] text-[#104F38]"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-[#104F38]/65 mt-1">
                     Jika diisi, pengunjung harus memasukkan kode ini sebelum diarahkan ke tautan tujuan.
                   </p>
                 </div>
 
                 <div>
-                  <label htmlFor="createExpiryInput" className="block text-xs font-semibold text-slate-800 mb-1">
+                  <label htmlFor="createExpiryInput" className="block text-xs font-bold text-[#104F38] mb-1">
                     Masa Berlaku Kedaluwarsa (Opsional)
                   </label>
                   <input
@@ -902,9 +909,9 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                     type="datetime-local"
                     value={expiryDate}
                     onChange={(e) => setExpiryDate(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs bg-white border border-slate-300 rounded-xl"
+                    className="w-full px-3.5 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-[#104F38]/65 mt-1">
                     Setelah tanggal ini, QR code akan menampilkan pesan bahwa masa berlaku promosi telah usai.
                   </p>
                 </div>
@@ -913,27 +920,27 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
           </div>
 
           {/* Right Column: Live QR Preview */}
-          <div className="md:col-span-5 p-6 bg-slate-50/70 flex flex-col justify-between items-center text-center">
+          <div className="md:col-span-5 p-6 bg-[#F4FAF6] flex flex-col justify-between items-center text-center">
             <div className="w-full">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#104F38]/65 block mb-2.5">
                 Pratinjau Hasil Cetak Fisik
               </span>
 
               {/* Render Canvas */}
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 inline-block mx-auto max-w-[260px]">
+              <div className="bg-white p-4 rounded-none border border-[#104F38]/20 inline-block mx-auto max-w-[260px]">
                 <canvas
                   ref={previewCanvasRef}
-                  className="w-48 h-auto rounded-lg mx-auto"
+                  className="w-48 h-auto mx-auto"
                 />
               </div>
 
               <div className="mt-3">
-                <span className="text-xs font-mono font-semibold text-slate-800 bg-slate-200/60 px-2.5 py-1 rounded-md">
+                <span className="text-xs font-mono font-bold text-[#104F38] bg-white px-2.5 py-1 border border-[#104F38]/20 inline-block">
                   /r/{slug || (isBatchMode ? 'kode-01' : 'nama-slug')}
                 </span>
               </div>
 
-              <p className="text-[11px] text-slate-500 mt-2 max-w-xs mx-auto">
+              <p className="text-[11px] text-[#104F38]/75 mt-2.5 max-w-xs mx-auto leading-relaxed">
                 {isBatchMode
                   ? `Sekali klik akan menerbitkan ${batchCount} QR Code dengan desain ini.`
                   : 'QR ini akan dicetak sekali secara fisik. Tautan tujuannya dapat diubah tak terbatas di masa depan.'}
@@ -941,11 +948,11 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="w-full pt-6 mt-6 border-t border-slate-200 flex items-center justify-end gap-2">
+            <div className="w-full pt-6 mt-6 border-t border-[#104F38]/15 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-xl cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-[#104F38]/75 hover:text-[#104F38] bg-white border border-[#104F38]/20 rounded-none cursor-pointer transition-colors"
               >
                 Batal
               </button>
@@ -953,7 +960,7 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
                 type="button"
                 onClick={() => handleSubmit()}
                 disabled={isSubmitting || (!isBatchMode && !title.trim())}
-                className="px-6 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] disabled:bg-stone-200 text-[#104F38] border border-[#104F38]/20 text-xs font-bold rounded-none shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-6 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] disabled:bg-stone-200 text-[#104F38] border border-[#104F38]/25 text-xs font-bold rounded-none transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 {isSubmitting ? (
                   <span>Menyimpan...</span>

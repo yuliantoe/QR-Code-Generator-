@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Download,
   Printer,
-  Sparkles,
   Check,
   Sliders,
   RotateCcw,
@@ -11,10 +10,7 @@ import {
   Maximize2,
   Square,
   CheckSquare,
-  ListFilter,
-  CheckCheck,
-  Eye,
-  Crown
+  CheckCheck
 } from 'lucide-react';
 import {
   renderGoogleReviewStandToCanvas,
@@ -480,20 +476,17 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
     <div className="space-y-8">
       
       {/* Masthead Banner */}
-      <div className="bg-white border border-[#104F38]/20 p-6 sm:p-8 relative overflow-hidden">
-        <div className="w-24 h-24 rounded-full bg-[#FCD5CE] absolute -top-4 -right-4 -z-0 opacity-80 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="bg-white border border-[#104F38]/20 p-6 sm:p-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#104F38] bg-[#FFE600] px-2.5 py-0.5 border border-[#104F38]/20">
-              <Sparkles className="w-3.5 h-3.5 text-[#104F38]" />
-              <span>Studio Stand Akrilik Meja & Media Sosial</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#104F38] leading-tight">
-              Desain Stand Meja: WhatsApp, Instagram, TikTok, Facebook & Google Review
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#104F38]/70 block">
+              Studio Stand Akrilik Meja &amp; Media Sosial
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#104F38] leading-tight [text-wrap:balance]">
+              Desain Stand Meja: WhatsApp, Instagram, TikTok, Facebook &amp; Google Review
             </h1>
             <p className="text-xs sm:text-sm text-[#104F38]/80 leading-relaxed font-medium">
-              Tersedia <strong>19 variasi desain siap cetak</strong> dalam <strong>Ukuran A6 (105 × 148 mm)</strong> dan <strong>Persegi 1:1</strong> untuk stand akrilik meja kasir/kafe. Pilih template WhatsApp, Instagram, TikTok, Facebook, All-in-One Sosmed, atau Google Review bintang 5. Tautan dinamis cloud dapat diganti kapan saja tanpa cetak ulang akrilik fisik.
+              Tersedia <strong>19 variasi desain siap cetak</strong> dalam ukuran <strong>A6 (105 × 148 mm)</strong> dan <strong>Persegi 1:1</strong> untuk stand akrilik meja kasir maupun kafe. Tautan dinamis dapat diganti kapan saja tanpa cetak ulang.
             </p>
           </div>
 
@@ -591,12 +584,12 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }}
               className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
                 templateFilter === 'whatsapp'
-                  ? 'bg-[#25D366] text-black border-[#25D366] font-black shadow-xs'
+                  ? 'bg-[#25D366] text-black border-[#25D366] font-black'
                   : 'bg-white text-[#075E54] border-emerald-300 hover:bg-emerald-50'
               }`}
             >
-              <span>💬 WhatsApp</span>
-              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'whatsapp').length})</span>
+              <span>WhatsApp</span>
+              <span className="text-[10px] opacity-80 font-mono tabular-nums">({STAND_TEMPLATES.filter(t => t.category === 'whatsapp').length})</span>
             </button>
 
             <button
@@ -609,12 +602,12 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }}
               className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
                 templateFilter === 'instagram'
-                  ? 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCB045] text-white border-transparent font-black shadow-xs'
+                  ? 'bg-[#C13584] text-white border-[#C13584] font-black'
                   : 'bg-white text-[#C13584] border-pink-300 hover:bg-pink-50'
               }`}
             >
-              <span>📸 Instagram</span>
-              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'instagram').length})</span>
+              <span>Instagram</span>
+              <span className="text-[10px] opacity-80 font-mono tabular-nums">({STAND_TEMPLATES.filter(t => t.category === 'instagram').length})</span>
             </button>
 
             <button
@@ -627,12 +620,12 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }}
               className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
                 templateFilter === 'tiktok'
-                  ? 'bg-black text-[#00F2FE] border-black font-black shadow-xs'
+                  ? 'bg-black text-[#00F2FE] border-black font-black'
                   : 'bg-white text-slate-900 border-slate-300 hover:bg-slate-100'
               }`}
             >
-              <span>🎵 TikTok</span>
-              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'tiktok').length})</span>
+              <span>TikTok</span>
+              <span className="text-[10px] opacity-80 font-mono tabular-nums">({STAND_TEMPLATES.filter(t => t.category === 'tiktok').length})</span>
             </button>
 
             <button
@@ -645,12 +638,12 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }}
               className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
                 templateFilter === 'facebook'
-                  ? 'bg-[#1877F2] text-white border-[#1877F2] font-black shadow-xs'
+                  ? 'bg-[#1877F2] text-white border-[#1877F2] font-black'
                   : 'bg-white text-[#1877F2] border-blue-300 hover:bg-blue-50'
               }`}
             >
-              <span>📘 Facebook</span>
-              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'facebook').length})</span>
+              <span>Facebook</span>
+              <span className="text-[10px] opacity-80 font-mono tabular-nums">({STAND_TEMPLATES.filter(t => t.category === 'facebook').length})</span>
             </button>
 
             <button
@@ -663,12 +656,12 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }}
               className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
                 templateFilter === 'social'
-                  ? 'bg-[#104F38] text-[#FFE600] border-[#104F38] font-black shadow-xs'
+                  ? 'bg-[#104F38] text-[#FFE600] border-[#104F38] font-black'
                   : 'bg-white text-[#104F38] border-[#104F38]/20 hover:bg-[#F4FAF6]'
               }`}
             >
-              <span>🌐 Multi-Sosmed</span>
-              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'social').length})</span>
+              <span>Multi-Sosmed</span>
+              <span className="text-[10px] opacity-80 font-mono tabular-nums">({STAND_TEMPLATES.filter(t => t.category === 'social').length})</span>
             </button>
 
             <button
@@ -681,12 +674,12 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }}
               className={`px-2.5 py-1 text-[11px] font-bold cursor-pointer transition-colors border flex items-center gap-1 ${
                 templateFilter === 'google'
-                  ? 'bg-[#0038CB] text-white border-[#0038CB] font-black shadow-xs'
+                  ? 'bg-[#0038CB] text-white border-[#0038CB] font-black'
                   : 'bg-white text-[#0038CB] border-blue-200 hover:bg-blue-50'
               }`}
             >
-              <span>⭐ Google Review</span>
-              <span className="text-[9.5px] opacity-80 font-mono">({STAND_TEMPLATES.filter(t => t.category === 'google').length})</span>
+              <span>Google Review</span>
+              <span className="text-[10px] opacity-80 font-mono tabular-nums">({STAND_TEMPLATES.filter(t => t.category === 'google').length})</span>
             </button>
 
             <div className="h-4 w-px bg-slate-300 mx-1 hidden sm:block" />
@@ -997,21 +990,17 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     >
                       <div>
                         <div className="font-extrabold flex items-center justify-between">
-                          <span className="flex items-center gap-1.5">
-                            <span>2. Tautan Dinamis Cloud</span>
-                            <span className="inline-block w-2 h-2 rounded-full bg-[#FFE600] animate-pulse" />
-                          </span>
-                          {urlMode === 'dynamic' && <span className="text-[9px] bg-[#FFE600] text-[#104F38] px-1.5 py-0.2">Aktif Dipilih</span>}
+                          <span>2. Tautan Dinamis Cloud</span>
+                          {urlMode === 'dynamic' && <span className="text-[9px] bg-[#FFE600] text-[#104F38] px-1.5 py-0.2">Aktif</span>}
                         </div>
                         <div className={`text-[10px] font-normal mt-0.5 leading-snug ${urlMode === 'dynamic' ? 'text-white/80' : 'text-[#104F38]/80'}`}>
-                          QR fisik memuat URL pendek awan (/r/...). Bisa ganti link berkali-kali tanpa cetak ulang akrilik.
+                          QR fisik memuat URL pendek (/r/...). Bisa ganti link berkali-kali tanpa cetak ulang akrilik.
                         </div>
                       </div>
-                      <div className={`text-[9.5px] font-mono font-bold truncate mt-1.5 px-1.5 py-0.5 border flex items-center justify-between gap-1 ${
+                      <div className={`text-[9.5px] font-mono font-bold truncate mt-1.5 px-1.5 py-0.5 border ${
                         urlMode === 'dynamic' ? 'bg-white/10 text-[#FFE600] border-white/20' : 'bg-white/80 text-[#104F38] border-[#104F38]/20'
                       }`}>
-                        <span className="truncate">{selectedItem?.url}</span>
-                        <span className="text-[8.5px] bg-emerald-600/80 text-white px-1 py-0.2 shrink-0 font-sans">🟢 Aktif Vercel</span>
+                        <span className="truncate block">{selectedItem?.url}</span>
                       </div>
                     </button>
                   </div>
@@ -1021,25 +1010,21 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 {selectedItem && (
                   <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 text-xs space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-mono font-black text-[#104F38] bg-[#FFE600] px-1.5 py-0.5 border border-[#104F38]/20 shrink-0">
                           {selectedItem.code}
                         </span>
                         <span className="font-bold text-[#104F38] truncate">{selectedItem.title}</span>
                       </div>
-                      <span className="text-[10px] font-bold text-[#104F38]/70 uppercase">
-                        {urlMode === 'direct' ? 'Cetak Tautan Baru Langsung' : 'Cetak Tautan Dinamis Cloud'}
+                      <span className="text-[10px] font-bold text-[#104F38]/70 uppercase shrink-0">
+                        {urlMode === 'direct' ? 'Langsung' : 'Dinamis'}
                       </span>
                     </div>
 
                     <div className="p-2.5 bg-white border border-[#104F38]/15 space-y-1.5">
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-[#104F38] flex items-center gap-1">
-                          {urlMode === 'direct' ? 'Tautan yang Dicetak ke QR (URL Baru Langsung):' : 'Tautan yang Dicetak ke QR (Dinamis Cloud /r/...):'}
-                          {urlMode === 'dynamic' && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
-                        </span>
-                        <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5">
-                          ✓ Sedang Aktif di Kanvas
+                        <span className="font-bold text-[#104F38]">
+                          {urlMode === 'direct' ? 'Tautan yang Dicetak ke QR (Langsung):' : 'Tautan yang Dicetak ke QR (Dinamis /r/...):'}
                         </span>
                       </div>
                       <div className="font-mono text-[11.5px] font-black text-[#104F38] truncate flex items-center justify-between gap-2">
@@ -1059,21 +1044,18 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                               className="text-[10px] font-bold text-white bg-[#104F38] px-2 py-0.5 border border-[#104F38] hover:bg-[#0c3c2b] flex items-center gap-1 cursor-pointer"
                               title="Uji buka link pengalihan dinamis di tab baru"
                             >
-                              <span>⚡ Uji Pindai Fisik</span>
+                              <span>Uji Scan</span>
                             </a>
                           )}
                         </div>
                       </div>
                       {urlMode === 'dynamic' && (
-                        <div className="text-[9.5px] text-[#104F38]/80 flex items-center justify-between pt-1 border-t border-[#104F38]/10">
-                          <span className="flex items-center gap-1">
-                            <span className="text-emerald-700 font-bold">🟢 Cloud Sync Siap:</span>
-                            <span>QR fisik aktif di Vercel Serverless & Cloud Sync.</span>
-                          </span>
+                        <div className="text-[10px] text-[#104F38]/75 flex items-center justify-between pt-1 border-t border-[#104F38]/10">
+                          <span>Sinkronisasi cloud aktif</span>
                           <button
                             type="button"
                             onClick={() => syncCurrentSlugToCloud()}
-                            className="text-[9px] underline font-bold text-[#104F38] hover:text-black cursor-pointer"
+                            className="text-[10px] underline font-bold text-[#104F38] hover:text-black cursor-pointer"
                           >
                             {cloudSyncStatus === 'syncing' ? 'Menyinkronkan...' : 'Sinkronkan Ulang'}
                           </button>
@@ -1084,7 +1066,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
                       <div className="truncate mr-2">
                         <span className="text-[10px] text-emerald-800 font-bold block uppercase tracking-wider">
-                          Tautan Tujuan Baru:
+                          Tautan Tujuan Saat Ini:
                         </span>
                         <span className="font-mono text-emerald-900 font-black truncate block">
                           {selectedItem.rawUrl}
@@ -1094,13 +1076,13 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setUrlMode('direct')}
-                          className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-1 border border-[#104F38]/20 hover:bg-[#F2DA00] shrink-0 cursor-pointer shadow-2xs"
+                          className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-1 border border-[#104F38]/20 hover:bg-[#F2DA00] shrink-0 cursor-pointer"
                         >
-                          ⚡ Gunakan Tautan Baru Ini Langsung ke QR
+                          Pakai Tautan Langsung ke QR
                         </button>
                       ) : (
-                        <span className="text-[9px] font-bold bg-[#104F38] text-white px-2 py-0.5 shrink-0">
-                          ✓ Terpasang Langsung ke QR
+                        <span className="text-[10px] font-bold text-[#104F38] shrink-0">
+                          Terpasang Langsung ke QR
                         </span>
                       )}
                     </div>
@@ -1108,7 +1090,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 )}
 
                 <div className="p-2.5 bg-[#FFFDEB] border border-[#FFE600]/60 text-[11px] text-[#104F38] flex items-center justify-between">
-                  <span>💡 Mau cetak 5, 10, atau 15 stand sekaligus?</span>
+                  <span>Cetak 5, 10, atau 15 stand sekaligus?</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -1117,7 +1099,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     }}
                     className="font-bold underline hover:text-black cursor-pointer text-xs"
                   >
-                    Buka Pilihan Ceklis →
+                    Buka Pilihan Ceklis &rarr;
                   </button>
                 </div>
               </div>
@@ -1299,25 +1281,19 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
 
             {/* Custom WhatsApp Heading for Bisnis, Cafe, Sekolah, Kampus & Resto */}
             {selectedTemplate.includes('whatsapp') && (
-              <div className="space-y-3 pt-3 border-t border-[#104F38]/10 bg-emerald-50/60 p-3.5 border border-emerald-200">
+              <div className="space-y-3 pt-3 border-t border-[#104F38]/10 bg-[#F4FAF6] p-3.5 border border-[#104F38]/20">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">💬</span>
-                    <label className="text-xs font-black text-[#075E54]">
-                      Pilihan Teks Ajakan Stand WhatsApp (Custom Heading):
-                    </label>
-                  </div>
-                  <span className="text-[9.5px] font-bold bg-[#25D366] text-white px-2 py-0.5 rounded-full">
-                    Live Cetak
-                  </span>
+                  <label className="text-xs font-black text-[#104F38]">
+                    Pilihan Teks Ajakan Stand WhatsApp (Custom Heading)
+                  </label>
                 </div>
-                <p className="text-[11px] text-emerald-800 leading-tight">
-                  Ubah teks <em>&quot;Hubungi & Pesan Menu di&quot;</em> sesuai bidang usaha Anda (Bisnis, Cafe, Sekolah, Kampus, atau Restoran).
+                <p className="text-[11px] text-[#104F38]/80 leading-tight">
+                  Ubah teks <em>&quot;Hubungi &amp; Pesan Menu di&quot;</em> sesuai bidang usaha Anda (Bisnis, Cafe, Sekolah, Kampus, atau Restoran).
                 </p>
 
                 {/* Sektor Presets */}
                 <div className="space-y-1.5">
-                  <span className="text-[10.5px] font-bold text-slate-700 block">
+                  <span className="text-[10.5px] font-bold text-[#104F38]/80 block">
                     Pilihan Siap Pakai per Sektor (1-Klik Pilih):
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
@@ -1331,17 +1307,17 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                             setWaHeadingText(hp.headingText);
                             if (hp.topBadgeText) setWaTopBadgeText(hp.topBadgeText);
                           }}
-                          className={`p-2 text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                          className={`p-2 text-left border transition-colors cursor-pointer flex flex-col justify-between ${
                             isSelected
-                              ? 'bg-emerald-100 border-[#25D366] ring-1 ring-[#25D366] font-bold text-[#075E54] shadow-xs'
-                              : 'bg-white hover:bg-emerald-50/80 border-slate-200 text-slate-800'
+                              ? 'bg-emerald-100 border-[#104F38] font-bold text-[#104F38]'
+                              : 'bg-white hover:bg-emerald-50/60 border-[#104F38]/20 text-slate-800'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-[9px] font-black text-emerald-800 uppercase tracking-wide bg-emerald-100/70 px-1.5 py-0.2 rounded-sm">
+                            <span className="text-[10px] font-bold text-[#104F38]/80 uppercase tracking-wide">
                               {hp.sectorLabel}
                             </span>
-                            {isSelected && <span className="text-[9px] font-extrabold text-[#075E54]">✓ Terpilih</span>}
+                            {isSelected && <span className="text-[10px] font-bold text-[#104F38]">Terpilih</span>}
                           </div>
                           <span className="text-[11px] font-medium leading-snug">
                             &ldquo;{hp.headingText}&rdquo;
@@ -1355,37 +1331,39 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 {/* Free Text Input for Heading */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-[#075E54]">
+                    <label htmlFor="wa-custom-heading" className="text-[11px] font-bold text-[#104F38]">
                       Ketik Bebas Teks Heading Stand Sendiri:
                     </label>
-                    <span className="text-[10px] text-slate-500 font-mono">
+                    <span className="text-[10px] text-[#104F38]/60 font-mono tabular-nums">
                       {waHeadingText.length} huruf
                     </span>
                   </div>
                   <input
+                    id="wa-custom-heading"
                     type="text"
                     value={waHeadingText}
                     onChange={(e) => setWaHeadingText(e.target.value)}
                     placeholder="Contoh: Hubungi & Konsultasi Layanan di / Pesan Kopi di"
-                    className="w-full px-3 py-2 text-xs bg-white border border-emerald-300 rounded-none focus:outline-none focus:ring-2 focus:ring-[#25D366] font-bold text-slate-900 shadow-2xs"
+                    className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 font-bold text-[#104F38]"
                   />
-                  <p className="text-[10px] text-emerald-700/80 mt-1">
+                  <p className="text-[10px] text-[#104F38]/70 mt-1">
                     Teks ini langsung muncul di atas tulisan &quot;WhatsApp&quot; pada lembar cetak akrilik fisik Anda.
                   </p>
                 </div>
 
                 {/* Optional Pill Banner for A6 */}
                 {selectedTemplate === 'a6-whatsapp' && (
-                  <div className="pt-2 border-t border-emerald-200/60">
-                    <label className="block text-[11px] font-bold text-[#075E54] mb-1">
-                      Kustom Teks Lencana Lengkung Atas (Pill Banner A6):
+                  <div className="pt-2 border-t border-[#104F38]/15">
+                    <label htmlFor="wa-top-badge" className="block text-[11px] font-bold text-[#104F38] mb-1">
+                      Kustom Teks Lencana Atas Stand A6:
                     </label>
                     <input
+                      id="wa-top-badge"
                       type="text"
                       value={waTopBadgeText}
                       onChange={(e) => setWaTopBadgeText(e.target.value)}
-                      placeholder="✓ CHAT LANGSUNG & LAYANAN RESMI"
-                      className="w-full px-3 py-1.5 text-xs bg-white border border-emerald-300 rounded-none focus:outline-none focus:ring-2 focus:ring-[#25D366] text-slate-900 font-mono text-[11px]"
+                      placeholder="CHAT LANGSUNG & LAYANAN RESMI"
+                      className="w-full px-3 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 text-[#104F38] font-mono text-[11px]"
                     />
                   </div>
                 )}
@@ -1404,46 +1382,40 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 {STAND_TEMPLATES.find(t => t.id === selectedTemplate)?.description}
               </p>
 
-            {/* Dynamic Platform Tip */}
+              {/* Dynamic Platform Tip */}
               {selectedTemplate.includes('whatsapp') && (
-                <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-none text-[10.5px] mt-1.5">
-                  💬 <strong>Tips Stand WhatsApp:</strong> Letakkan di atas meja kafe, kasir resto, lobi kantor bisnis, atau loket pendaftaran sekolah/kampus agar pengunjung dapat langsung chat CS atau panitia tanpa perlu simpan kontak terlebih dahulu.
+                <div className="p-2.5 bg-white border border-[#104F38]/20 text-[#104F38] rounded-none text-[11px] mt-1.5">
+                  <strong>Tips Stand WhatsApp:</strong> Letakkan di meja kafe, kasir resto, lobi kantor, atau loket pendaftaran sekolah/kampus agar pengunjung dapat langsung chat tanpa simpan nomor.
                 </div>
               )}
               {selectedTemplate.includes('instagram') && (
-                <div className="p-2 bg-pink-50 border border-pink-200 text-[#833AB4] rounded-none text-[10.5px] mt-1.5">
-                  📸 <strong>Tips Stand Instagram:</strong> Dorong pelanggan mengunggah foto kuliner ke IG Story dan tag akun resmi Anda untuk mendapatkan diskon langsung.
+                <div className="p-2.5 bg-white border border-pink-200 text-[#833AB4] rounded-none text-[11px] mt-1.5">
+                  <strong>Tips Stand Instagram:</strong> Dorong pelanggan mengunggah foto ke IG Story dan menandai akun resmi usaha Anda.
                 </div>
               )}
               {selectedTemplate.includes('tiktok') && (
-                <div className="p-2 bg-slate-900 text-[#00F2FE] border border-slate-700 rounded-none text-[10.5px] mt-1.5">
-                  🎵 <strong>Tips Stand TikTok:</strong> Ajak pengunjung menonton konten video viral, proses pembuatan menu, dan review seru pengunjung lainnya.
+                <div className="p-2.5 bg-slate-900 text-[#00F2FE] border border-slate-700 rounded-none text-[11px] mt-1.5">
+                  <strong>Tips Stand TikTok:</strong> Ajak pengunjung menonton video menu dan ulasan pelanggan langsung dari akun resmi Anda.
                 </div>
               )}
               {selectedTemplate.includes('facebook') && (
-                <div className="p-2 bg-blue-50 border border-blue-200 text-[#1877F2] rounded-none text-[10.5px] mt-1.5">
-                  📘 <strong>Tips Stand Facebook:</strong> Bagikan info promo bulanan, lowongan kerja, dan bangun komunitas pelanggan setia.
+                <div className="p-2.5 bg-white border border-blue-200 text-[#1877F2] rounded-none text-[11px] mt-1.5">
+                  <strong>Tips Stand Facebook:</strong> Bagikan informasi promo bulanan dan bangun komunitas pelanggan tetap.
                 </div>
               )}
               {selectedTemplate.includes('social-all') && (
-                <div className="p-2 bg-[#FFFDEB] border border-[#FFE600] text-[#104F38] rounded-none text-[10.5px] mt-1.5">
-                  🌐 <strong>Tips All-in-One:</strong> Hubungkan QR Code ke Linktree atau halaman utama yang memuat semua akun media sosial bisnis Anda dalam 1 scan.
+                <div className="p-2.5 bg-[#FFFDEB] border border-[#FFE600] text-[#104F38] rounded-none text-[11px] mt-1.5">
+                  <strong>Tips Multi-Sosmed:</strong> Hubungkan QR Code ke tautan halaman profil yang memuat seluruh akun media sosial bisnis Anda.
                 </div>
               )}
             </div>
 
             {/* WhatsApp Custom Welcome Greeting Panel */}
             {isSelectedWhatsApp && (
-              <div className="p-3.5 bg-white border border-[#104F38]/20 rounded-xl space-y-3 shadow-2xs">
+              <div className="p-3.5 bg-white border border-[#104F38]/20 rounded-none space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">💬</span>
-                    <span className="text-xs font-black text-[#075E54]">
-                      Kustomisasi Tampilan Awal & Pesan Sambutan WhatsApp
-                    </span>
-                  </div>
-                  <span className="text-[9.5px] bg-[#25D366] text-white px-2 py-0.5 rounded-full font-bold">
-                    Stand WhatsApp
+                  <span className="text-xs font-black text-[#104F38]">
+                    Kustomisasi Tampilan Awal &amp; Pesan Sambutan WhatsApp
                   </span>
                 </div>
 
@@ -1452,14 +1424,14 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                   onUrlChange={(updatedUrl) => setWaLiveUrl(updatedUrl)}
                 />
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-[#104F38]/10">
                   {waSavedMessage ? (
-                    <span className="text-xs text-emerald-800 font-bold bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300">
+                    <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 border border-emerald-300">
                       {waSavedMessage}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-slate-500">
-                      Klik simpan untuk memperbarui tautan tujuan QR code di cloud.
+                    <span className="text-[11px] text-[#104F38]/70">
+                      Klik simpan untuk memperbarui tautan tujuan QR code.
                     </span>
                   )}
 
@@ -1467,9 +1439,9 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     type="button"
                     onClick={handleSaveWhatsAppToQR}
                     disabled={waSaving || !selectedItem || selectedItem.type !== 'qr'}
-                    className="px-3.5 py-2 text-xs font-bold bg-[#104F38] hover:bg-[#0c3c2b] text-[#FFE600] rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    className="px-3.5 py-2 text-xs font-bold bg-[#104F38] hover:bg-[#0c3c2b] text-[#FFE600] rounded-none flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                   >
-                    <span>{waSaving ? 'Menyimpan...' : '💾 Simpan Pesan Sambutan ke QR'}</span>
+                    <span>{waSaving ? 'Menyimpan...' : 'Simpan Pesan Sambutan ke QR'}</span>
                   </button>
                 </div>
               </div>
@@ -1505,8 +1477,8 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 <h3 className="text-sm font-bold text-[#104F38] flex items-center gap-1.5">
                   <span>Pratinjau Stand Akrilik {formatSize === 'a6' ? 'Ukuran A6' : 'Format Kotak'}</span>
                   {isRendering && (
-                    <span className="text-[10px] text-[#104F38]/60 animate-pulse font-normal">
-                      (Merender...)
+                    <span className="text-[11px] text-[#104F38]/60 font-normal">
+                      (Memuat...)
                     </span>
                   )}
                 </h3>
@@ -1530,20 +1502,20 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                 ref={previewCanvasRef}
                 className={`w-full ${
                   formatSize === 'a6' ? 'max-w-[340px] sm:max-w-[380px]' : 'max-w-[440px]'
-                } h-auto shadow-md block border border-slate-300 rounded-lg transition-all`}
+                } h-auto block border border-slate-300 rounded-none transition-all`}
                 style={{ aspectRatio: formatSize === 'a6' ? '105/148' : '1/1' }}
               />
             </div>
 
             {/* Download & Print Buttons Bar */}
             {isBatchPrinting ? (
-              <div className="p-4 bg-[#F4FAF6] border border-[#104F38]/30 text-center space-y-2 animate-in fade-in">
+              <div className="p-4 bg-[#F4FAF6] border border-[#104F38]/30 text-center space-y-2">
                 <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#104F38]">
                   <span className="w-3.5 h-3.5 border-2 border-[#104F38] border-t-transparent rounded-full animate-spin" />
                   <span>{batchProgressText || 'Sedang memproses stand meja...'}</span>
                 </div>
                 <div className="w-full bg-[#104F38]/10 h-1.5 overflow-hidden">
-                  <div className="bg-[#104F38] h-full w-2/3 animate-pulse" />
+                  <div className="bg-[#104F38] h-full w-2/3" />
                 </div>
                 <span className="text-[10px] text-[#104F38]/70 block">
                   Mohon tunggu sebentar, setiap stand meja sedang disiapkan dengan resolusi tinggi...
@@ -1625,13 +1597,13 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
             {/* Instruction Notice */}
             <div className="p-3.5 bg-[#F4FAF6] border border-[#104F38]/15 text-xs text-[#104F38]/80 space-y-1">
               <strong className="text-[#104F38] font-bold block">
-                💡 Petunjuk Penggunaan Stand Akrilik Meja A6:
+                Petunjuk Penggunaan Stand Akrilik Meja A6:
               </strong>
               <p className="text-[11px] leading-relaxed">
-                1. Pilih salah satu dari <strong>4 Desain Stand Meja A6</strong> (atau 5 desain persegi) di atas.<br />
+                1. Pilih desain Stand Meja A6 atau Persegi di atas.<br />
                 2. Unduh format <strong>PNG Super HD (300 DPI)</strong> lalu cetak pada kertas foto/art carton ukuran <strong>A6 (105 × 148 mm)</strong>.<br />
-                3. Tempelkan chip/stiker stiker NFC fisik di bagian belakang lambang <strong>TAP UNTUK REVIEW</strong>.<br />
-                4. Selipkan ke dalam stand akrilik meja (T-Shape, L-Shape, atau Stand Segitiga). Pelanggan kasir cukup tap HP atau scan QR untuk memberikan ulasan bintang 5 Google Review secara instan!
+                3. Tempelkan chip atau stiker NFC fisik di bagian belakang lambang <strong>TAP UNTUK REVIEW</strong>.<br />
+                4. Selipkan ke dalam stand akrilik meja agar pelanggan cukup tap smartphone atau scan QR secara instan.
               </p>
             </div>
 

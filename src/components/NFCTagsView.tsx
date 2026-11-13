@@ -14,7 +14,8 @@ import {
   Search,
   LayoutList,
   Minimize2,
-  Sparkles
+  Layers,
+  X
 } from 'lucide-react';
 import type { NFCTag } from '../types.ts';
 
@@ -54,11 +55,17 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'locked'>('all');
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedPayloadLink, setCopiedPayloadLink] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [tapSuccessMessage, setTapSuccessMessage] = useState<string | null>(null);
   const [writePayloadModalTag, setWritePayloadModalTag] = useState<NFCTag | null>(null);
   const [nfcWriteStatus, setNfcWriteStatus] = useState<'idle' | 'writing' | 'success' | 'unsupported'>('idle');
   const [nfcWriteLog, setNfcWriteLog] = useState<string | null>(null);
+
+  const [deleteTargetTag, setDeleteTargetTag] = useState<NFCTag | null>(null);
+  const [deletePin, setDeletePin] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeletingTag, setIsDeletingTag] = useState(false);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -107,13 +114,34 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
     }
   };
 
-  const handleDeleteWithPin = async (tag: NFCTag) => {
-    const enteredPin = prompt(`Masukkan PIN NFC Tag untuk menghapus "${tag.placeName}":`);
-    if (!enteredPin) return;
+  const openDeletePinModal = (tag: NFCTag) => {
+    setDeleteTargetTag(tag);
+    setDeletePin('');
+    setDeleteError(null);
+  };
 
-    const ok = await onDeleteTag(tag.id, enteredPin.trim());
-    if (!ok) {
-      alert('PIN NFC salah! Penghapusan dibatalkan.');
+  const handleConfirmDeleteWithPin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteTargetTag) return;
+    if (!deletePin.trim()) {
+      setDeleteError('PIN NFC Tag wajib diisi untuk menghapus.');
+      return;
+    }
+
+    setIsDeletingTag(true);
+    setDeleteError(null);
+    try {
+      const ok = await onDeleteTag(deleteTargetTag.id, deletePin.trim());
+      if (ok) {
+        setDeleteTargetTag(null);
+        setDeletePin('');
+      } else {
+        setDeleteError('PIN NFC salah! Penghapusan dibatalkan.');
+      }
+    } catch {
+      setDeleteError('Terjadi gangguan saat menghapus NFC Tag.');
+    } finally {
+      setIsDeletingTag(false);
     }
   };
 
@@ -151,20 +179,16 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   return (
     <div className="space-y-8">
       
-      {/* Hero Banner: Clean White Box with Forest Green Framing and Blush Blob */}
+      {/* Hero Banner */}
       <div className="bg-white rounded-none border border-[#104F38]/20 p-6 sm:p-8 relative overflow-hidden">
-        
-        {/* Whimsical Blush Pink Circle Blob Accent */}
-        <div className="w-24 h-24 rounded-full bg-[#FCD5CE] absolute -top-4 -right-4 -z-0 opacity-80 pointer-events-none" />
-
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl space-y-2">
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#104F38] bg-[#FFE600] px-2.5 py-0.5 border border-[#104F38]/20">
+            <div className="text-xs font-bold uppercase tracking-wider text-[#104F38]/75 flex items-center gap-1.5">
               <Radio className="w-3.5 h-3.5 text-[#104F38]" />
               <span>Teknologi Tap to Review (NFC)</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#104F38] leading-tight">
-              Aktivasi & Manajemen NFC Tag Google Review
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#104F38] leading-tight [text-wrap:balance]">
+              Aktivasi &amp; Manajemen NFC Tag Google Review
             </h1>
             <p className="text-xs sm:text-sm text-[#104F38]/80 leading-relaxed font-medium">
               Daftarkan dan program chip NFC fisik (kartu tap akrilik meja atau stiker). Pelanggan cukup menempelkan smartphone mereka untuk langsung membuka formulir ulasan bintang 5 Google Bisnis Anda.
@@ -286,16 +310,11 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
         <div className="flex items-center justify-between text-xs px-1 text-[#104F38]/70">
           <div className="flex items-center gap-2">
             <span className="font-bold text-[#104F38] text-sm">Daftar Aktivasi NFC Tag</span>
-            <span className="bg-[#FFE600] text-[#104F38] px-2 py-0.5 font-mono text-[11px] font-extrabold border border-[#104F38]/20">
-              {filteredTags.length}
+            <span className="text-[#104F38]/70 font-mono text-xs font-bold tabular-nums">
+              ({filteredTags.length})
             </span>
-            {isCompact && (
-              <span className="bg-[#F4FAF6] text-[#104F38] font-semibold px-2 py-0.5 rounded-none text-[10px] flex items-center gap-1 border border-[#104F38]/15">
-                <Minimize2 className="w-2.5 h-2.5" /> View Lebih Kecil Aktif
-              </span>
-            )}
           </div>
-          <div className="text-[11px] text-[#104F38]/60">
+          <div className="text-[11px] text-[#104F38]/65">
             Mode: <strong className="text-[#104F38]">{isCompact ? 'Detail Lebih Kecil' : 'Normal'}</strong>
           </div>
         </div>
@@ -353,10 +372,10 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                               <Copy className="w-2.5 h-2.5" />
                             )}
                           </button>
-                          <span className="text-[#104F38]/30 text-[10px]">·</span>
+                          <span aria-hidden="true" className="text-[#104F38]/30 text-[10px]">·</span>
                           <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded-none ${
-                              isLocked ? 'bg-[#FCD5CE] text-[#104F38]' : 'bg-[#FFE600] text-[#104F38]'
+                            className={`text-[10px] font-bold ${
+                              isLocked ? 'text-rose-700' : 'text-[#104F38]'
                             }`}
                           >
                             {isLocked ? 'Dikunci' : 'Aktif'}
@@ -414,7 +433,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                       <button
                         onClick={() => handleSimulateTap(tag)}
                         disabled={testingId === tag.id}
-                        className="px-2 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 rounded-none text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        className="px-2 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
                         title="Simulasikan tap pengunjung"
                       >
                         {testingId === tag.id ? (
@@ -431,8 +450,9 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                           setWritePayloadModalTag(tag);
                           setNfcWriteStatus('idle');
                           setNfcWriteLog(null);
+                          setCopiedPayloadLink(false);
                         }}
-                        className="px-2 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 rounded-none text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        className="px-2 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
                         title="Program chip NFC fisik"
                       >
                         <Radio className="w-3 h-3 text-[#104F38]/70" />
@@ -443,10 +463,10 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                       {onOpenStandStudio && (
                         <button
                           onClick={() => onOpenStandStudio(tag)}
-                          className="px-2 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
+                          className="px-2 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
                           title="Buka Template Desain Stand Akrilik Google Review"
                         >
-                          <Sparkles className="w-3 h-3 text-[#104F38]" />
+                          <Layers className="w-3 h-3 text-[#104F38]" />
                           <span>Stand</span>
                         </button>
                       )}
@@ -454,7 +474,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                       {/* Edit with PIN */}
                       <button
                         onClick={() => onOpenEditModal(tag)}
-                        className="px-2 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                        className="px-2 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
                         title="Ubah Link Review (Perlu PIN)"
                       >
                         <Edit3 className="w-3 h-3 text-[#FFE600]" />
@@ -463,8 +483,9 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
 
                       {/* Delete with PIN */}
                       <button
-                        onClick={() => handleDeleteWithPin(tag)}
-                        className="p-1 text-[#104F38]/40 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors cursor-pointer border border-transparent hover:border-rose-200"
+                        onClick={() => openDeletePinModal(tag)}
+                        aria-label={`Hapus NFC Tag ${tag.placeName}`}
+                        className="p-1 text-[#104F38]/45 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors cursor-pointer border border-transparent hover:border-rose-200"
                         title="Hapus NFC Tag (Perlu PIN)"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -519,8 +540,8 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                             <Copy className="w-3 h-3" />
                           )}
                         </button>
-                        <span className="text-[#104F38]/30">·</span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-none ${isLocked ? 'bg-[#FCD5CE] text-[#104F38]' : 'bg-[#FFE600] text-[#104F38]'}`}>
+                        <span aria-hidden="true" className="text-[#104F38]/30">·</span>
+                        <span className={`text-[11px] font-bold ${isLocked ? 'text-rose-700' : 'text-[#104F38]'}`}>
                           {isLocked ? 'Dikunci' : 'Aktif'}
                         </span>
                       </div>
@@ -581,7 +602,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                     <button
                       onClick={() => handleSimulateTap(tag)}
                       disabled={testingId === tag.id}
-                      className="px-3 py-2 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 rounded-none text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      className="px-3 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                       title="Simulasikan smartphone pengunjung menempelkan NFC"
                     >
                       {testingId === tag.id ? (
@@ -603,8 +624,9 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                         setWritePayloadModalTag(tag);
                         setNfcWriteStatus('idle');
                         setNfcWriteLog(null);
+                        setCopiedPayloadLink(false);
                       }}
-                      className="px-3 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 rounded-none text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      className="px-3 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                       title="Tulis URL ke chip NFC fisik"
                     >
                       <Radio className="w-3.5 h-3.5 text-[#104F38]/70" />
@@ -615,10 +637,10 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                     {onOpenStandStudio && (
                       <button
                         onClick={() => onOpenStandStudio(tag)}
-                        className="px-3 py-2 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        className="px-3 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 rounded-none text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                         title="Buka Template Desain Stand Akrilik Google Review"
                       >
-                        <Sparkles className="w-3.5 h-3.5 text-[#104F38]" />
+                        <Layers className="w-3.5 h-3.5 text-[#104F38]" />
                         <span>Stand Review</span>
                       </button>
                     )}
@@ -626,7 +648,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                     {/* Edit with PIN */}
                     <button
                       onClick={() => onOpenEditModal(tag)}
-                      className="px-3 py-2 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                      className="px-3 py-2 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-[#FFE600]" />
                       <span>Ubah Link (PIN)</span>
@@ -634,8 +656,9 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
 
                     {/* Delete with PIN */}
                     <button
-                      onClick={() => handleDeleteWithPin(tag)}
-                      className="p-2 text-[#104F38]/40 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors cursor-pointer border border-transparent hover:border-rose-200"
+                      onClick={() => openDeletePinModal(tag)}
+                      aria-label={`Hapus NFC Tag ${tag.placeName}`}
+                      className="p-2 text-[#104F38]/45 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors cursor-pointer border border-transparent hover:border-rose-200"
                       title="Hapus NFC Tag (Perlu PIN)"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -688,9 +711,13 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
 
       {/* Modal: Write / Program Physical NFC Tag */}
       {writePayloadModalTag && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#104F38]/40 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg bg-white rounded-none shadow-2xl border border-[#104F38]/20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-[#104F38]/10 flex items-center justify-between bg-[#F8FAF9]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a2318]/75">
+          <div
+            className="relative w-full max-w-lg bg-white rounded-none shadow-xl border border-[#104F38]/30 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="px-6 py-4 border-b border-[#104F38]/15 flex items-center justify-between bg-[#F4FAF6]">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-[#104F38]" />
                 <h3 className="text-base font-bold text-[#104F38]">
@@ -699,27 +726,37 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
               </div>
               <button
                 onClick={() => setWritePayloadModalTag(null)}
-                className="text-[#104F38]/50 hover:text-[#104F38] p-1 rounded"
+                aria-label="Tutup modal program NFC"
+                className="text-[#104F38]/60 hover:text-[#104F38] p-1 rounded-none cursor-pointer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-4 text-xs">
-              <div className="p-3.5 bg-[#F4FAF6] border border-[#104F38]/20 rounded-none space-y-1">
+              <div className="p-3.5 bg-[#F4FAF6] border border-[#104F38]/20 rounded-none space-y-1.5">
                 <strong className="text-[#104F38] font-bold block">
                   Tautan Dinamis yang Ditulis ke Chip NFC:
                 </strong>
                 <div className="flex items-center justify-between gap-2 bg-white p-2 rounded-none border border-[#104F38]/20 font-mono text-[#104F38]">
                   <span className="truncate">{`${origin}/nfc/${writePayloadModalTag.id}`}</span>
                   <button
+                    type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(`${origin}/nfc/${writePayloadModalTag.id}`);
-                      alert('URL NFC berhasil disalin!');
+                      setCopiedPayloadLink(true);
+                      setTimeout(() => setCopiedPayloadLink(false), 2000);
                     }}
-                    className="text-[#104F38] font-bold hover:underline shrink-0 text-[11px]"
+                    className="text-[#104F38] font-bold hover:underline shrink-0 text-[11px] flex items-center gap-1 cursor-pointer"
                   >
-                    Salin
+                    {copiedPayloadLink ? (
+                      <>
+                        <Check className="w-3 h-3" />
+                        <span>Tersalin</span>
+                      </>
+                    ) : (
+                      <span>Salin</span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -733,7 +770,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                   type="button"
                   onClick={() => handleWebNFCWrite(writePayloadModalTag)}
                   disabled={nfcWriteStatus === 'writing'}
-                  className="w-full py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] disabled:bg-stone-300 text-white font-bold rounded-none flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  className="w-full py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] disabled:bg-stone-300 text-white font-bold rounded-none flex items-center justify-center gap-2 cursor-pointer transition-colors"
                 >
                   <Radio className="w-4 h-4 text-[#FFE600]" />
                   <span>
@@ -748,7 +785,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                 <div className={`p-3 rounded-none border text-xs flex items-start gap-2 ${
                   nfcWriteStatus === 'success'
                     ? 'bg-[#F4FAF6] border-[#104F38]/30 text-[#104F38]'
-                    : 'bg-[#FCD5CE]/30 border-[#FCD5CE] text-[#104F38]'
+                    : 'bg-amber-50 border-amber-300 text-amber-900'
                 }`}>
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#104F38]" />
                   <span>{nfcWriteLog}</span>
@@ -758,7 +795,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
               {/* NFC Tools App Guide */}
               <div className="pt-2 border-t border-[#104F38]/10 space-y-1.5 text-[#104F38]/80">
                 <span className="font-bold text-[#104F38] block">
-                  Metode 2: Menggunakan Aplikasi "NFC Tools" (Gratis di Android / iOS)
+                  Metode 2: Menggunakan Aplikasi &ldquo;NFC Tools&rdquo; (Gratis di Android / iOS)
                 </span>
                 <ol className="list-decimal pl-4 space-y-1 text-[11px] leading-relaxed">
                   <li>Unduh aplikasi <strong>NFC Tools</strong> dari Play Store atau App Store.</li>
@@ -769,15 +806,94 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
               </div>
             </div>
 
-            <div className="px-6 py-3 bg-[#F8FAF9] border-t border-[#104F38]/10 flex justify-end">
+            <div className="px-6 py-3 bg-[#F4FAF6] border-t border-[#104F38]/15 flex justify-end">
               <button
                 type="button"
                 onClick={() => setWritePayloadModalTag(null)}
-                className="px-4 py-1.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/20 font-bold rounded-none text-xs cursor-pointer"
+                className="px-4 py-1.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/25 font-bold rounded-none text-xs cursor-pointer"
               >
                 Selesai
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Confirm Delete NFC Tag with PIN (Replaces browser prompt/alert) */}
+      {deleteTargetTag && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a2318]/75">
+          <div
+            className="relative w-full max-w-md bg-white rounded-none shadow-xl border border-rose-600 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="h-1.5 bg-rose-600" />
+            <div className="px-5 py-4 border-b border-rose-200 bg-rose-50/50 flex items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-rose-700 font-bold block">
+                  Verifikasi Hapus NFC Tag
+                </span>
+                <h3 className="text-base font-bold text-[#104F38]">
+                  Hapus &ldquo;{deleteTargetTag.placeName}&rdquo;?
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteTargetTag(null)}
+                disabled={isDeletingTag}
+                aria-label="Tutup konfirmasi hapus NFC"
+                className="p-1 text-[#104F38]/60 hover:text-[#104F38] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDeleteWithPin} className="p-5 space-y-4 text-xs">
+              <p className="text-[#104F38]/80 leading-relaxed">
+                Masukkan PIN NFC Tag untuk menghapus registrasi <strong className="font-mono">/nfc/{deleteTargetTag.id}</strong> secara permanen.
+              </p>
+
+              {deleteError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-300 text-rose-800 font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="deleteNfcPinInput" className="block font-bold text-[#104F38] mb-1">
+                  PIN NFC Tag <span className="text-rose-600">*</span>
+                </label>
+                <input
+                  id="deleteNfcPinInput"
+                  type="password"
+                  autoFocus
+                  required
+                  value={deletePin}
+                  onChange={(e) => setDeletePin(e.target.value)}
+                  placeholder="Masukkan PIN keamanan NFC Tag..."
+                  className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none font-mono focus:outline-none focus:border-[#104F38] text-[#104F38]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#104F38]/15">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetTag(null)}
+                  disabled={isDeletingTag}
+                  className="px-4 py-2 font-semibold text-[#104F38]/75 hover:text-[#104F38] bg-white border border-[#104F38]/20 rounded-none cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isDeletingTag}
+                  className="px-4 py-2 font-bold text-white bg-rose-600 hover:bg-rose-700 border border-rose-700 rounded-none cursor-pointer disabled:opacity-50"
+                >
+                  {isDeletingTag ? 'Menghapus...' : 'Hapus NFC Tag'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

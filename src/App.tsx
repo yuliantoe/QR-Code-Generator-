@@ -12,7 +12,7 @@ import { StandDesignView } from './components/StandDesignView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { AddUserModal } from './components/AddUserModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, ArrowRight, Sparkles, Crown, UserPlus, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, Layers, UserPlus, ShieldCheck } from 'lucide-react';
 import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
@@ -655,105 +655,102 @@ export default function App() {
             {/* HERO SECTION: Exactly matching image_210c7505 */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center pt-2 pb-6">
               
-              {/* Left Column: Heading + Blush Pink Circle + Wireframe Bracket CTA */}
+              {/* Left Column: Heading + Wireframe Bracket CTA Hierarchy */}
               <div className="lg:col-span-7 space-y-6 relative">
                 
-                {/* Soft Blush Pink Circular Blob (matching the pink circle in the image) */}
-                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-[#FCD5CE] absolute -top-4 sm:-top-8 left-40 sm:left-56 -z-10 opacity-90 pointer-events-none" />
-
                 {/* 2-Line Bold Heading */}
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#104F38] leading-[1.08]">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#104F38] leading-[1.08] [text-wrap:balance]">
                   Keunggulan<br />
-                  QR Dinamis & NFC
+                  QR Dinamis &amp; NFC
                 </h1>
 
                 {/* Subtitle description in Indonesian */}
                 <p className="text-sm sm:text-base text-[#104F38]/80 max-w-xl leading-relaxed font-medium">
-                  Kami menciptakan QR Code dinamis dan stand akrilik NFC Google Review berkualitas tinggi yang membantu mencapai target bisnis Anda serta meningkatkan kepercayaan pelanggan tanpa repot cetak ulang.
+                  Buat QR Code dinamis dan stand akrilik NFC Google Review yang tautannya dapat diganti kapan saja tanpa perlu cetak ulang media fisik.
                 </p>
 
                 {/* Architectural Wireframe Bracket framing the Action Buttons */}
                 <div className="pt-2 relative">
                   
-                  {/* Decorative Wireframe Bracket Line */}
+                  {/* Architectural Wireframe Bracket Line */}
                   <div className="hidden sm:block absolute -left-3 top-2 bottom-3 w-8 border-l-2 border-b-2 border-[#104F38]/30 pointer-events-none" />
 
-                  <div className="space-y-2.5 w-full pl-0 sm:pl-3">
+                  <div className="space-y-3 w-full pl-0 sm:pl-3">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full">
                       
-                      {/* Canary Yellow Button */}
+                      {/* Single Dominant Primary CTA */}
                       <button
                         onClick={handleOpenCreateSingle}
-                        className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
+                        className="w-full sm:w-auto justify-center px-5 sm:px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-colors flex items-center gap-2 cursor-pointer"
                       >
                         <Plus className="w-4 h-4 text-[#104F38] shrink-0" />
-                        <span>Buat QR Baru (Tunggal & Batch)</span>
+                        <span>Buat QR Baru</span>
                       </button>
 
-                      {/* Forest Green Button */}
+                      {/* Secondary Outline Action */}
                       <button
                         onClick={() => setIsActivateNFCOpen(true)}
-                        className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
+                        className="w-full sm:w-auto justify-center px-4 sm:px-5 py-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-colors flex items-center gap-2 cursor-pointer"
                       >
                         <Radio className="w-4 h-4 text-[#FFE600] shrink-0" />
                         <span>Aktivasi NFC Review</span>
                       </button>
 
-                      {/* Blue Stand Akrilik Design Button */}
+                      {/* Secondary Ghost Action */}
                       <button
                         onClick={() => setCurrentTab('stand-design')}
-                        className="w-full sm:w-auto justify-center px-4 sm:px-6 py-3 bg-[#0038CB] hover:bg-[#032ea0] text-white text-xs sm:text-sm font-bold tracking-tight rounded-none transition-all flex items-center gap-2 cursor-pointer shadow-xs active:translate-y-0.5"
+                        className="w-full sm:w-auto justify-center px-4 sm:px-5 py-3 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <Sparkles className="w-4 h-4 text-[#FFE600] shrink-0" />
-                        <span>Desain Stand Meja A6 (9 Desain)</span>
+                        <Layers className="w-4 h-4 text-[#104F38] shrink-0" />
+                        <span>Studio Stand A6</span>
                       </button>
 
                     </div>
 
                     {/* Quick Batch Generate Shortcut Buttons */}
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-[#104F38]">
-                      <span className="text-[11px] font-bold text-[#104F38]/70">Pintas Buat Sekaligus:</span>
+                      <span className="text-[11px] font-bold text-[#104F38]/70 mr-1">Buat Massal:</span>
                       <button
                         type="button"
                         onClick={() => handleOpenCreateBatch(5)}
-                        className="px-2.5 py-1 bg-white hover:bg-[#FFE600] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] rounded-none transition-all cursor-pointer shadow-2xs hover:border-[#104F38]"
+                        className="px-2.5 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 font-semibold text-[11px] rounded-none transition-colors cursor-pointer hover:border-[#104F38]/50 tabular-nums"
                       >
-                        ⚡ 5 QR Sekaligus
+                        5 QR Sekaligus
                       </button>
                       <button
                         type="button"
                         onClick={() => handleOpenCreateBatch(10)}
-                        className="px-2.5 py-1 bg-white hover:bg-[#FFE600] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] rounded-none transition-all cursor-pointer shadow-2xs hover:border-[#104F38]"
+                        className="px-2.5 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 font-semibold text-[11px] rounded-none transition-colors cursor-pointer hover:border-[#104F38]/50 tabular-nums"
                       >
-                        ⚡ 10 QR Sekaligus
+                        10 QR Sekaligus
                       </button>
                       <button
                         type="button"
                         onClick={() => handleOpenCreateBatch(15)}
-                        className="px-2.5 py-1 bg-white hover:bg-[#FFE600] text-[#104F38] border border-[#104F38]/20 font-bold text-[11px] rounded-none transition-all cursor-pointer shadow-2xs hover:border-[#104F38]"
+                        className="px-2.5 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 font-semibold text-[11px] rounded-none transition-colors cursor-pointer hover:border-[#104F38]/50 tabular-nums"
                       >
-                        ⚡ 15 QR Sekaligus
+                        15 QR Sekaligus
                       </button>
                     </div>
 
                     {/* Administrator Panel: Tambah User Menu (Only for Admin) */}
                     {currentUser?.username.toLowerCase() === 'admin' && (
-                      <div className="pt-2 flex flex-wrap items-center gap-2">
-                        <div className="inline-flex flex-wrap items-center gap-2 p-2 px-3 bg-[#F4FAF6] border border-[#104F38]/25 text-xs shadow-2xs">
-                          <span className="font-extrabold text-[#104F38] flex items-center gap-1.5">
+                      <div className="pt-1 flex flex-wrap items-center gap-2">
+                        <div className="inline-flex flex-wrap items-center gap-2.5 py-2 px-3 bg-[#F4FAF6] border border-[#104F38]/20 text-xs">
+                          <span className="font-bold text-[#104F38] flex items-center gap-1.5">
                             <ShieldCheck className="w-3.5 h-3.5 text-[#104F38]" />
-                            Dashboard Administrator:
+                            Administrator:
                           </span>
                           <button
                             type="button"
                             onClick={() => setIsAddUserOpen(true)}
-                            className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                            className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <UserPlus className="w-3.5 h-3.5 text-[#FFE600]" />
-                            <span>+ Tambah User Baru</span>
+                            <span>Tambah User Baru</span>
                           </button>
-                          <span className="text-[10px] text-[#104F38]/60 font-medium">
-                            (Username Administrator terkunci)
+                          <span className="text-[11px] text-[#104F38]/65 font-medium">
+                            Username admin terkunci
                           </span>
                         </div>
                       </div>
@@ -1084,7 +1081,7 @@ export default function App() {
 
                   {/* Setelan View Detail (Normal vs Lebih Kecil) */}
                   <div className="flex items-center gap-1 p-1 bg-[#F4FAF6] rounded-none text-xs font-semibold text-[#104F38]/80 border border-[#104F38]/15">
-                    <span className="text-[10px] font-bold text-[#104F38]/60 uppercase px-2 hidden sm:inline flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-[#104F38]/60 uppercase px-2 hidden sm:flex items-center gap-1">
                       <SlidersHorizontal className="w-3 h-3 text-[#104F38]/60" />
                       <span>View:</span>
                     </span>
@@ -1120,18 +1117,13 @@ export default function App() {
               {/* Sub-header showing list info */}
               <div className="flex items-center justify-between text-xs px-1 text-[#104F38]/70">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#104F38] text-sm">Daftar QRIS & QR Dinamis</span>
-                  <span className="bg-[#FFE600] text-[#104F38] px-2 py-0.5 font-mono text-[11px] font-extrabold border border-[#104F38]/20">
+                  <span className="font-bold text-[#104F38] text-sm">Daftar QRIS &amp; QR Dinamis</span>
+                  <span className="bg-[#FFE600] text-[#104F38] px-2 py-0.5 font-mono tabular-nums text-[11px] font-extrabold border border-[#104F38]/20">
                     {filteredQRCodes.length}
                   </span>
-                  {viewMode === 'compact' && (
-                    <span className="bg-[#EAF2ED] text-[#104F38] font-semibold px-2 py-0.5 rounded text-[10px] flex items-center gap-1 border border-[#104F38]/15">
-                      <Minimize2 className="w-2.5 h-2.5" /> View Lebih Kecil Aktif
-                    </span>
-                  )}
                 </div>
                 <div className="text-[11px] text-[#104F38]/60">
-                  Mode: <strong className="text-[#104F38]">{viewMode === 'compact' ? 'Detail Lebih Kecil' : 'Normal'}</strong>
+                  Tampilan: <strong className="text-[#104F38]">{viewMode === 'compact' ? 'Ringkas' : 'Normal'}</strong>
                 </div>
               </div>
             </div>
@@ -1142,7 +1134,7 @@ export default function App() {
                 {[1, 2, 3].map(n => (
                   <div
                     key={n}
-                    className={`bg-white rounded-none border border-[#104F38]/15 animate-pulse ${
+                    className={`bg-[#F4FAF6] rounded-none border border-[#104F38]/15 ${
                       viewMode === 'compact' ? 'h-12' : 'h-20'
                     }`}
                   />

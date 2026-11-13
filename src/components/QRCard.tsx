@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ExternalLink, Edit3, BarChart2, Download, Copy, Check, Pause, Play, Trash2, Sparkles } from 'lucide-react';
+import { ExternalLink, Edit3, BarChart2, Download, Copy, Check, Pause, Play, Trash2, Layers } from 'lucide-react';
 import { renderStyledQRToCanvas, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import type { DynamicQRCode } from '../types.ts';
 
@@ -93,6 +93,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
                   onClick={handleCopy}
                   className="text-[#104F38]/50 hover:text-[#104F38] p-0.5 transition-colors cursor-pointer"
                   title="Salin tautan"
+                  aria-label="Salin tautan"
                 >
                   {copied ? (
                     <Check className="w-2.5 h-2.5 text-[#104F38] font-bold" />
@@ -102,8 +103,8 @@ export const QRCard: React.FC<QRListItemProps> = ({
                 </button>
                 <span className="text-[#104F38]/30 text-[10px]">·</span>
                 <span
-                  className={`text-[9px] font-bold px-1.5 py-0.2 rounded-none ${
-                    isPaused ? 'bg-[#FCD5CE] text-[#104F38]' : 'bg-[#FFE600] text-[#104F38]'
+                  className={`text-[10px] font-bold ${
+                    isPaused ? 'text-rose-700' : 'text-[#104F38]'
                   }`}
                 >
                   {isPaused ? 'Dijeda' : 'Aktif'}
@@ -137,10 +138,10 @@ export const QRCard: React.FC<QRListItemProps> = ({
                 href={redirectUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-[9px] font-bold bg-[#FFE600] text-[#104F38] hover:bg-[#F2DA00] px-1.5 py-0.5 border border-[#104F38]/20 whitespace-nowrap shadow-2xs"
+                className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] hover:bg-[#F2DA00] px-1.5 py-0.5 border border-[#104F38]/20 whitespace-nowrap"
                 title="Tes hasil scan fisik /r/..."
               >
-                ⚡ Tes Scan
+                Tes Scan
               </a>
               <a
                 href={qr.targetUrl}
@@ -148,6 +149,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
                 rel="noreferrer"
                 className="text-[#104F38]/40 hover:text-[#104F38] p-0.5"
                 title="Buka link tujuan asli"
+                aria-label="Buka link tujuan asli"
               >
                 <ExternalLink className="w-3 h-3" />
               </a>
@@ -164,7 +166,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
           <div className="flex flex-wrap items-center gap-1.5 shrink-0 justify-end pt-1.5 sm:pt-0 border-t sm:border-t-0 border-[#104F38]/10 w-full sm:w-auto">
             <button
               onClick={() => onOpenEditLink(qr)}
-              className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
+              className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
               title="Ganti tautan tujuan (desain fisik QR tetap sesuai awal)"
             >
               <Edit3 className="w-3 h-3 text-[#FFE600]" />
@@ -183,10 +185,10 @@ export const QRCard: React.FC<QRListItemProps> = ({
             {onOpenStandStudio && (
               <button
                 onClick={() => onOpenStandStudio(qr)}
-                className="px-2 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
-                title="Buka Template Stand Akrilik Google Review"
+                className="px-2 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                title="Buka Studio Desain Stand Akrilik"
               >
-                <Sparkles className="w-3 h-3 text-[#104F38]" />
+                <Layers className="w-3 h-3 text-[#104F38]" />
                 <span>Stand</span>
               </button>
             )}
@@ -259,11 +261,12 @@ export const QRCard: React.FC<QRListItemProps> = ({
               <span className="text-xs font-mono font-black text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20 tracking-tight shrink-0">
                 {qr.code || 'QR 001'}
               </span>
-              <span className="text-xs font-mono text-[#104F38]/70 font-medium">/r/{qr.slug}</span>
+              <span className="text-xs font-mono text-[#104F38]/70 font-medium truncate">/r/{qr.slug}</span>
               <button
                 onClick={handleCopy}
-                className="text-[#104F38]/50 hover:text-[#104F38] p-0.5 rounded transition-colors cursor-pointer"
+                className="text-[#104F38]/50 hover:text-[#104F38] p-0.5 transition-colors cursor-pointer"
                 title="Salin tautan permanen fisik"
+                aria-label="Salin tautan permanen fisik"
               >
                 {copied ? (
                   <Check className="w-3 h-3 text-[#104F38] font-bold" />
@@ -273,8 +276,8 @@ export const QRCard: React.FC<QRListItemProps> = ({
               </button>
               <span className="text-[#104F38]/30">·</span>
               <span
-                className={`text-[10px] font-bold px-1.5 py-0.2 rounded-none ${
-                  isPaused ? 'bg-[#FCD5CE] text-[#104F38]' : 'bg-[#FFE600] text-[#104F38]'
+                className={`text-[11px] font-bold ${
+                  isPaused ? 'text-rose-700' : 'text-[#104F38]'
                 }`}
               >
                 {isPaused ? 'Dijeda' : 'Aktif'}
@@ -286,7 +289,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
             </h3>
 
             <div className="text-[11px] text-[#104F38]/60 sm:hidden mt-0.5">
-              Pindai: <strong className="font-mono text-[#104F38]">{qr.totalScans.toLocaleString()}</strong>
+              Pindai: <strong className="font-mono tabular-nums text-[#104F38]">{qr.totalScans.toLocaleString()}</strong>
             </div>
           </div>
         </div>
@@ -294,11 +297,10 @@ export const QRCard: React.FC<QRListItemProps> = ({
         {/* Middle Section: Destination Target URL */}
         <div className="flex-1 min-w-0 bg-[#F8FAF9] rounded-none py-2 px-3 sm:px-4 border border-[#104F38]/10 flex flex-col justify-between gap-1.5">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#104F38]">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block" />
-              <span>Link Tujuan (Bisa Diganti Kapan Saja Setelah Dicetak)</span>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#104F38]/80">
+              Tautan Tujuan Dinamis
             </div>
-            <span className="text-[9px] font-bold text-[#104F38]/60 font-mono hidden sm:inline">
+            <span className="text-[10px] font-medium text-[#104F38]/60 font-mono hidden sm:inline">
               Fisik: /r/{qr.slug}
             </span>
           </div>
@@ -319,26 +321,27 @@ export const QRCard: React.FC<QRListItemProps> = ({
                 href={redirectUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="px-2.5 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
+                className="px-2.5 py-1 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-[10.5px] font-bold transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
                 title="Buka /r/... untuk mengetes pengalihan otomatis seperti saat scan fisik di HP"
               >
-                <span>⚡ Tes Scan (/r/{qr.slug})</span>
+                <span>Tes Scan</span>
               </a>
 
               <a
                 href={qr.targetUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="p-1 text-[#104F38]/50 hover:text-[#104F38] hover:bg-white rounded transition-colors"
+                className="p-1 text-[#104F38]/50 hover:text-[#104F38] hover:bg-white transition-colors"
                 title="Buka link tujuan asli langsung"
+                aria-label="Buka link tujuan asli langsung"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
 
-          <div className="text-[10px] text-[#104F38]/70 flex items-center gap-1">
-            <span>✨ QR fisik di akrilik/kertas otomatis membuka link di atas tanpa perlu cetak ulang.</span>
+          <div className="text-[11px] text-[#104F38]/65">
+            Cetakan fisik tetap memakai kode permanen dan langsung mengikuti perubahan tautan tujuan.
           </div>
         </div>
 
@@ -357,7 +360,7 @@ export const QRCard: React.FC<QRListItemProps> = ({
             {/* Ganti Link Button */}
             <button
               onClick={() => onOpenEditLink(qr)}
-              className="px-3.5 py-1.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white rounded-none text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Ganti tautan tujuan (desain fisik QR tetap sesuai awal)"
             >
               <Edit3 className="w-3.5 h-3.5 text-[#FFE600]" />
@@ -378,10 +381,10 @@ export const QRCard: React.FC<QRListItemProps> = ({
             {onOpenStandStudio && (
               <button
                 onClick={() => onOpenStandStudio(qr)}
-                className="px-3 py-1.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                title="Buka Template Stand Akrilik Google Review"
+                className="px-3 py-1.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 rounded-none text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Buka Studio Desain Stand Akrilik"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#104F38]" />
+                <Layers className="w-3.5 h-3.5 text-[#104F38]" />
                 <span>Stand Review</span>
               </button>
             )}

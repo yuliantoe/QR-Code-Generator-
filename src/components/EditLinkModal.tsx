@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Check, History, Sparkles, AlertCircle, ArrowRight, Tag, Sliders, ShieldCheck } from 'lucide-react';
+import { ExternalLink, Check, History, AlertCircle, ArrowRight, Tag, Sliders, ShieldCheck, MessageSquare } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { renderStyledQRToCanvas, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
 import type { DynamicQRCode, QRStyleConfig } from '../types.ts';
@@ -181,49 +181,47 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
     utmCampaign !== (qr.utm?.campaign || '');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#104F38]/40 overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-white rounded-none shadow-2xl border border-[#104F38]/25 overflow-hidden my-auto max-h-[95vh] flex flex-col">
         
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#104F38]/15 bg-[#F4FAF6] flex items-center justify-between shrink-0">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#104F38] bg-[#EAF5F0] border border-[#104F38]/20 px-2.5 py-0.5 rounded-none font-mono">
+              <span className="text-xs font-semibold text-[#104F38] bg-white border border-[#104F38]/20 px-2.5 py-0.5 rounded-none font-mono">
                 {qr.code || 'QR 001'}
               </span>
-              <span className="text-xs text-slate-500 font-mono">/r/{qr.slug}</span>
-              <span className="text-[10px] font-bold bg-[#FFE600] text-[#104F38] px-2 py-0.5 border border-[#104F38]/20">
-                Tautan Dinamis
-              </span>
+              <span className="text-xs text-[#104F38]/70 font-mono">/r/{qr.slug}</span>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 mt-1">
+            <h2 className="text-base sm:text-lg font-bold text-[#104F38] mt-1">
               Ganti Link Tujuan QR Code
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="text-[#104F38]/60 hover:text-[#104F38] p-1.5 rounded-none hover:bg-white transition-colors cursor-pointer"
+            aria-label="Tutup"
           >
             ✕
           </button>
         </div>
 
         {/* 2-Column Responsive Body */}
-        <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-100 overflow-y-auto flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-[#104F38]/15 overflow-y-auto flex-1">
           
           {/* Left Column: Form Controls */}
           <div className="md:col-span-7 p-4 sm:p-6 space-y-4">
             
             {/* Highlight Banner */}
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-none flex items-start gap-2.5">
-              <div className="p-1.5 bg-[#104F38] text-[#FFE600] rounded-none shrink-0 mt-0.5 font-bold">
-                <Sparkles className="w-4 h-4" />
+            <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 rounded-none flex items-start gap-2.5">
+              <div className="p-1.5 bg-[#104F38] text-[#FFE600] rounded-none shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4" />
               </div>
-              <div className="text-xs text-emerald-950 leading-relaxed">
+              <div className="text-xs text-[#104F38] leading-relaxed">
                 <strong className="font-bold block text-[#104F38] text-[13px]">
-                  ✓ Desain Fisik QR Code Tetap Sesuai Generate Awal
+                  Desain Fisik QR Code Tetap Sesuai Generate Awal
                 </strong>
-                QR Code fisik yang sudah Anda cetak di meja, stand akrilik, atau stiker <strong>TIDAK PERLU dicetak ulang</strong>. Cukup masukkan link tujuan baru di bawah, dan seluruh pemindaian fisik di lapangan otomatis dialihkan ke link baru ini seketika.
+                QR Code fisik yang sudah dicetak di meja, stand akrilik, atau stiker tidak perlu dicetak ulang. Masukkan link tujuan baru di bawah agar pemindaian otomatis diarahkan ke link baru.
               </div>
             </div>
 
@@ -288,14 +286,14 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                           }
                           setForceShowWaEditor(!forceShowWaEditor);
                         }}
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-none border transition-colors cursor-pointer flex items-center gap-1 ${
                           (parseWhatsAppUrl(newUrl).isWhatsApp || forceShowWaEditor)
                             ? 'bg-emerald-100 text-[#075E54] border-emerald-300'
                             : 'bg-white text-slate-700 hover:bg-emerald-50 border-slate-300'
                         }`}
                       >
-                        <span>💬</span>
-                        <span>{(parseWhatsAppUrl(newUrl).isWhatsApp || forceShowWaEditor) ? 'Mode WhatsApp Aktif' : '+ Ubah ke WhatsApp'}</span>
+                        <MessageSquare className="w-3 h-3" />
+                        <span>{(parseWhatsAppUrl(newUrl).isWhatsApp || forceShowWaEditor) ? 'Mode WhatsApp Aktif' : 'Ubah ke WhatsApp'}</span>
                       </button>
                       <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                         <Check className="w-3 h-3" /> Dialihkan Seketika
@@ -484,15 +482,15 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
                 </div>
                 <div className="pt-1.5 border-t border-[#104F38]/10 flex items-center justify-between">
                   <span className="text-[10px] text-[#104F38]/70">URL Fisik: /r/{qr.slug}</span>
-                  <a
-                    href={`/r/${qr.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/30 hover:bg-[#F2DA00] flex items-center gap-1"
-                    title="Uji buka tautan pengalihan fisik"
-                  >
-                    <span>⚡ Uji Pengalihan</span>
-                  </a>
+                    <a
+                      href={`/r/${qr.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/30 hover:bg-[#F2DA00] flex items-center gap-1"
+                      title="Uji buka tautan pengalihan fisik"
+                    >
+                      <span>Uji Pengalihan</span>
+                    </a>
                 </div>
               </div>
 

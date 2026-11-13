@@ -39,26 +39,26 @@ export const DeleteQRConfirmModal: React.FC<DeleteQRConfirmModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a2318]/70 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a2318]/75 animate-in fade-in duration-150">
       <div 
-        className="bg-white border-2 border-rose-500 w-full max-w-md shadow-2xl overflow-hidden relative"
+        className="bg-white border border-rose-600 w-full max-w-md shadow-xl overflow-hidden relative rounded-none"
         role="dialog"
         aria-modal="true"
       >
         {/* Top Warning Banner Accent */}
-        <div className="h-1.5 bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500" />
+        <div className="h-1.5 bg-rose-600" />
 
         {/* Header */}
-        <div className="p-5 pb-4 flex items-start justify-between gap-3 border-b border-rose-100 bg-rose-50/40">
+        <div className="p-5 pb-4 flex items-start justify-between gap-3 border-b border-rose-200 bg-rose-50/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+            <div className="w-10 h-10 rounded-none bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-700 shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <span className="inline-block text-[10px] font-mono uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 font-bold mb-1 border border-rose-200">
+              <span className="inline-block text-[10px] font-mono uppercase tracking-wider text-rose-700 font-bold mb-1">
                 Konfirmasi Hapus
               </span>
-              <h3 className="text-base font-bold text-gray-900 leading-tight">
+              <h3 className="text-base font-bold text-[#104F38] leading-tight">
                 Yakin ingin menghapus QR Code ini?
               </h3>
             </div>
@@ -66,7 +66,8 @@ export const DeleteQRConfirmModal: React.FC<DeleteQRConfirmModalProps> = ({
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-none cursor-pointer transition-colors"
+            aria-label="Tutup"
+            className="p-1 text-[#104F38]/50 hover:text-[#104F38] hover:bg-white rounded-none cursor-pointer transition-colors"
             title="Tutup"
           >
             <X className="w-5 h-5" />
@@ -76,13 +77,13 @@ export const DeleteQRConfirmModal: React.FC<DeleteQRConfirmModalProps> = ({
         {/* Modal Body */}
         <div className="p-5 space-y-4">
           {/* Target QR Code Summary Box */}
-          <div className="bg-[#F8FAF9] border border-[#104F38]/15 p-3.5 space-y-2">
+          <div className="bg-[#F4FAF6] border border-[#104F38]/20 p-3.5 space-y-2 rounded-none">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-xs font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20">
+              <span className="font-mono text-xs font-bold text-[#104F38] bg-[#FFE600] px-2 py-0.5 border border-[#104F38]/20 tabular-nums">
                 {qr.code || 'QR DINAMIS'}
               </span>
-              <span className="text-[11px] text-gray-500 flex items-center gap-1 font-mono">
-                <QrCode className="w-3.5 h-3.5 text-gray-400" />
+              <span className="text-[11px] text-[#104F38]/70 flex items-center gap-1 font-mono">
+                <QrCode className="w-3.5 h-3.5 text-[#104F38]/50" />
                 /r/{qr.slug}
               </span>
             </div>
@@ -91,15 +92,15 @@ export const DeleteQRConfirmModal: React.FC<DeleteQRConfirmModalProps> = ({
               <h4 className="font-bold text-[#104F38] text-sm break-words line-clamp-1">
                 {qr.title || 'Tanpa Judul'}
               </h4>
-              <p className="text-[11px] text-gray-500 break-all line-clamp-2 mt-0.5">
-                Tautan Tujuan: <span className="text-gray-700 font-mono">{qr.targetUrl}</span>
+              <p className="text-[11px] text-[#104F38]/75 break-all line-clamp-2 mt-0.5">
+                Tautan Tujuan: <span className="text-[#104F38] font-mono">{qr.targetUrl}</span>
               </p>
             </div>
 
-            <div className="flex items-center gap-3 pt-1 text-[11px] text-gray-600 border-t border-gray-200/60">
-              <span>Total Pindai: <strong>{qr.totalScans || 0} kali</strong></span>
-              <span>•</span>
-              <span className={qr.status === 'active' ? 'text-emerald-700 font-medium' : 'text-amber-700 font-medium'}>
+            <div className="flex items-center gap-3 pt-1 text-[11px] text-[#104F38]/75 border-t border-[#104F38]/15 tabular-nums">
+              <span>Total Pindai: <strong className="font-mono text-[#104F38]">{qr.totalScans || 0} kali</strong></span>
+              <span aria-hidden="true">·</span>
+              <span className={qr.status === 'active' ? 'text-[#104F38] font-bold' : 'text-amber-800 font-bold'}>
                 Status: {qr.status === 'active' ? 'Aktif' : 'Dijeda'}
               </span>
             </div>
