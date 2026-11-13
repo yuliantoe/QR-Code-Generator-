@@ -1220,9 +1220,7 @@ export default function App() {
       <footer className="border-t border-[#104F38]/10 bg-white py-6 mt-16 text-xs text-[#104F38]/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-[#104F38]">DinamisQR</span>
-            <span aria-hidden="true">·</span>
-            <span className="font-serif-italic">Keunggulan QR Dinamis & Stand NFC Google Review</span>
+            <span className="font-extrabold text-[#104F38]">Projecttapp 2026</span>
           </div>
           <div className="text-[11px] text-[#104F38]/70 flex items-center gap-2 flex-wrap justify-center">
             <span>Masuk sebagai: <strong className="text-[#104F38]">{currentUser.username}</strong></span>
