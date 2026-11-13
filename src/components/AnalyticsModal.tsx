@@ -691,7 +691,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
           }`}
         >
           <span className="text-slate-500 text-[11px]">
-            DinamisQR · Solusi QR Code Bebas Cetak Ulang
+            Projecttapp · Solusi QR Code Bebas Cetak Ulang
           </span>
           <button
             onClick={onClose}

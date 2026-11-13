@@ -2667,7 +2667,7 @@ export async function renderGoogleReviewStandToCanvas(
     ctx.fillStyle = 'rgba(225, 29, 72, 0.25)'; // translucent rose-600
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('DINAMISQR • TRIAL 3 HARI', 0, -110 * scale);
+    ctx.fillText('PROJECTTAPP • TRIAL 3 HARI', 0, -110 * scale);
     ctx.fillText('VERSI UJI COBA • WATERMARK AKTIF', 0, 0);
     ctx.fillText('UPGRADE KE PRO BULANAN / TAHUNAN', 0, 110 * scale);
     ctx.restore();
@@ -2745,7 +2745,7 @@ export function printStandSheet(
         <p class="guide-text no-print">Potong mengikuti garis tepi putus-putus untuk diselipkan ke stand akrilik meja ${sizeLabel}.</p>
         <img class="stand-img" src="${dataUrl}" alt="${title}" />
         <div class="cut-lines">
-          <span>Garis lipat / batas akrilik meja ${sizeLabel} · DinamisQR Tap to Review</span>
+          <span>Garis lipat / batas akrilik meja ${sizeLabel} · Projecttapp Tap to Review</span>
         </div>
       </div>
     </body>
@@ -2782,7 +2782,7 @@ export function printMultipleStandSheets(
       <p class="guide-text no-print">Potong garis tepi untuk diselipkan ke stand meja akrilik ${sizeLabel}.</p>
       <img class="stand-img" src="${item.dataUrl}" alt="${item.title}" />
       <div class="cut-lines">
-        <span>Garis lipat / batas akrilik meja ${sizeLabel} · ${item.code} · DinamisQR</span>
+        <span>Garis lipat / batas akrilik meja ${sizeLabel} · ${item.code} · Projecttapp</span>
       </div>
     </div>
   `).join('\n');

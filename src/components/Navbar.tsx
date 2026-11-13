@@ -37,18 +37,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onTabChange('qr')}
             className="flex items-center gap-2.5 text-left cursor-pointer group"
           >
-            <div className="w-8 h-8 border border-[#104F38]/25 bg-[#F4FAF6] text-[#104F38] flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-[#104F38]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M7 7h3v3H7z" />
-                <path d="M14 7h3v3h-3z" />
-                <path d="M7 14h3v3H7z" />
-                <path d="M14 14h.01" />
-                <path d="M17 17h.01" />
+            <div className="w-9 h-9 bg-[#104F38] border border-[#104F38] flex items-center justify-center shrink-0">
+              <svg
+                className="w-5 h-5 text-[#FFE600]"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M3 3h7v7H3V3zm2 2v3h3V5H5z" />
+                <rect x="6" y="6" width="1" height="1" />
+                <path d="M14 3h7v7h-7V3zm2 2v3h3V5h-3z" />
+                <rect x="17" y="6" width="1" height="1" />
+                <path d="M3 14h7v7H3v-7zm2 2v3h3v-3H5z" />
+                <rect x="6" y="17" width="1" height="1" />
+                <rect x="11" y="3" width="2" height="2" />
+                <rect x="11" y="7" width="2" height="2" />
+                <rect x="3" y="11" width="2" height="2" />
+                <rect x="7" y="11" width="2" height="2" />
+                <rect x="11" y="11" width="2" height="2" />
+                <rect x="14" y="11" width="3" height="2" />
+                <rect x="19" y="11" width="2" height="2" />
+                <rect x="11" y="15" width="2" height="2" />
+                <rect x="14" y="14" width="2" height="2" />
+                <rect x="18" y="14" width="3" height="2" />
+                <rect x="15" y="17" width="2" height="2" />
+                <rect x="11" y="19" width="2" height="2" />
+                <rect x="14" y="19" width="2" height="2" />
+                <rect x="18" y="18" width="3" height="3" />
               </svg>
             </div>
             <span className="text-base sm:text-lg font-extrabold tracking-tight text-[#104F38] whitespace-nowrap">
-              DinamisQR
+              Projecttapp
             </span>
           </button>
         </div>

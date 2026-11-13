@@ -443,7 +443,7 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
                 <div>
                   <div className="text-xs font-bold text-[#104F38]">Bebas Watermark Stand Meja</div>
                   <div className="text-[10px] text-[#104F38]/70">
-                    {isWatermarkActive ? 'Watermark DinamisQR aktif pada ekspor desain' : 'Desain stand bersih tanpa cap DinamisQR'}
+                    {isWatermarkActive ? 'Watermark Projecttapp aktif pada ekspor desain' : 'Desain stand bersih tanpa cap Projecttapp'}
                   </div>
                 </div>
                 <button

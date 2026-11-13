@@ -106,17 +106,36 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, sessionExp
         {/* Brand Icon & Title in Forest Green */}
         <div className="text-center mb-6">
           <div className="w-12 h-12 rounded-none bg-[#104F38] text-[#FFE600] flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-[#FFE600]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect width="18" height="18" x="3" y="3" rx="2" />
-              <path d="M7 7h3v3H7z" />
-              <path d="M14 7h3v3h-3z" />
-              <path d="M7 14h3v3H7z" />
-              <path d="M14 14h.01" />
-              <path d="M17 17h.01" />
+            <svg
+              className="w-7 h-7 text-[#FFE600]"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M3 3h7v7H3V3zm2 2v3h3V5H5z" />
+              <rect x="6" y="6" width="1" height="1" />
+              <path d="M14 3h7v7h-7V3zm2 2v3h3V5h-3z" />
+              <rect x="17" y="6" width="1" height="1" />
+              <path d="M3 14h7v7H3v-7zm2 2v3h3v-3H5z" />
+              <rect x="6" y="17" width="1" height="1" />
+              <rect x="11" y="3" width="2" height="2" />
+              <rect x="11" y="7" width="2" height="2" />
+              <rect x="3" y="11" width="2" height="2" />
+              <rect x="7" y="11" width="2" height="2" />
+              <rect x="11" y="11" width="2" height="2" />
+              <rect x="14" y="11" width="3" height="2" />
+              <rect x="19" y="11" width="2" height="2" />
+              <rect x="11" y="15" width="2" height="2" />
+              <rect x="14" y="14" width="2" height="2" />
+              <rect x="18" y="14" width="3" height="2" />
+              <rect x="15" y="17" width="2" height="2" />
+              <rect x="11" y="19" width="2" height="2" />
+              <rect x="14" y="19" width="2" height="2" />
+              <rect x="18" y="18" width="3" height="3" />
             </svg>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-[#104F38] tracking-tight">
-            DinamisQR
+            Projecttapp
           </h1>
           <p className="text-xs text-[#104F38]/75 mt-1 font-medium">
             Sistem Manajemen QR Dinamis &amp; Stand Meja Akrilik
