@@ -83,16 +83,35 @@ export interface AuthUser {
   createdAt?: string;
 }
 
+export interface NFCTapRecord {
+  id: string;
+  tagId: string;
+  tagUid: string;
+  timestamp: string;
+  device: 'mobile' | 'desktop' | 'tablet' | 'unknown';
+  os: string;
+  browser: string;
+  source: 'nfc-tap' | 'simulation' | 'auto-scan';
+  pinVerified?: boolean;
+  readPayload?: string;
+}
+
 export interface NFCTag {
   id: string;
   tagUid: string;
   placeName: string;
   googleReviewUrl: string;
   pin: string;
+  requirePinOnTap?: boolean;
+  linkedQrId?: string | null;
+  linkedQrSlug?: string | null;
+  linkedQrCode?: string | null;
+  syncWithQr?: boolean;
   status: 'active' | 'pending' | 'locked';
   totalTaps: number;
   lastTappedAt?: string | null;
   notes?: string;
+  tapHistory?: NFCTapRecord[];
   createdAt: string;
   updatedAt: string;
 }

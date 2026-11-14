@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, Check, History, AlertCircle, ArrowRight, Tag, Sliders, ShieldCheck, MessageSquare } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { renderStyledQRToCanvas, DEFAULT_QR_STYLE } from '../utils/qrRenderer.ts';
-import type { DynamicQRCode, QRStyleConfig } from '../types.ts';
+import type { DynamicQRCode, QRStyleConfig, NFCTag } from '../types.ts';
 import { WhatsAppWelcomeEditor } from './WhatsAppWelcomeEditor.tsx';
 import { parseWhatsAppUrl, buildWhatsAppUrl } from '../utils/whatsappPresets.ts';
 
@@ -10,7 +10,7 @@ interface EditLinkModalProps {
   qr: DynamicQRCode;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (updatedQR: DynamicQRCode) => void;
+  onUpdate: (updatedQR: DynamicQRCode, syncedNfcTags?: NFCTag[]) => void;
 }
 
 export const EditLinkModal: React.FC<EditLinkModalProps> = ({
@@ -110,6 +110,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
     };
 
     let finalQR = localUpdatedQR;
+    let syncedNfcTags: NFCTag[] | undefined;
 
     try {
       const payload = {
@@ -146,6 +147,9 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
             style: json.data.style || initialStyle
           };
         }
+        if (Array.isArray(json.syncedNfcTags)) {
+          syncedNfcTags = json.syncedNfcTags;
+        }
       } else if (!res.ok) {
         setErrorMessage(`Server mengembalikan kesalahan (HTTP ${res.status}) saat memperbarui tautan.`);
         setIsSubmitting(false);
@@ -156,7 +160,7 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
     }
 
     // Apply updated data to React state & localStorage
-    onUpdate(finalQR);
+    onUpdate(finalQR, syncedNfcTags);
 
     try {
       confetti({
@@ -166,7 +170,11 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
       });
     } catch {}
 
-    setFeedbackMessage('Tautan tujuan berhasil diperbarui! Desain QR fisik tetap sesuai generate awal.');
+    setFeedbackMessage(
+      syncedNfcTags && syncedNfcTags.length > 0
+        ? `Tautan berhasil diperbarui dan ${syncedNfcTags.length} NFC tag terhubung ikut diperbarui otomatis!`
+        : 'Tautan tujuan berhasil diperbarui! Desain QR fisik tetap sesuai generate awal.'
+    );
     setTimeout(() => {
       onClose();
     }, 1100);

@@ -1446,6 +1446,24 @@ export const db = {
     return tags.find(t => t.id === id) || null;
   },
 
+  async getNFCTagByUid(tagUid: string): Promise<any | null> {
+    const cleanUid = (tagUid || '').trim().toUpperCase();
+    if (!cleanUid) return null;
+
+    const ok = await ensurePostgres();
+    if (ok && pool) {
+      try {
+        const res = await pool.query('SELECT data FROM dinamis_nfc_tags WHERE UPPER(tag_uid) = $1 LIMIT 1', [cleanUid]);
+        if (res.rows[0]?.data) return res.rows[0].data;
+      } catch (err) {
+        console.error('[DB] getNFCTagByUid error:', err);
+      }
+    }
+
+    const tags = await this.getNFCTags();
+    return tags.find(t => (t.tagUid || '').trim().toUpperCase() === cleanUid) || null;
+  },
+
   async saveNFCTag(tag: any): Promise<void> {
     const ok = await ensurePostgres();
     if (ok && pool) {

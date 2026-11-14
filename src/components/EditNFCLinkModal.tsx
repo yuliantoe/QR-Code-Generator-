@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, MapPin, ExternalLink, Check, AlertTriangle, RefreshCw, X } from 'lucide-react';
+import { Lock, MapPin, ExternalLink, Check, AlertTriangle, RefreshCw, X, Eye, EyeOff, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import type { NFCTag } from '../types.ts';
+import type { DynamicQRCode, NFCTag } from '../types.ts';
 
 interface EditNFCLinkModalProps {
   tag: NFCTag;
+  qrcodes: DynamicQRCode[];
   isOpen: boolean;
   onClose: () => void;
   onUpdated: (updatedTag: NFCTag) => void;
@@ -12,25 +13,33 @@ interface EditNFCLinkModalProps {
 
 export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
   tag,
+  qrcodes,
   isOpen,
   onClose,
   onUpdated
 }) => {
   const [placeName, setPlaceName] = useState(tag.placeName);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(tag.googleReviewUrl);
+  const [linkedQrId, setLinkedQrId] = useState<string>(tag.linkedQrId || '');
+  const [linkedQrSlug, setLinkedQrSlug] = useState<string>(tag.linkedQrSlug || '');
+  const [linkedQrCode, setLinkedQrCode] = useState<string>(tag.linkedQrCode || '');
+  const [syncWithQr, setSyncWithQr] = useState<boolean>(tag.syncWithQr ?? Boolean(tag.linkedQrId));
+
   const [isAutoUrl, setIsAutoUrl] = useState(false);
   const [suggestions, setSuggestions] = useState<Array<{ placeName: string; reviewUrl: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
 
   const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [newPin, setNewPin] = useState('');
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [requirePinOnTap, setRequirePinOnTap] = useState<boolean>(Boolean(tag.requirePinOnTap));
   const [notes, setNotes] = useState(tag.notes || '');
   const [status, setStatus] = useState<'active' | 'locked'>(tag.status === 'locked' ? 'locked' : 'active');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Auto-generate review link when place name changes and auto is toggled
   const handlePlaceNameChange = (val: string) => {
     setPlaceName(val);
     if (isAutoUrl && val.trim()) {
@@ -46,9 +55,27 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
     }
   };
 
-  // Debounced search for place lookup
+  const handleSelectLinkedQR = (qrId: string) => {
+    setLinkedQrId(qrId);
+    if (!qrId) {
+      setLinkedQrSlug('');
+      setLinkedQrCode('');
+      setSyncWithQr(false);
+      return;
+    }
+    const found = qrcodes.find(q => q.id === qrId);
+    if (found) {
+      setPlaceName(found.title);
+      setGoogleReviewUrl(found.targetUrl);
+      setLinkedQrSlug(found.slug);
+      setLinkedQrCode(found.code || '');
+      setSyncWithQr(true);
+      setIsAutoUrl(false);
+    }
+  };
+
   useEffect(() => {
-    if (!placeName.trim() || placeName.trim().length < 2) {
+    if (!placeName.trim() || placeName.trim().length < 2 || linkedQrId) {
       setSuggestions([]);
       return;
     }
@@ -69,7 +96,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [placeName]);
+  }, [placeName, linkedQrId]);
 
   const handleSelectSuggestion = (item: { placeName: string; reviewUrl: string }) => {
     setPlaceName(item.placeName);
@@ -84,6 +111,11 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
     e.preventDefault();
     if (!pin.trim()) {
       setErrorMessage('Wajib memasukkan PIN NFC Tag untuk verifikasi keamanan.');
+      return;
+    }
+
+    if (newPin.trim() && newPin.trim().length < 4) {
+      setErrorMessage('PIN baru minimal 4 karakter/angka.');
       return;
     }
 
@@ -104,8 +136,14 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
           googleReviewUrl: formattedUrl,
           pin: pin.trim(),
           newPin: newPin.trim() || undefined,
+          requirePinOnTap,
+          linkedQrId: linkedQrId || null,
+          linkedQrSlug: linkedQrSlug || null,
+          linkedQrCode: linkedQrCode || null,
+          syncWithQr: linkedQrId ? syncWithQr : false,
           status,
-          notes: notes.trim()
+          notes: notes.trim(),
+          tagData: tag
         })
       });
 
@@ -136,7 +174,6 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
         role="dialog"
         aria-modal="true"
       >
-        
         {/* Header */}
         <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#104F38]/15 flex items-center justify-between bg-[#F4FAF6] shrink-0">
           <div>
@@ -148,7 +185,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
               <span>UID: {tag.tagUid}</span>
             </div>
             <h2 className="text-base font-extrabold text-[#104F38] mt-1">
-              Ubah Data NFC Tag Google Review
+              Ubah Data &amp; Keamanan PIN NFC Tag
             </h2>
           </div>
           <button
@@ -164,7 +201,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
         <div className="mx-4 sm:mx-6 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-none flex items-start gap-2.5 text-xs text-amber-900">
           <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
           <span>
-            Perubahan diarahkan langsung tanpa perlu menulis ulang chip fisik NFC. Masukkan <strong>PIN NFC Tag</strong> yang Anda buat untuk verifikasi.
+            Perubahan diarahkan langsung tanpa menulis ulang chip fisik NFC. Masukkan <strong>PIN keamanan NFC</strong> untuk menyimpan perubahan.
           </span>
         </div>
 
@@ -175,12 +212,45 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
-          
+          {/* Link / Switch from existing QR Code */}
+          {qrcodes.length > 0 && (
+            <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 space-y-2">
+              <label htmlFor="editNfcLinkedQr" className="text-xs font-bold text-[#104F38] flex items-center gap-1.5">
+                <QrCode className="w-3.5 h-3.5" />
+                <span>Hubungkan / Ambil Data dari Daftar QR Code</span>
+              </label>
+              <select
+                id="editNfcLinkedQr"
+                value={linkedQrId}
+                onChange={(e) => handleSelectLinkedQR(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38] font-medium"
+              >
+                <option value="">-- Input Manual / Tidak Terhubung ke QR Tertentu --</option>
+                {qrcodes.map(qr => (
+                  <option key={qr.id} value={qr.id}>
+                    {qr.code || 'QR'} · {qr.title} (/r/{qr.slug})
+                  </option>
+                ))}
+              </select>
+              {linkedQrId && (
+                <label className="flex items-center gap-2 text-[11px] font-bold text-[#104F38] cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={syncWithQr}
+                    onChange={(e) => setSyncWithQr(e.target.checked)}
+                    className="accent-[#104F38]"
+                  />
+                  <span>Sinkronkan link otomatis jika QR Code terkait diperbarui</span>
+                </label>
+              )}
+            </div>
+          )}
+
           {/* Nama Tempat */}
           <div className="relative">
             <div className="flex items-center justify-between mb-1">
               <label htmlFor="editNfcPlaceName" className="block text-xs font-bold text-[#104F38]">
-                Nama Tempat di Google Review
+                Nama Tempat / Label NFC
               </label>
               {isLookingUp && (
                 <span className="text-[10px] text-[#104F38]/70 flex items-center gap-1">
@@ -203,7 +273,6 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
               />
             </div>
 
-            {/* Suggestions */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-[#104F38]/25 rounded-none shadow-lg overflow-hidden divide-y divide-[#104F38]/10">
                 <div className="px-3 py-1.5 bg-[#F4FAF6] text-[10px] font-bold text-[#104F38]/75 flex justify-between items-center">
@@ -232,11 +301,11 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
             )}
           </div>
 
-          {/* Tautan Google Review */}
+          {/* Tautan Tujuan */}
           <div className="p-3 bg-[#F4FAF6] rounded-none border border-[#104F38]/20 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <label htmlFor="editNfcReviewUrl" className="block text-xs font-bold text-[#104F38]">
-                Tautan Google Review (Tujuan Dinamis)
+                Tautan Tujuan Dinamis
               </label>
               <button
                 type="button"
@@ -269,13 +338,13 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
                   rel="noreferrer"
                   className="text-[#104F38] hover:underline font-bold flex items-center gap-1"
                 >
-                  <ExternalLink className="w-3 h-3" /> Tes Buka Review
+                  <ExternalLink className="w-3 h-3" /> Tes Buka Tautan
                 </a>
               )}
             </div>
           </div>
 
-          {/* PIN Verification (Required) */}
+          {/* PIN Verification & Security Settings */}
           <div className="p-3.5 bg-[#F4FAF6] rounded-none border border-[#104F38]/20 space-y-3">
             <div>
               <label htmlFor="editNfcCurrentPin" className="block text-xs font-bold text-[#104F38] mb-1">
@@ -287,29 +356,48 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
                 </div>
                 <input
                   id="editNfcCurrentPin"
-                  type="password"
+                  type={showPin ? 'text' : 'password'}
                   required
                   placeholder="Masukkan PIN saat aktivasi tag..."
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
+                  className="w-full pl-9 pr-10 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:border-[#104F38] font-mono text-[#104F38]"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(p => !p)}
+                  aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#104F38]/60 hover:text-[#104F38] cursor-pointer"
+                >
+                  {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#104F38]/15">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#104F38]/15">
               <div>
                 <label htmlFor="editNfcNewPin" className="block text-[11px] font-bold text-[#104F38] mb-1">
                   Ubah ke PIN Baru (Opsional)
                 </label>
-                <input
-                  id="editNfcNewPin"
-                  type="password"
-                  placeholder="Kosongkan jika PIN tetap"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none font-mono text-[#104F38]"
-                />
+                <div className="relative">
+                  <input
+                    id="editNfcNewPin"
+                    type={showNewPin ? 'text' : 'password'}
+                    maxLength={8}
+                    placeholder="Kosongkan jika PIN tetap"
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value)}
+                    className="w-full pl-2.5 pr-8 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none font-mono text-[#104F38]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPin(p => !p)}
+                    aria-label={showNewPin ? 'Sembunyikan PIN baru' : 'Tampilkan PIN baru'}
+                    className="absolute inset-y-0 right-0 pr-2 flex items-center text-[#104F38]/60 hover:text-[#104F38] cursor-pointer"
+                  >
+                    {showNewPin ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -319,7 +407,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
                 <select
                   id="editNfcStatus"
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
+                  onChange={(e) => setStatus(e.target.value as 'active' | 'locked')}
                   className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#104F38]/25 rounded-none text-[#104F38]"
                 >
                   <option value="active">Aktif (Bisa Di-tap)</option>
@@ -327,6 +415,23 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
                 </select>
               </div>
             </div>
+
+            <label className="flex items-start gap-2 pt-2 border-t border-[#104F38]/15 cursor-pointer select-none text-xs">
+              <input
+                type="checkbox"
+                checked={requirePinOnTap}
+                onChange={(e) => setRequirePinOnTap(e.target.checked)}
+                className="mt-0.5 accent-[#104F38]"
+              />
+              <div>
+                <span className="font-bold text-[#104F38] block">
+                  Wajibkan PIN Saat Tag NFC Ditempel (Proteksi Tap)
+                </span>
+                <span className="text-[11px] text-[#104F38]/75">
+                  Smartphone pemindai harus memasukkan PIN sebelum dialihkan ke URL tujuan.
+                </span>
+              </div>
+            </label>
           </div>
 
           <div>
@@ -366,9 +471,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
               )}
             </button>
           </div>
-
         </form>
-
       </div>
     </div>
   );

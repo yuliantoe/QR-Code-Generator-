@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import type { DynamicQRCode, ScanRecord, QRAnalyticsSummary } from './src/types.ts';
+import type { DynamicQRCode, ScanRecord, QRAnalyticsSummary, NFCTapRecord } from './src/types.ts';
 import { db, syncAllSlugsToCloud } from './db.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -351,7 +351,7 @@ app.get(['/r/:slug', '/r/:slug/*', '/r', '/api/r', '/api/index.ts', '/api', '/']
 // ==========================================
 app.get(['/nfc/:id', '/n/:id'], async (req: Request, res: Response) => {
   const { id } = req.params;
-  const tag = await db.getNFCTagById(id);
+  let tag = await db.getNFCTagById(id);
 
   if (!tag) {
     return res.status(404).send(`
@@ -360,22 +360,20 @@ app.get(['/nfc/:id', '/n/:id'], async (req: Request, res: Response) => {
       <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>NFC Tag Belum Terdaftar</title>
+        <title>NFC Tag Belum Terdaftar - Projecttapp</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #1e293b; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-          .card { background: white; max-width: 440px; width: 100%; border-radius: 20px; border: 1px solid #e2e8f0; padding: 36px 28px; text-align: center; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); }
-          .icon { font-size: 48px; margin-bottom: 16px; }
-          h1 { font-size: 20px; font-weight: 800; margin: 0 0 10px; color: #0f172a; }
-          p { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0 0 24px; }
-          a { display: inline-block; background: #0f172a; color: white; padding: 12px 24px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; }
+          body { font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F4FAF6; color: #104F38; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+          .card { background: white; max-width: 440px; width: 100%; border: 1px solid rgba(16,79,56,0.2); padding: 36px 28px; text-align: center; }
+          h1 { font-size: 20px; font-weight: 800; margin: 0 0 10px; color: #104F38; }
+          p { font-size: 14px; color: rgba(16,79,56,0.75); line-height: 1.6; margin: 0 0 24px; }
+          a { display: inline-block; background: #104F38; color: #FFE600; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; }
         </style>
       </head>
       <body>
         <div class="card">
-          <div class="icon">🏷️</div>
           <h1>NFC Tag Belum Terdaftar</h1>
-          <p>Tag NFC ini belum diaktivasi untuk Google Review toko.</p>
-          <a href="/">Buka Dashboard DinamisQR</a>
+          <p>Tag NFC ini belum diaktivasi di sistem Projecttapp.</p>
+          <a href="/">Buka Dashboard Projecttapp</a>
         </div>
       </body>
       </html>
@@ -389,18 +387,16 @@ app.get(['/nfc/:id', '/n/:id'], async (req: Request, res: Response) => {
       <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>Tag NFC Dikunci</title>
+        <title>Tag NFC Dikunci - Projecttapp</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #1e293b; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-          .card { background: white; max-width: 440px; width: 100%; border-radius: 20px; border: 1px solid #e2e8f0; padding: 36px 28px; text-align: center; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); }
-          .icon { font-size: 48px; margin-bottom: 16px; }
-          h1 { font-size: 20px; font-weight: 800; margin: 0 0 10px; color: #0f172a; }
-          p { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0; }
+          body { font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F4FAF6; color: #104F38; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+          .card { background: white; max-width: 440px; width: 100%; border: 1px solid rgba(16,79,56,0.2); padding: 36px 28px; text-align: center; }
+          h1 { font-size: 20px; font-weight: 800; margin: 0 0 10px; color: #104F38; }
+          p { font-size: 14px; color: rgba(16,79,56,0.75); line-height: 1.6; margin: 0; }
         </style>
       </head>
       <body>
         <div class="card">
-          <div class="icon">🔒</div>
           <h1>Tag NFC Sedang Dikunci</h1>
           <p>Tag untuk <strong>${tag.placeName}</strong> dinonaktifkan sementara oleh pemilik.</p>
         </div>
@@ -409,9 +405,108 @@ app.get(['/nfc/:id', '/n/:id'], async (req: Request, res: Response) => {
     `);
   }
 
-  // Increment total taps
+  // Sync latest URL if linked to an existing QR Code
+  if (tag.linkedQrId && tag.syncWithQr !== false) {
+    const linkedQr = await db.getQRCodeById(tag.linkedQrId);
+    if (linkedQr?.targetUrl && linkedQr.targetUrl !== tag.googleReviewUrl) {
+      tag.googleReviewUrl = linkedQr.targetUrl;
+    }
+  }
+
+  // If PIN security on tap is enabled, require PIN verification before revealing destination URL
+  if (tag.requirePinOnTap) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    return res.status(200).send(`
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Verifikasi PIN NFC - ${tag.placeName}</title>
+        <style>
+          body { font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F4FAF6; color: #104F38; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+          .card { background: white; max-width: 420px; width: 100%; border: 1px solid rgba(16,79,56,0.25); padding: 32px 24px; box-shadow: 0 10px 30px rgba(16,79,56,0.08); }
+          .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(16,79,56,0.7); margin-bottom: 6px; }
+          h1 { font-size: 20px; font-weight: 800; margin: 0 0 8px; color: #104F38; }
+          p { font-size: 13px; color: rgba(16,79,56,0.75); line-height: 1.5; margin: 0 0 20px; }
+          .meta { font-family: monospace; font-size: 11px; background: #F4FAF6; border: 1px solid rgba(16,79,56,0.15); padding: 8px 10px; margin-bottom: 18px; color: #104F38; }
+          label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #104F38; }
+          input { width: 100%; box-sizing: border-box; padding: 11px 12px; font-size: 15px; font-family: monospace; letter-spacing: 0.12em; border: 1px solid rgba(16,79,56,0.3); outline: none; color: #104F38; margin-bottom: 12px; }
+          input:focus { border-color: #104F38; }
+          button { width: 100%; background: #FFE600; border: 1px solid rgba(16,79,56,0.25); color: #104F38; font-weight: 800; font-size: 13px; padding: 12px 16px; cursor: pointer; }
+          button:hover { background: #F2DA00; }
+          .err { background: #FFF1F2; border: 1px solid #FECDD3; color: #BE123C; font-size: 12px; font-weight: 600; padding: 9px 11px; margin-bottom: 12px; display: none; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="eyebrow">Projecttapp · Proteksi Keamanan NFC</div>
+          <h1>Masukkan PIN Tag NFC</h1>
+          <p>Tag NFC untuk <strong>${tag.placeName}</strong> dilindungi PIN keamanan. Masukkan PIN untuk membuka tautan.</p>
+          <div class="meta">UID: ${tag.tagUid} · /nfc/${tag.id}</div>
+          <div id="errBox" class="err"></div>
+          <form id="pinForm">
+            <label for="nfcPin">PIN Keamanan NFC</label>
+            <input id="nfcPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Masukkan PIN..." required autofocus />
+            <button id="submitBtn" type="submit">Buka Tautan NFC</button>
+          </form>
+        </div>
+        <script>
+          document.getElementById('pinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var pin = document.getElementById('nfcPin').value.trim();
+            var errBox = document.getElementById('errBox');
+            var btn = document.getElementById('submitBtn');
+            errBox.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Memverifikasi PIN...';
+            try {
+              var res = await fetch('/api/nfc/${encodeURIComponent(tag.id)}/verify-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin, action: 'tap', source: 'nfc-tap' })
+              });
+              var data = await res.json();
+              if (res.ok && data.success && data.targetUrl) {
+                window.location.replace(data.targetUrl);
+              } else {
+                errBox.textContent = data.error || 'PIN keamanan NFC salah!';
+                errBox.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Buka Tautan NFC';
+              }
+            } catch (err) {
+              errBox.textContent = 'Gagal terhubung ke server verifikasi.';
+              errBox.style.display = 'block';
+              btn.disabled = false;
+              btn.textContent = 'Buka Tautan NFC';
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  }
+
+  // Automatically record NFC tap data
+  const ua = parseUserAgent(req.headers['user-agent']);
+  const now = new Date().toISOString();
+  const tapRecord: NFCTapRecord = {
+    id: 'tap-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+    tagId: tag.id,
+    tagUid: tag.tagUid,
+    timestamp: now,
+    device: ua.device,
+    os: ua.os,
+    browser: ua.browser,
+    source: 'nfc-tap',
+    pinVerified: false,
+    readPayload: `/nfc/${tag.id}`
+  };
+
   tag.totalTaps = (tag.totalTaps || 0) + 1;
-  tag.lastTappedAt = new Date().toISOString();
+  tag.lastTappedAt = now;
+  tag.tapHistory = [tapRecord, ...(Array.isArray(tag.tapHistory) ? tag.tapHistory : [])].slice(0, 100);
   await db.saveNFCTag(tag);
 
   let target = tag.googleReviewUrl.trim();
@@ -793,10 +888,37 @@ app.post('/api/admin/users', async (req: Request, res: Response) => {
 // NFC TAGS REST API ROUTES
 // ==========================================
 
-// List all NFC tags
+// List all NFC tags (with live sync from linked QR codes)
 app.get('/api/nfc', async (_req: Request, res: Response) => {
-  const tags = await db.getNFCTags();
-  res.json({ success: true, data: tags });
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  const [tags, qrcodes] = await Promise.all([db.getNFCTags(), db.getQRCodes()]);
+  const qrById = new Map(qrcodes.map(q => [q.id, q]));
+  const qrBySlug = new Map(qrcodes.map(q => [q.slug.toLowerCase().trim(), q]));
+
+  const syncedTags = await Promise.all(
+    tags.map(async (tag: any) => {
+      if (tag.syncWithQr === false) return tag;
+      const linkedQr =
+        (tag.linkedQrId ? qrById.get(tag.linkedQrId) : undefined) ||
+        (tag.linkedQrSlug ? qrBySlug.get(String(tag.linkedQrSlug).toLowerCase().trim()) : undefined);
+
+      if (linkedQr && linkedQr.targetUrl && linkedQr.targetUrl !== tag.googleReviewUrl) {
+        const updatedTag = {
+          ...tag,
+          linkedQrId: tag.linkedQrId || linkedQr.id,
+          linkedQrSlug: tag.linkedQrSlug || linkedQr.slug,
+          linkedQrCode: tag.linkedQrCode || linkedQr.code || null,
+          googleReviewUrl: linkedQr.targetUrl,
+          updatedAt: linkedQr.updatedAt || new Date().toISOString()
+        };
+        await db.saveNFCTag(updatedTag);
+        return updatedTag;
+      }
+      return tag;
+    })
+  );
+
+  res.json({ success: true, data: syncedTags });
 });
 
 // Auto-resolve Google Review URL from place name
@@ -851,25 +973,82 @@ app.get('/api/nfc/lookup-place', async (req: Request, res: Response) => {
   });
 });
 
-// Activate or input new NFC tag
+// Activate or input new NFC tag (supports auto-populating from existing QR Code data & physical tap scan)
 app.post('/api/nfc/activate', async (req: Request, res: Response) => {
-  const { placeName, googleReviewUrl, pin, tagUid, notes } = req.body;
+  const {
+    placeName,
+    googleReviewUrl,
+    pin,
+    requirePinOnTap,
+    linkedQrId,
+    linkedQrSlug,
+    linkedQrCode,
+    syncWithQr,
+    tagUid,
+    notes,
+    initialRecord
+  } = req.body;
 
-  if (!placeName || !googleReviewUrl || !pin) {
+  if (!pin || String(pin).trim().length < 4) {
     return res.status(400).json({
       success: false,
-      error: 'Nama tempat, link Google Review, dan PIN NFC tag wajib diisi'
+      error: 'PIN keamanan NFC wajib diisi minimal 4 karakter/angka.'
     });
+  }
+
+  let resolvedPlaceName = (placeName || '').trim();
+  let resolvedUrl = (googleReviewUrl || '').trim();
+  let resolvedQrId = linkedQrId || null;
+  let resolvedQrSlug = linkedQrSlug || null;
+  let resolvedQrCode = linkedQrCode || null;
+  let resolvedNotes = (notes || '').trim();
+
+  // Auto-read from existing QR Code list if linkedQrId is provided
+  if (resolvedQrId) {
+    const existingQr = await db.getQRCodeById(resolvedQrId);
+    if (existingQr) {
+      if (!resolvedPlaceName) resolvedPlaceName = existingQr.title;
+      if (!resolvedUrl) resolvedUrl = existingQr.targetUrl;
+      resolvedQrSlug = resolvedQrSlug || existingQr.slug;
+      resolvedQrCode = resolvedQrCode || existingQr.code || null;
+      if (!resolvedNotes) {
+        resolvedNotes = existingQr.notes || `Terhubung otomatis ke ${existingQr.code || existingQr.slug}`;
+      }
+    }
+  }
+
+  if (!resolvedPlaceName || !resolvedUrl) {
+    return res.status(400).json({
+      success: false,
+      error: 'Nama tempat/judul dan URL tujuan wajib diisi atau dipilih dari daftar QR Code.'
+    });
+  }
+
+  if (!resolvedUrl.startsWith('http://') && !resolvedUrl.startsWith('https://')) {
+    resolvedUrl = 'https://' + resolvedUrl;
   }
 
   const tags = await db.getNFCTags();
   const now = new Date().toISOString();
 
-  let cleanId = 'nfc-' + placeName
+  // Check if hardware UID is already registered
+  const normalizedUid = tagUid ? String(tagUid).trim().toUpperCase() : '';
+  if (normalizedUid) {
+    const duplicateUid = tags.find((t: any) => (t.tagUid || '').trim().toUpperCase() === normalizedUid);
+    if (duplicateUid) {
+      return res.status(409).json({
+        success: false,
+        error: `Chip NFC dengan UID ${normalizedUid} sudah terdaftar atas nama "${duplicateUid.placeName}". Gunakan menu Ubah Link (PIN) untuk memperbaruinya.`
+      });
+    }
+  }
+
+  let cleanId = 'nfc-' + resolvedPlaceName
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
     .slice(0, 18);
 
   if (!cleanId || cleanId === 'nfc-') {
@@ -883,7 +1062,7 @@ app.post('/api/nfc/activate', async (req: Request, res: Response) => {
     counter++;
   }
 
-  const autoUid = tagUid || [
+  const autoUid = normalizedUid || [
     '04',
     Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
     Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
@@ -893,16 +1072,39 @@ app.post('/api/nfc/activate', async (req: Request, res: Response) => {
     '80'
   ].join(':');
 
+  const tapHistory: NFCTapRecord[] = [];
+  if (initialRecord) {
+    const ua = parseUserAgent(req.headers['user-agent']);
+    tapHistory.push({
+      id: 'tap-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      tagId: finalId,
+      tagUid: autoUid,
+      timestamp: now,
+      device: ua.device,
+      os: ua.os,
+      browser: ua.browser,
+      source: 'auto-scan',
+      pinVerified: true,
+      readPayload: typeof initialRecord === 'string' ? initialRecord : 'Aktivasi Tempel Tag NFC'
+    });
+  }
+
   const newTag = {
     id: finalId,
     tagUid: autoUid,
-    placeName: placeName.trim(),
-    googleReviewUrl: googleReviewUrl.trim(),
+    placeName: resolvedPlaceName,
+    googleReviewUrl: resolvedUrl,
     pin: String(pin).trim(),
+    requirePinOnTap: Boolean(requirePinOnTap),
+    linkedQrId: resolvedQrId,
+    linkedQrSlug: resolvedQrSlug,
+    linkedQrCode: resolvedQrCode,
+    syncWithQr: resolvedQrId ? syncWithQr !== false : false,
     status: 'active',
-    totalTaps: 0,
-    lastTappedAt: null,
-    notes: notes?.trim() || 'Aktivasi NFC Google Review Stand',
+    totalTaps: tapHistory.length,
+    lastTappedAt: tapHistory.length > 0 ? now : null,
+    notes: resolvedNotes || 'Aktivasi NFC Tag',
+    tapHistory,
     createdAt: now,
     updatedAt: now
   };
@@ -913,15 +1115,236 @@ app.post('/api/nfc/activate', async (req: Request, res: Response) => {
     success: true,
     data: newTag,
     redirectUrl: `/nfc/${newTag.id}`,
-    message: `Tag NFC untuk "${newTag.placeName}" berhasil diaktivasi!`
+    message: `Tag NFC untuk "${newTag.placeName}" berhasil diaktivasi dengan proteksi PIN!`
   });
 });
 
-// Update NFC tag (requires PIN verification)
+// Auto-read and record physical NFC tag tap/scan
+app.post('/api/nfc/scan-record', async (req: Request, res: Response) => {
+  try {
+    const { tagUid, scannedUrl, scannedText, source = 'auto-scan', pin } = req.body;
+    const cleanUid = (tagUid || '').trim().toUpperCase();
+    const rawPayload = (scannedUrl || scannedText || '').trim();
+
+    let matchedTag: any = null;
+
+    // 1. Try matching by hardware tag UID
+    if (cleanUid) {
+      matchedTag = await db.getNFCTagByUid(cleanUid);
+    }
+
+    // 2. Try matching by /nfc/:id or /n/:id extracted from NDEF URL payload
+    if (!matchedTag && rawPayload) {
+      const nfcMatch = rawPayload.match(/\/(?:nfc|n)\/([^/?#\s]+)/i);
+      if (nfcMatch?.[1]) {
+        matchedTag = await db.getNFCTagById(decodeURIComponent(nfcMatch[1]));
+      }
+    }
+
+    if (matchedTag) {
+      if (matchedTag.status === 'locked') {
+        return res.status(403).json({
+          success: false,
+          matchedType: 'nfc',
+          locked: true,
+          tag: matchedTag,
+          error: `Tag NFC "${matchedTag.placeName}" sedang dikunci.`
+        });
+      }
+
+      if (matchedTag.requirePinOnTap && (!pin || String(pin).trim() !== String(matchedTag.pin).trim())) {
+        return res.status(401).json({
+          success: false,
+          matchedType: 'nfc',
+          requirePin: true,
+          tag: {
+            id: matchedTag.id,
+            tagUid: matchedTag.tagUid,
+            placeName: matchedTag.placeName,
+            requirePinOnTap: true,
+            status: matchedTag.status
+          },
+          error: pin ? 'PIN keamanan NFC tidak sesuai.' : 'Tag NFC ini memerlukan verifikasi PIN.'
+        });
+      }
+
+      // Sync linked QR url if enabled
+      if (matchedTag.linkedQrId && matchedTag.syncWithQr !== false) {
+        const linkedQr = await db.getQRCodeById(matchedTag.linkedQrId);
+        if (linkedQr?.targetUrl) {
+          matchedTag.googleReviewUrl = linkedQr.targetUrl;
+        }
+      }
+
+      const ua = parseUserAgent(req.headers['user-agent']);
+      const now = new Date().toISOString();
+      const record: NFCTapRecord = {
+        id: 'tap-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        tagId: matchedTag.id,
+        tagUid: cleanUid || matchedTag.tagUid,
+        timestamp: now,
+        device: ua.device,
+        os: ua.os,
+        browser: ua.browser,
+        source: source === 'simulation' ? 'simulation' : 'auto-scan',
+        pinVerified: Boolean(matchedTag.requirePinOnTap),
+        readPayload: rawPayload || `/nfc/${matchedTag.id}`
+      };
+
+      matchedTag.totalTaps = (matchedTag.totalTaps || 0) + 1;
+      matchedTag.lastTappedAt = now;
+      matchedTag.tapHistory = [record, ...(Array.isArray(matchedTag.tapHistory) ? matchedTag.tapHistory : [])].slice(0, 100);
+      await db.saveNFCTag(matchedTag);
+
+      return res.json({
+        success: true,
+        matchedType: 'nfc',
+        tag: matchedTag,
+        record,
+        targetUrl: matchedTag.googleReviewUrl,
+        message: `Tag NFC "${matchedTag.placeName}" terbaca dan berhasil direcord!`
+      });
+    }
+
+    // 3. Check if NDEF payload points to an existing QR Code (/r/:slug)
+    if (rawPayload) {
+      const qrMatch = rawPayload.match(/\/r\/([^/?#\s]+)/i);
+      if (qrMatch?.[1]) {
+        const cleanSlug = decodeURIComponent(qrMatch[1]).replace(/\.png$/i, '').trim().toLowerCase();
+        const qr = await db.getQRCodeBySlug(cleanSlug);
+        if (qr) {
+          return res.json({
+            success: true,
+            matchedType: 'qr',
+            qr,
+            tagUid: cleanUid || undefined,
+            scannedPayload: rawPayload,
+            message: `Terdeteksi data QR Code "${qr.title}" (${qr.code || qr.slug}). Siap diaktivasi ke NFC Tag!`
+          });
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      matchedType: 'blank',
+      tagUid: cleanUid || undefined,
+      scannedPayload: rawPayload || undefined,
+      message: cleanUid
+        ? `Tag NFC baru dengan UID ${cleanUid} terbaca. Pilih data QR Code untuk mengaktivasi.`
+        : 'Tag NFC baru terbaca dan siap diaktivasi.'
+    });
+  } catch (err: any) {
+    console.error('[NFC Scan Record] Error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal membaca dan merecord data tag NFC: ' + (err?.message || 'Error')
+    });
+  }
+});
+
+// Verify NFC PIN for tap, programming chip, or management actions
+app.post('/api/nfc/:id/verify-pin', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { pin, action = 'manage', source = 'nfc-tap', readPayload } = req.body;
+
+    const tag = await db.getNFCTagById(id);
+    if (!tag) {
+      return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan.' });
+    }
+
+    if (!pin || String(pin).trim() !== String(tag.pin).trim()) {
+      return res.status(403).json({
+        success: false,
+        error: 'PIN keamanan NFC salah! Akses ditolak.'
+      });
+    }
+
+    if (action === 'tap') {
+      if (tag.status === 'locked') {
+        return res.status(403).json({
+          success: false,
+          error: `Tag NFC "${tag.placeName}" sedang dikunci.`
+        });
+      }
+
+      if (tag.linkedQrId && tag.syncWithQr !== false) {
+        const linkedQr = await db.getQRCodeById(tag.linkedQrId);
+        if (linkedQr?.targetUrl) {
+          tag.googleReviewUrl = linkedQr.targetUrl;
+        }
+      }
+
+      const ua = parseUserAgent(req.headers['user-agent']);
+      const now = new Date().toISOString();
+      const record: NFCTapRecord = {
+        id: 'tap-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        tagId: tag.id,
+        tagUid: tag.tagUid,
+        timestamp: now,
+        device: ua.device,
+        os: ua.os,
+        browser: ua.browser,
+        source: source === 'simulation' ? 'simulation' : source === 'auto-scan' ? 'auto-scan' : 'nfc-tap',
+        pinVerified: true,
+        readPayload: readPayload || `/nfc/${tag.id}`
+      };
+
+      tag.totalTaps = (tag.totalTaps || 0) + 1;
+      tag.lastTappedAt = now;
+      tag.tapHistory = [record, ...(Array.isArray(tag.tapHistory) ? tag.tapHistory : [])].slice(0, 100);
+      await db.saveNFCTag(tag);
+
+      let targetUrl = tag.googleReviewUrl.trim();
+      if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+        targetUrl = 'https://' + targetUrl;
+      }
+
+      return res.json({
+        success: true,
+        verified: true,
+        totalTaps: tag.totalTaps,
+        targetUrl,
+        record,
+        data: tag,
+        message: 'PIN terverifikasi! Tap NFC berhasil direcord.'
+      });
+    }
+
+    return res.json({
+      success: true,
+      verified: true,
+      data: tag,
+      message: 'PIN keamanan NFC terverifikasi.'
+    });
+  } catch (err: any) {
+    console.error('[NFC Verify PIN] Error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal memverifikasi PIN NFC: ' + (err?.message || 'Error')
+    });
+  }
+});
+
+// Update NFC tag (requires strict PIN verification)
 app.put('/api/nfc/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { placeName, googleReviewUrl, pin, newPin, status, notes, tagData } = req.body;
+    const {
+      placeName,
+      googleReviewUrl,
+      pin,
+      newPin,
+      requirePinOnTap,
+      linkedQrId,
+      linkedQrSlug,
+      linkedQrCode,
+      syncWithQr,
+      status,
+      notes,
+      tagData
+    } = req.body;
 
     let tag = await db.getNFCTagById(id);
     if (!tag) {
@@ -932,6 +1355,11 @@ app.put('/api/nfc/:id', async (req: Request, res: Response) => {
           placeName: placeName !== undefined ? placeName.trim() : tagData.placeName,
           googleReviewUrl: googleReviewUrl !== undefined ? googleReviewUrl.trim() : tagData.googleReviewUrl,
           pin: newPin ? String(newPin).trim() : tagData.pin,
+          requirePinOnTap: requirePinOnTap !== undefined ? Boolean(requirePinOnTap) : Boolean(tagData.requirePinOnTap),
+          linkedQrId: linkedQrId !== undefined ? linkedQrId : tagData.linkedQrId,
+          linkedQrSlug: linkedQrSlug !== undefined ? linkedQrSlug : tagData.linkedQrSlug,
+          linkedQrCode: linkedQrCode !== undefined ? linkedQrCode : tagData.linkedQrCode,
+          syncWithQr: syncWithQr !== undefined ? Boolean(syncWithQr) : tagData.syncWithQr,
           status: status || tagData.status,
           notes: notes !== undefined ? notes : tagData.notes,
           updatedAt: new Date().toISOString()
@@ -940,17 +1368,31 @@ app.put('/api/nfc/:id', async (req: Request, res: Response) => {
         return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
       }
     } else {
-      // Verify PIN
-      if (pin && String(pin).trim() !== String(tag.pin).trim()) {
+      // Strict PIN check (cannot be bypassed with empty pin)
+      if (!pin || String(pin).trim() !== String(tag.pin).trim()) {
         return res.status(403).json({
           success: false,
-          error: 'PIN NFC Tag tidak sesuai! Masukkan PIN yang tepat.'
+          error: 'PIN NFC Tag wajib diisi dan harus sesuai! Perubahan ditolak.'
         });
+      }
+
+      if (newPin !== undefined && String(newPin).trim().length > 0) {
+        if (String(newPin).trim().length < 4) {
+          return res.status(400).json({
+            success: false,
+            error: 'PIN baru minimal 4 karakter/angka.'
+          });
+        }
+        tag.pin = String(newPin).trim();
       }
 
       if (placeName !== undefined) tag.placeName = placeName.trim();
       if (googleReviewUrl !== undefined) tag.googleReviewUrl = googleReviewUrl.trim();
-      if (newPin !== undefined && newPin.trim()) tag.pin = String(newPin).trim();
+      if (requirePinOnTap !== undefined) tag.requirePinOnTap = Boolean(requirePinOnTap);
+      if (linkedQrId !== undefined) tag.linkedQrId = linkedQrId;
+      if (linkedQrSlug !== undefined) tag.linkedQrSlug = linkedQrSlug;
+      if (linkedQrCode !== undefined) tag.linkedQrCode = linkedQrCode;
+      if (syncWithQr !== undefined) tag.syncWithQr = Boolean(syncWithQr);
       if (status !== undefined) tag.status = status;
       if (notes !== undefined) tag.notes = notes;
       tag.updatedAt = new Date().toISOString();
@@ -976,7 +1418,7 @@ app.put('/api/nfc/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Delete NFC tag (with PIN verification)
+// Delete NFC tag (strict PIN verification)
 app.delete('/api/nfc/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { pin } = req.body;
@@ -986,32 +1428,78 @@ app.delete('/api/nfc/:id', async (req: Request, res: Response) => {
     return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
   }
 
-  if (pin && String(pin).trim() !== String(tag.pin).trim()) {
-    return res.status(403).json({ success: false, error: 'PIN NFC Tag salah.' });
+  if (!pin || String(pin).trim() !== String(tag.pin).trim()) {
+    return res.status(403).json({ success: false, error: 'PIN NFC Tag salah atau kosong. Penghapusan dibatalkan.' });
   }
 
   await db.deleteNFCTag(id);
   res.json({ success: true, message: 'Tag NFC berhasil dihapus' });
 });
 
-// Test tap simulation
+// Test tap simulation (checks lock status, PIN requirement, and records tap)
 app.post('/api/nfc/:id/test-tap', async (req: Request, res: Response) => {
   const { id } = req.params;
+  const { pin, source = 'simulation' } = req.body || {};
   const tag = await db.getNFCTagById(id);
 
   if (!tag) {
     return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
   }
 
+  if (tag.status === 'locked') {
+    return res.status(403).json({
+      success: false,
+      locked: true,
+      error: `Tag NFC "${tag.placeName}" sedang dikunci dan tidak bisa diakses.`
+    });
+  }
+
+  if (tag.requirePinOnTap) {
+    if (!pin || String(pin).trim() !== String(tag.pin).trim()) {
+      return res.status(401).json({
+        success: false,
+        requirePin: true,
+        placeName: tag.placeName,
+        tagUid: tag.tagUid,
+        error: pin ? 'PIN keamanan NFC salah!' : 'Tag NFC ini dilindungi PIN keamanan.'
+      });
+    }
+  }
+
+  if (tag.linkedQrId && tag.syncWithQr !== false) {
+    const linkedQr = await db.getQRCodeById(tag.linkedQrId);
+    if (linkedQr?.targetUrl) {
+      tag.googleReviewUrl = linkedQr.targetUrl;
+    }
+  }
+
+  const ua = parseUserAgent(req.headers['user-agent']);
+  const now = new Date().toISOString();
+  const record: NFCTapRecord = {
+    id: 'tap-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+    tagId: tag.id,
+    tagUid: tag.tagUid,
+    timestamp: now,
+    device: ua.device,
+    os: ua.os,
+    browser: ua.browser,
+    source: source === 'nfc-tap' ? 'nfc-tap' : source === 'auto-scan' ? 'auto-scan' : 'simulation',
+    pinVerified: Boolean(tag.requirePinOnTap),
+    readPayload: `/nfc/${tag.id}`
+  };
+
   tag.totalTaps = (tag.totalTaps || 0) + 1;
-  tag.lastTappedAt = new Date().toISOString();
+  tag.lastTappedAt = now;
+  tag.tapHistory = [record, ...(Array.isArray(tag.tapHistory) ? tag.tapHistory : [])].slice(0, 100);
   await db.saveNFCTag(tag);
 
   res.json({
     success: true,
-    message: `Simulasi tap NFC pada "${tag.placeName}" berhasil!`,
+    message: `Simulasi tap NFC pada "${tag.placeName}" berhasil dan telah direcord!`,
     totalTaps: tag.totalTaps,
-    targetUrl: tag.googleReviewUrl
+    targetUrl: tag.googleReviewUrl,
+    record,
+    data: tag
   });
 });
 
@@ -1258,6 +1746,8 @@ app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
       current = await db.getQRCodeBySlug(String(slug || qrData.slug));
     }
 
+    const previousTargetUrl = current?.targetUrl;
+    const previousTitle = current?.title;
     const now = new Date().toISOString();
     let urlChanged = false;
 
@@ -1320,12 +1810,74 @@ app.put('/api/qrcodes/:id', async (req: Request, res: Response) => {
 
     await db.saveQRCode(current);
 
+    // Automatically propagate QR link updates to linked NFC tags
+    const syncedNfcTags: any[] = [];
+    try {
+      const allNfcTags = await db.getNFCTags();
+      const qrSlugLower = (current.slug || '').trim().toLowerCase();
+      const qrCodeLower = (current.code || '').trim().toLowerCase();
+      const prevTitleLower = (previousTitle || '').trim().toLowerCase();
+
+      for (const nfcTag of allNfcTags) {
+        if (nfcTag.syncWithQr === false) continue;
+
+        const matchesById = Boolean(nfcTag.linkedQrId && nfcTag.linkedQrId === current.id);
+        const matchesBySlug = Boolean(
+          qrSlugLower && nfcTag.linkedQrSlug && String(nfcTag.linkedQrSlug).trim().toLowerCase() === qrSlugLower
+        );
+        const matchesByCode = Boolean(
+          qrCodeLower && nfcTag.linkedQrCode && String(nfcTag.linkedQrCode).trim().toLowerCase() === qrCodeLower
+        );
+        const matchesByRedirectSlug = Boolean(
+          qrSlugLower && typeof nfcTag.googleReviewUrl === 'string' && nfcTag.googleReviewUrl.toLowerCase().includes(`/r/${qrSlugLower}`)
+        );
+        const matchesByLegacyTitleUrl = Boolean(
+          !nfcTag.linkedQrId &&
+          previousTargetUrl &&
+          nfcTag.googleReviewUrl === previousTargetUrl &&
+          prevTitleLower &&
+          String(nfcTag.placeName || '').trim().toLowerCase() === prevTitleLower
+        );
+
+        if (matchesById || matchesBySlug || matchesByCode || matchesByRedirectSlug || matchesByLegacyTitleUrl) {
+          const nextPlaceName =
+            prevTitleLower && String(nfcTag.placeName || '').trim().toLowerCase() === prevTitleLower && current.title
+              ? current.title
+              : nfcTag.placeName;
+
+          if (
+            nfcTag.googleReviewUrl !== current.targetUrl ||
+            nextPlaceName !== nfcTag.placeName ||
+            nfcTag.linkedQrId !== current.id
+          ) {
+            const updatedTag = {
+              ...nfcTag,
+              placeName: nextPlaceName,
+              googleReviewUrl: current.targetUrl,
+              linkedQrId: current.id,
+              linkedQrSlug: current.slug,
+              linkedQrCode: current.code || nfcTag.linkedQrCode || null,
+              syncWithQr: true,
+              updatedAt: now
+            };
+            await db.saveNFCTag(updatedTag);
+            syncedNfcTags.push(updatedTag);
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.warn('[NFC Sync] Warning propagating QR link update to NFC tags:', syncErr);
+    }
+
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     return res.json({
       success: true,
       data: current,
+      syncedNfcTags,
       message: urlChanged
-        ? 'Tautan tujuan berhasil diperbarui! QR code fisik yang dicetak akan langsung mengarah ke tautan baru.'
+        ? syncedNfcTags.length > 0
+          ? `Tautan tujuan berhasil diperbarui dan ${syncedNfcTags.length} NFC tag terhubung ikut diperbarui otomatis!`
+          : 'Tautan tujuan berhasil diperbarui! QR code fisik yang dicetak akan langsung mengarah ke tautan baru.'
         : 'Pengaturan QR code berhasil diperbarui.'
     });
   } catch (err: any) {
@@ -1507,6 +2059,7 @@ async function startServer() {
   const distPath = path.resolve(__dirname, 'dist');
   const indexHtmlPath = path.resolve(distPath, 'index.html');
 
+  let viteServerInstance: { close: () => Promise<void> } | null = null;
   let frontendHandler: ((req: Request, res: Response, next: NextFunction) => void) | null = null;
 
   const frontendReadyPromise = (async () => {
@@ -1523,18 +2076,20 @@ async function startServer() {
         console.warn('dist/index.html not found in production, mounting Vite middleware fallback');
         const { createServer: createViteServer } = await import('vite');
         const vite = await createViteServer({
-          server: { middlewareMode: true, hmr: false },
+          server: { middlewareMode: true, hmr: false, ws: false, watch: null, allowedHosts: true },
           appType: 'spa'
         });
+        viteServerInstance = vite;
         frontendHandler = vite.middlewares;
       }
     } else {
       try {
         const { createServer: createViteServer } = await import('vite');
         const vite = await createViteServer({
-          server: { middlewareMode: true, hmr: false },
+          server: { middlewareMode: true, hmr: false, ws: false, watch: null, allowedHosts: true },
           appType: 'spa'
         });
+        viteServerInstance = vite;
         frontendHandler = vite.middlewares;
       } catch (viteErr) {
         console.warn('Vite middleware warning in dev, trying static dist fallback:', viteErr);
@@ -1564,11 +2119,23 @@ async function startServer() {
   });
 
   const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`DinamisQR server running on http://0.0.0.0:${PORT}`);
+    console.log(`Projecttapp server running on http://0.0.0.0:${PORT}`);
   });
   server.on('error', (err: any) => {
-    console.error(`DinamisQR server error on port ${PORT}:`, err);
+    console.error(`Projecttapp server error on port ${PORT}:`, err);
   });
+
+  const shutdown = async () => {
+    server.close();
+    if (viteServerInstance) {
+      try {
+        await viteServerInstance.close();
+      } catch {}
+    }
+    process.exit(0);
+  };
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
 }
 
 startServer().catch(err => {

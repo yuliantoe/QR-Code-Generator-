@@ -6,6 +6,7 @@ import { CreateQRModal } from './components/CreateQRModal.tsx';
 import { AnalyticsModal } from './components/AnalyticsModal.tsx';
 import { LoginView } from './components/LoginView.tsx';
 import { NFCTagsView } from './components/NFCTagsView.tsx';
+import type { TestTapResult } from './components/NFCTagsView.tsx';
 import { ActivateNFCModal } from './components/ActivateNFCModal.tsx';
 import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
@@ -154,6 +155,7 @@ export default function App() {
 
   // NFC Modals state
   const [isActivateNFCOpen, setIsActivateNFCOpen] = useState(false);
+  const [activateNfcPrefill, setActivateNfcPrefill] = useState<{ tagUid?: string; qrId?: string; scannedPayload?: string } | null>(null);
   const [editingNFCTag, setEditingNFCTag] = useState<NFCTag | null>(null);
 
   // Client-side redirect fallback if /r/:slug or /nfc/:id serves SPA index.html
@@ -219,7 +221,7 @@ export default function App() {
 
   const syncQRToServer = async (qr: DynamicQRCode) => {
     try {
-      await fetch(`/api/qrcodes/${qr.id}`, {
+      const res = await fetch(`/api/qrcodes/${qr.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -230,6 +232,15 @@ export default function App() {
           qrData: qr
         })
       });
+      const json = await res.json().catch(() => null);
+      if (json?.success && Array.isArray(json.syncedNfcTags) && json.syncedNfcTags.length > 0) {
+        const syncedById = new Map<string, NFCTag>(json.syncedNfcTags.map((t: NFCTag) => [t.id, t]));
+        setNfcTags(prev => {
+          const next = prev.map(t => syncedById.get(t.id) || t);
+          try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+          return next;
+        });
+      }
     } catch {}
   };
 
@@ -469,8 +480,9 @@ export default function App() {
     };
   }, [currentUser, authToken, handleLogout]);
 
-  // QR Handlers with immediate LocalStorage sync
-  const handleUpdateQR = (updated: DynamicQRCode) => {
+  // QR Handlers with immediate LocalStorage sync + automatic linked NFC Tag sync
+  const handleUpdateQR = (updated: DynamicQRCode, syncedNfcTags?: NFCTag[]) => {
+    const prevQR = qrcodes.find(item => item.id === updated.id);
     setQrcodes(prev => {
       const next = prev.map(item => item.id === updated.id ? updated : item);
       try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
@@ -479,6 +491,73 @@ export default function App() {
     if (analyticsQR?.id === updated.id) {
       setAnalyticsQR(updated);
     }
+
+    // Propagate QR link change to linked NFC tags in state & cache immediately
+    const syncedById = new Map<string, NFCTag>((syncedNfcTags || []).map(t => [t.id, t]));
+    const updatedSlugLower = (updated.slug || '').trim().toLowerCase();
+    const updatedCodeLower = (updated.code || '').trim().toLowerCase();
+    const prevTitleLower = (prevQR?.title || '').trim().toLowerCase();
+
+    setNfcTags(prevTags => {
+      let changed = false;
+      const nextTags = prevTags.map(tag => {
+        const serverSynced = syncedById.get(tag.id);
+        if (serverSynced) {
+          changed = true;
+          return serverSynced;
+        }
+        if (tag.syncWithQr === false) return tag;
+
+        const matchesId = Boolean(tag.linkedQrId && tag.linkedQrId === updated.id);
+        const matchesSlug = Boolean(
+          updatedSlugLower && tag.linkedQrSlug && tag.linkedQrSlug.trim().toLowerCase() === updatedSlugLower
+        );
+        const matchesCode = Boolean(
+          updatedCodeLower && tag.linkedQrCode && tag.linkedQrCode.trim().toLowerCase() === updatedCodeLower
+        );
+        const matchesRedirect = Boolean(
+          updatedSlugLower && tag.googleReviewUrl.toLowerCase().includes(`/r/${updatedSlugLower}`)
+        );
+        const matchesLegacy = Boolean(
+          !tag.linkedQrId &&
+          prevQR?.targetUrl &&
+          tag.googleReviewUrl === prevQR.targetUrl &&
+          prevTitleLower &&
+          tag.placeName.trim().toLowerCase() === prevTitleLower
+        );
+
+        if (matchesId || matchesSlug || matchesCode || matchesRedirect || matchesLegacy) {
+          const nextPlaceName =
+            prevTitleLower && tag.placeName.trim().toLowerCase() === prevTitleLower && updated.title
+              ? updated.title
+              : tag.placeName;
+
+          if (
+            tag.googleReviewUrl !== updated.targetUrl ||
+            nextPlaceName !== tag.placeName ||
+            tag.linkedQrId !== updated.id
+          ) {
+            changed = true;
+            return {
+              ...tag,
+              placeName: nextPlaceName,
+              googleReviewUrl: updated.targetUrl,
+              linkedQrId: updated.id,
+              linkedQrSlug: updated.slug,
+              linkedQrCode: updated.code || tag.linkedQrCode || null,
+              syncWithQr: true,
+              updatedAt: updated.updatedAt || new Date().toISOString()
+            };
+          }
+        }
+        return tag;
+      });
+
+      if (changed) {
+        try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(nextTags)); } catch {}
+      }
+      return changed ? nextTags : prevTags;
+    });
   };
 
   const handleCreatedQR = (newQR: DynamicQRCode) => {
@@ -553,13 +632,28 @@ export default function App() {
     });
   };
 
+  const handleTagRecorded = (recordedTag: NFCTag) => {
+    setNfcTags(prev => {
+      const exists = prev.some(t => t.id === recordedTag.id);
+      const next = exists
+        ? prev.map(t => (t.id === recordedTag.id ? recordedTag : t))
+        : [recordedTag, ...prev];
+      try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
   const handleDeleteNFCTag = async (id: string, pin: string): Promise<boolean> => {
     try {
-      await fetch(`/api/nfc/${id}`, {
+      const res = await fetch(`/api/nfc/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin })
-      }).catch(() => {});
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        return false;
+      }
       setNfcTags(prev => {
         const next = prev.filter(t => t.id !== id);
         try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
@@ -571,18 +665,49 @@ export default function App() {
     }
   };
 
-  const handleTestNFCTap = async (id: string): Promise<string | null> => {
+  const handleTestNFCTap = async (id: string, pin?: string): Promise<TestTapResult> => {
     try {
-      const res = await fetch(`/api/nfc/${id}/test-tap`, { method: 'POST' });
+      const res = await fetch(`/api/nfc/${id}/test-tap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pin || undefined, source: 'simulation' })
+      });
       const json = await res.json();
-      if (json.success && json.targetUrl) {
-        setNfcTags(prev => prev.map(t => t.id === id ? { ...t, totalTaps: json.totalTaps, lastTappedAt: new Date().toISOString() } : t));
-        return json.targetUrl;
+      if (json.requirePin) {
+        return {
+          success: false,
+          requirePin: true,
+          error: json.error || 'PIN keamanan NFC diperlukan.'
+        };
       }
+      if (!res.ok || !json.success) {
+        return {
+          success: false,
+          locked: json.locked,
+          error: json.error || 'Gagal membaca tag NFC.'
+        };
+      }
+      if (json.data) {
+        handleTagRecorded(json.data);
+      } else {
+        setNfcTags(prev =>
+          prev.map(t =>
+            t.id === id ? { ...t, totalTaps: json.totalTaps, lastTappedAt: new Date().toISOString() } : t
+          )
+        );
+      }
+      return {
+        success: true,
+        targetUrl: json.targetUrl,
+        updatedTag: json.data
+      };
     } catch (err) {
       console.warn(err);
+      return {
+        success: false,
+        error: 'Gagal terhubung ke server.'
+      };
     }
-    return null;
   };
 
   // If user opened a physical QR redirect (/r/:slug) or NFC (/nfc/:id), show redirect screen immediately without prompting login
@@ -1189,10 +1314,15 @@ export default function App() {
         {currentTab === 'nfc' && (
           <NFCTagsView
             tags={nfcTags}
-            onOpenActivateModal={() => setIsActivateNFCOpen(true)}
+            qrcodes={qrcodes}
+            onOpenActivateModal={(prefill) => {
+              setActivateNfcPrefill(prefill || null);
+              setIsActivateNFCOpen(true);
+            }}
             onOpenEditModal={(tag) => setEditingNFCTag(tag)}
             onDeleteTag={handleDeleteNFCTag}
             onTestTap={handleTestNFCTap}
+            onTagRecorded={handleTagRecorded}
             onOpenStandStudio={(tag) => {
               setStandDesignInitialId('nfc-' + tag.id);
               setCurrentTab('stand-design');
@@ -1294,7 +1424,14 @@ export default function App() {
       {isActivateNFCOpen && (
         <ActivateNFCModal
           isOpen={isActivateNFCOpen}
-          onClose={() => setIsActivateNFCOpen(false)}
+          qrcodes={qrcodes}
+          initialTagUid={activateNfcPrefill?.tagUid}
+          initialSelectedQrId={activateNfcPrefill?.qrId}
+          initialScannedPayload={activateNfcPrefill?.scannedPayload}
+          onClose={() => {
+            setIsActivateNFCOpen(false);
+            setActivateNfcPrefill(null);
+          }}
           onActivated={handleActivatedNFC}
         />
       )}
@@ -1303,6 +1440,7 @@ export default function App() {
       {editingNFCTag && (
         <EditNFCLinkModal
           tag={editingNFCTag}
+          qrcodes={qrcodes}
           isOpen={!!editingNFCTag}
           onClose={() => setEditingNFCTag(null)}
           onUpdated={handleUpdatedNFCTag}
