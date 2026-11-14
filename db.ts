@@ -25,6 +25,7 @@ const QR_FILE = path.resolve(DATA_DIR, 'qrcodes.json');
 const SCANS_FILE = path.resolve(DATA_DIR, 'scans.json');
 const USERS_FILE = path.resolve(DATA_DIR, 'users.json');
 const NFC_FILE = path.resolve(DATA_DIR, 'nfc_tags.json');
+const DELETED_FILE = path.resolve(DATA_DIR, 'deleted_ids.json');
 
 export interface UserRecord {
   username: string;
@@ -646,6 +647,7 @@ let memoryUsers = [...initialUsers];
 let memoryQRCodes = [...initialQRCodes];
 let memoryScans: ScanRecord[] = [];
 let memoryNFCTags = [...initialNFCTags];
+let memoryDeletedIds: string[] = [];
 
 function readJsonFile<T>(filePath: string, fallback: T): T {
   try {
@@ -665,6 +667,62 @@ function writeJsonFile<T>(filePath: string, data: T): void {
   } catch {
     // Continue with memory/KV fallback
   }
+}
+
+async function getDeletedIdSet(): Promise<Set<string>> {
+  if (isKVConfigured) {
+    const kvDeleted = await kvGetJson<string[]>('dinamis:deleted:ids');
+    if (Array.isArray(kvDeleted)) {
+      memoryDeletedIds = kvDeleted;
+      return new Set(kvDeleted);
+    }
+  }
+  const fileDeleted = readJsonFile<string[]>(DELETED_FILE, memoryDeletedIds);
+  memoryDeletedIds = Array.isArray(fileDeleted) ? fileDeleted : [];
+  return new Set(memoryDeletedIds);
+}
+
+async function recordDeletedId(key: string): Promise<void> {
+  if (!key) return;
+  const set = await getDeletedIdSet();
+  set.add(key);
+  const next = Array.from(set).slice(-500);
+  memoryDeletedIds = next;
+  writeJsonFile(DELETED_FILE, next);
+  if (isKVConfigured) {
+    await kvSetJson('dinamis:deleted:ids', next);
+  }
+}
+
+async function clearDeletedId(key: string): Promise<void> {
+  if (!key) return;
+  const set = await getDeletedIdSet();
+  if (set.delete(key)) {
+    const next = Array.from(set);
+    memoryDeletedIds = next;
+    writeJsonFile(DELETED_FILE, next);
+    if (isKVConfigured) {
+      await kvSetJson('dinamis:deleted:ids', next);
+    }
+  }
+}
+
+function computeSyncRevision(qrcodes: DynamicQRCode[], nfcTags: any[]): string {
+  const qrParts = qrcodes
+    .map(q => `${q.id}|${q.updatedAt || ''}|${q.targetUrl || ''}|${q.status || ''}|${q.totalScans || 0}|${q.title || ''}`)
+    .sort()
+    .join(';');
+  const nfcParts = nfcTags
+    .map(t => `${t.id}|${t.updatedAt || ''}|${t.googleReviewUrl || ''}|${t.status || ''}|${t.totalTaps || 0}|${t.placeName || ''}|${t.linkedQrId || ''}|${t.requirePinOnTap ? 1 : 0}`)
+    .sort()
+    .join(';');
+  const input = `${qrcodes.length}:${qrParts}||${nfcTags.length}:${nfcParts}`;
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `rev-${qrcodes.length}-${nfcTags.length}-${(hash >>> 0).toString(36)}`;
 }
 
 // Static default fallback map used ONLY if slug does not exist in DB/KV/JSON/Memory
@@ -753,12 +811,16 @@ async function syncAllSlugsToCloud(
   fullQRs?: DynamicQRCode[]
 ): Promise<boolean> {
   try {
+    const deletedSet = await getDeletedIdSet();
     if (Array.isArray(fullQRs) && fullQRs.length > 0) {
       const existing = await db.getQRCodes();
       const existingBySlug = new Map(existing.map(q => [q.slug.trim().toLowerCase(), q]));
       for (const incoming of fullQRs) {
         if (!incoming?.slug || !incoming?.targetUrl) continue;
         const cleanSlug = incoming.slug.trim().toLowerCase();
+        if (deletedSet.has(`qr:${incoming.id}`) || deletedSet.has(`qr-slug:${cleanSlug}`)) {
+          continue;
+        }
         const serverItem = existingBySlug.get(cleanSlug);
         const serverTime = serverItem ? new Date(serverItem.updatedAt || serverItem.createdAt || 0).getTime() : 0;
         const incomingTime = new Date(incoming.updatedAt || incoming.createdAt || 0).getTime();
@@ -774,6 +836,7 @@ async function syncAllSlugsToCloud(
       for (const [rawSlug, rawUrl] of Object.entries(slugMap)) {
         if (!rawSlug || typeof rawUrl !== 'string' || !rawUrl.trim()) continue;
         const cleanSlug = rawSlug.trim().toLowerCase();
+        if (deletedSet.has(`qr-slug:${cleanSlug}`)) continue;
         const found = existing.find(q => q.slug.trim().toLowerCase() === cleanSlug);
         if (!found) {
           const now = new Date().toISOString();
@@ -1031,16 +1094,14 @@ export const db = {
     if (ok && pool) {
       try {
         const res = await pool.query('SELECT data, target_url, status, updated_at FROM dinamis_qrcodes ORDER BY created_at DESC');
-        if (res.rows.length > 0) {
-          const rows = res.rows.map(r => ({
-            ...r.data,
-            targetUrl: r.target_url || r.data?.targetUrl,
-            status: r.status || r.data?.status || 'active',
-            updatedAt: r.data?.updatedAt || (r.updated_at instanceof Date ? r.updated_at.toISOString() : r.updated_at)
-          }));
-          memoryQRCodes = rows;
-          return rows;
-        }
+        const rows = res.rows.map(r => ({
+          ...r.data,
+          targetUrl: r.target_url || r.data?.targetUrl,
+          status: r.status || r.data?.status || 'active',
+          updatedAt: r.data?.updatedAt || (r.updated_at instanceof Date ? r.updated_at.toISOString() : r.updated_at)
+        }));
+        memoryQRCodes = rows;
+        return rows;
       } catch (err) {
         console.error('[DB] getQRCodes error:', err);
       }
@@ -1048,15 +1109,22 @@ export const db = {
 
     if (isKVConfigured) {
       const kvList = await kvGetJson<DynamicQRCode[]>('dinamis:qrcodes:all');
-      if (kvList && kvList.length > 0) {
-        const merged = mergeQRCodesPreserveLatest(initialQRCodes, kvList);
-        memoryQRCodes = merged;
-        return merged;
+      if (Array.isArray(kvList)) {
+        memoryQRCodes = kvList;
+        return kvList;
       }
+      await kvSetJson('dinamis:qrcodes:all', initialQRCodes);
+      memoryQRCodes = [...initialQRCodes];
+      return memoryQRCodes;
     }
 
-    const loaded = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
-    memoryQRCodes = loaded.length ? loaded : initialQRCodes;
+    if (fs.existsSync(QR_FILE)) {
+      const loaded = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
+      if (Array.isArray(loaded)) {
+        memoryQRCodes = loaded;
+        return memoryQRCodes;
+      }
+    }
     return memoryQRCodes;
   },
 
@@ -1292,9 +1360,16 @@ export const db = {
       await syncQRToKV(normalizedQR);
     }
 
+    await clearDeletedId(`qr:${normalizedQR.id}`);
+    if (normalizedQR.slug) {
+      await clearDeletedId(`qr-slug:${normalizedQR.slug}`);
+    }
+
     // Always update memory and local/tmp JSON file so same-instance reads are immediately fresh
-    const currentList = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
-    const list = currentList.length ? [...currentList] : [...memoryQRCodes];
+    const currentList = fs.existsSync(QR_FILE)
+      ? readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes)
+      : [...memoryQRCodes];
+    const list = Array.isArray(currentList) ? [...currentList] : [...memoryQRCodes];
     const idx = list.findIndex(
       q => q.id === normalizedQR.id || q.slug?.toLowerCase().trim() === normalizedQR.slug
     );
@@ -1315,40 +1390,57 @@ export const db = {
 
   async deleteQRCode(id: string): Promise<boolean> {
     let deletedFromPg = false;
+    let deletedSlug: string | null = null;
     const ok = await ensurePostgres();
     if (ok && pool) {
       try {
         const res = await pool.query('DELETE FROM dinamis_qrcodes WHERE id = $1 RETURNING slug', [id]);
         deletedFromPg = (res.rowCount || 0) > 0;
-        if (isKVConfigured && res.rows[0]?.slug) {
-          await kvCommand(['DEL', `dinamis:qr:slug:${String(res.rows[0].slug).toLowerCase().trim()}`]);
+        if (res.rows[0]?.slug) {
+          deletedSlug = String(res.rows[0].slug).toLowerCase().trim();
+          if (isKVConfigured) {
+            await kvCommand(['DEL', `dinamis:qr:slug:${deletedSlug}`]);
+          }
         }
       } catch (err) {
         console.error('[DB] deleteQRCode error:', err);
       }
     }
 
-    let list = readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes);
+    let list = fs.existsSync(QR_FILE)
+      ? readJsonFile<DynamicQRCode[]>(QR_FILE, memoryQRCodes)
+      : [...memoryQRCodes];
     const target = list.find(q => q.id === id);
     const existsInFile = Boolean(target);
+    if (target?.slug && !deletedSlug) {
+      deletedSlug = target.slug.toLowerCase().trim();
+    }
     if (existsInFile) {
       list = list.filter(q => q.id !== id);
       memoryQRCodes = list;
       writeJsonFile(QR_FILE, list);
     }
 
+    let deletedFromKv = false;
     if (isKVConfigured) {
       const kvList = (await kvGetJson<DynamicQRCode[]>('dinamis:qrcodes:all')) || [];
       const kvTarget = kvList.find(q => q.id === id);
       if (kvTarget) {
+        deletedFromKv = true;
+        deletedSlug = deletedSlug || kvTarget.slug.toLowerCase().trim();
         await kvCommand(['DEL', `dinamis:qr:slug:${kvTarget.slug.toLowerCase().trim()}`]);
         await kvSetJson('dinamis:qrcodes:all', kvList.filter(q => q.id !== id));
-      } else if (target) {
-        await kvCommand(['DEL', `dinamis:qr:slug:${target.slug.toLowerCase().trim()}`]);
+      } else if (deletedSlug) {
+        await kvCommand(['DEL', `dinamis:qr:slug:${deletedSlug}`]);
       }
     }
 
-    return deletedFromPg || existsInFile;
+    await recordDeletedId(`qr:${id}`);
+    if (deletedSlug) {
+      await recordDeletedId(`qr-slug:${deletedSlug}`);
+    }
+
+    return deletedFromPg || existsInFile || deletedFromKv;
   },
 
   // SCANS
@@ -1412,7 +1504,9 @@ export const db = {
     if (ok && pool) {
       try {
         const res = await pool.query('SELECT data FROM dinamis_nfc_tags ORDER BY created_at DESC');
-        if (res.rows.length > 0) return res.rows.map(r => r.data);
+        const rows = res.rows.map(r => r.data);
+        memoryNFCTags = rows;
+        return rows;
       } catch (err) {
         console.error('[DB] getNFCTags error:', err);
       }
@@ -1420,14 +1514,22 @@ export const db = {
 
     if (isKVConfigured) {
       const kvNfc = await kvGetJson<any[]>('dinamis:nfc:all');
-      if (kvNfc && kvNfc.length > 0) {
+      if (Array.isArray(kvNfc)) {
         memoryNFCTags = kvNfc;
         return kvNfc;
       }
+      await kvSetJson('dinamis:nfc:all', initialNFCTags);
+      memoryNFCTags = [...initialNFCTags];
+      return memoryNFCTags;
     }
 
-    const loaded = readJsonFile(NFC_FILE, memoryNFCTags);
-    memoryNFCTags = loaded.length ? loaded : initialNFCTags;
+    if (fs.existsSync(NFC_FILE)) {
+      const loaded = readJsonFile(NFC_FILE, memoryNFCTags);
+      if (Array.isArray(loaded)) {
+        memoryNFCTags = loaded;
+        return memoryNFCTags;
+      }
+    }
     return memoryNFCTags;
   },
 
@@ -1487,6 +1589,8 @@ export const db = {
       }
     }
 
+    await clearDeletedId(`nfc:${tag.id}`);
+
     const tags = await this.getNFCTags();
     const idx = tags.findIndex(t => t.id === tag.id);
     if (idx !== -1) {
@@ -1519,8 +1623,9 @@ export const db = {
       writeJsonFile(NFC_FILE, tags);
       if (isKVConfigured) await kvSetJson('dinamis:nfc:all', tags);
     }
+    await recordDeletedId(`nfc:${id}`);
     return deletedPg || exists;
   }
 };
 
-export { syncSlugToCloud, syncAllSlugsToCloud, getCloudUrlForSlug };
+export { syncSlugToCloud, syncAllSlugsToCloud, getCloudUrlForSlug, computeSyncRevision };

@@ -34,7 +34,6 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
   const [showPin, setShowPin] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [showNewPin, setShowNewPin] = useState(false);
-  const [requirePinOnTap, setRequirePinOnTap] = useState<boolean>(Boolean(tag.requirePinOnTap));
   const [notes, setNotes] = useState(tag.notes || '');
   const [status, setStatus] = useState<'active' | 'locked'>(tag.status === 'locked' ? 'locked' : 'active');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,7 +135,7 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
           googleReviewUrl: formattedUrl,
           pin: pin.trim(),
           newPin: newPin.trim() || undefined,
-          requirePinOnTap,
+          requirePinOnTap: false,
           linkedQrId: linkedQrId || null,
           linkedQrSlug: linkedQrSlug || null,
           linkedQrCode: linkedQrCode || null,
@@ -416,22 +415,14 @@ export const EditNFCLinkModal: React.FC<EditNFCLinkModalProps> = ({
               </div>
             </div>
 
-            <label className="flex items-start gap-2 pt-2 border-t border-[#104F38]/15 cursor-pointer select-none text-xs">
-              <input
-                type="checkbox"
-                checked={requirePinOnTap}
-                onChange={(e) => setRequirePinOnTap(e.target.checked)}
-                className="mt-0.5 accent-[#104F38]"
-              />
-              <div>
-                <span className="font-bold text-[#104F38] block">
-                  Wajibkan PIN Saat Tag NFC Ditempel (Proteksi Tap)
-                </span>
-                <span className="text-[11px] text-[#104F38]/75">
-                  Smartphone pemindai harus memasukkan PIN sebelum dialihkan ke URL tujuan.
-                </span>
-              </div>
-            </label>
+            <div className="pt-2 border-t border-[#104F38]/15 text-xs">
+              <span className="font-bold text-[#104F38] block">
+                Tap NFC di Handphone Otomatis Tanpa PIN
+              </span>
+              <span className="text-[11px] text-[#104F38]/75">
+                Pelanggan yang menempelkan tag NFC di smartphone langsung diarahkan ke link Google Review tanpa input PIN. PIN hanya diperlukan saat mengubah, menghapus, atau memprogram chip.
+              </span>
+            </div>
           </div>
 
           <div>

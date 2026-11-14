@@ -51,7 +51,6 @@ export const ActivateNFCModal: React.FC<ActivateNFCModalProps> = ({
 
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
-  const [requirePinOnTap, setRequirePinOnTap] = useState(false);
   const [tagUid, setTagUid] = useState(initialTagUid || '');
   const [notes, setNotes] = useState('');
   const [initialScanRecord, setInitialScanRecord] = useState<string | null>(initialScannedPayload || null);
@@ -312,7 +311,7 @@ export const ActivateNFCModal: React.FC<ActivateNFCModalProps> = ({
           placeName: placeName.trim(),
           googleReviewUrl: formattedUrl,
           pin: pin.trim(),
-          requirePinOnTap,
+          requirePinOnTap: false,
           linkedQrId: sourceMode === 'qr' && selectedQrId ? selectedQrId : null,
           linkedQrSlug: sourceMode === 'qr' && selectedQR ? selectedQR.slug : null,
           linkedQrCode: sourceMode === 'qr' && selectedQR ? selectedQR.code || null : null,
@@ -741,22 +740,17 @@ export const ActivateNFCModal: React.FC<ActivateNFCModalProps> = ({
                 </p>
               </div>
 
-              <label className="flex items-start gap-2.5 p-2.5 bg-[#F4FAF6] border border-[#104F38]/15 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={requirePinOnTap}
-                  onChange={(e) => setRequirePinOnTap(e.target.checked)}
-                  className="mt-0.5 accent-[#104F38]"
-                />
-                <div className="text-xs">
+              <div className="flex items-start gap-2.5 p-2.5 bg-[#F4FAF6] border border-[#104F38]/15 text-xs">
+                <Smartphone className="w-4 h-4 text-[#104F38] shrink-0 mt-0.5" />
+                <div>
                   <span className="font-bold text-[#104F38] block">
-                    Wajibkan Verifikasi PIN Saat Tag NFC Ditempel (Proteksi Tap)
+                    Tap NFC di Handphone Otomatis Tanpa PIN
                   </span>
                   <span className="text-[11px] text-[#104F38]/75">
-                    Jika diaktifkan, setiap smartphone yang menempelkan tag NFC ini wajib memasukkan PIN di atas sebelum tautan tujuan dibuka.
+                    Saat pelanggan menempelkan tag NFC ke smartphone, halaman Google Review langsung terbuka otomatis tanpa diminta memasukkan PIN. PIN hanya melindungi dashboard admin.
                   </span>
                 </div>
-              </label>
+              </div>
             </div>
 
             {/* Actions */}

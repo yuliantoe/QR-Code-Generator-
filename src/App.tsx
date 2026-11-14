@@ -74,25 +74,13 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<'qr' | 'nfc' | 'stand-design'>('qr');
   const [standDesignInitialId, setStandDesignInitialId] = useState<string | undefined>(undefined);
 
-  // QR Codes State with local storage cache persistence
+  // QR Codes State (localStorage is only an offline/cold-start display cache; server is authoritative)
   const [qrcodes, setQrcodes] = useState<DynamicQRCode[]>(() => {
     try {
       const saved = localStorage.getItem('dinamis_qrcodes_cache');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Merge in any missing social media initial QR codes (QR 004, 005, 006, 007)
-          const existingIds = new Set(parsed.map((item: any) => item.id || item.slug));
-          const toAdd = INITIAL_DEFAULT_QRCODES.filter(item => !existingIds.has(item.id) && !existingIds.has(item.slug));
-          if (toAdd.length > 0) {
-            const combined = [...parsed, ...toAdd];
-            try {
-              localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(combined));
-            } catch {}
-            return combined;
-          }
-          return parsed;
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch {}
     return INITIAL_DEFAULT_QRCODES;
@@ -197,147 +185,406 @@ export default function App() {
           });
       }
     } else if (pathname.startsWith('/nfc/') || pathname.startsWith('/n/')) {
-      const nfcId = pathname.replace(/^\/(nfc|n)\//, '').split('/')[0].split('?')[0].trim();
+      const nfcId = decodeURIComponent(
+        pathname.replace(/^\/(nfc|n)\//, '').split('/')[0].split('?')[0].trim()
+      ).replace(/\/+$/, '');
+
+      const normalizeAndRedirect = (rawUrl?: string | null) => {
+        if (!rawUrl || typeof rawUrl !== 'string') return false;
+        let url = rawUrl.trim();
+        if (!url) return false;
+        if (!/^https?:\/\//i.test(url)) {
+          url = `https://${url.replace(/^\/+/, '')}`;
+        }
+        window.location.replace(url);
+        return true;
+      };
+
+      const redirectNfcFromLocalCache = () => {
+        try {
+          const cached = localStorage.getItem('dinamis_nfc_cache');
+          if (!cached) return false;
+          const items: NFCTag[] = JSON.parse(cached);
+          const matched = items.find(t => t.id === nfcId);
+          if (matched && matched.status !== 'locked' && matched.googleReviewUrl) {
+            return normalizeAndRedirect(matched.googleReviewUrl);
+          }
+        } catch {}
+        return false;
+      };
+
       if (nfcId) {
-        fetch(`/api/nfc/${encodeURIComponent(nfcId)}/test-tap`, { method: 'POST' })
+        fetch(`/api/nfc/${encodeURIComponent(nfcId)}/test-tap?t=${Date.now()}`, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: 'nfc-tap' })
+        })
           .then(res => res.json())
           .then(json => {
-            if (json.success && json.targetUrl) {
-              window.location.replace(json.targetUrl);
+            if (!normalizeAndRedirect(json.targetUrl)) {
+              redirectNfcFromLocalCache();
             }
           })
-          .catch(() => {});
+          .catch(() => {
+            redirectNfcFromLocalCache();
+          });
       }
     }
   }, []);
 
-  // Load initial data
-  useEffect(() => {
-    if (currentUser && authToken) {
-      fetchQRCodes();
-      fetchNFCTags();
-    }
-  }, [currentUser, authToken]);
+  const lastRevisionRef = useRef<string>('');
+  const snapshotInFlightRef = useRef<Promise<void> | null>(null);
 
-  const syncQRToServer = async (qr: DynamicQRCode) => {
+  const persistQRCache = useCallback((items: DynamicQRCode[]) => {
     try {
-      const res = await fetch(`/api/qrcodes/${qr.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetUrl: qr.targetUrl,
-          title: qr.title,
-          status: qr.status,
-          style: qr.style,
-          qrData: qr
-        })
-      });
-      const json = await res.json().catch(() => null);
-      if (json?.success && Array.isArray(json.syncedNfcTags) && json.syncedNfcTags.length > 0) {
-        const syncedById = new Map<string, NFCTag>(json.syncedNfcTags.map((t: NFCTag) => [t.id, t]));
-        setNfcTags(prev => {
-          const next = prev.map(t => syncedById.get(t.id) || t);
-          try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(items));
+    } catch {}
+  }, []);
+
+  const persistNFCCache = useCallback((items: NFCTag[]) => {
+    try {
+      localStorage.setItem('dinamis_nfc_cache', JSON.stringify(items));
+    } catch {}
+  }, []);
+
+  // Authoritative snapshot fetch: Server is the single source of truth across Web & Mobile
+  const fetchSyncSnapshot = useCallback(async () => {
+    if (snapshotInFlightRef.current) {
+      return snapshotInFlightRef.current;
+    }
+
+    const run = (async () => {
+      try {
+        const res = await fetch(`/api/sync/snapshot?t=${Date.now()}`, { cache: 'no-store' });
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.qrcodes) && Array.isArray(json.nfcTags)) {
+            if (json.revision) {
+              lastRevisionRef.current = json.revision;
+            }
+            setQrcodes(json.qrcodes);
+            persistQRCache(json.qrcodes);
+            setNfcTags(json.nfcTags);
+            persistNFCCache(json.nfcTags);
+
+            setAnalyticsQR(prev => {
+              if (!prev) return null;
+              return json.qrcodes.find((q: DynamicQRCode) => q.id === prev.id) || null;
+            });
+            return;
+          }
+        }
+
+        // Fallback if snapshot route unavailable: fetch individual endpoints
+        const [qrRes, nfcRes] = await Promise.all([
+          fetch(`/api/qrcodes?t=${Date.now()}`, { cache: 'no-store' }),
+          fetch(`/api/nfc?t=${Date.now()}`, { cache: 'no-store' })
+        ]);
+        if (qrRes.ok) {
+          const qrJson = await qrRes.json().catch(() => null);
+          if (qrJson?.success && Array.isArray(qrJson.data)) {
+            setQrcodes(qrJson.data);
+            persistQRCache(qrJson.data);
+          }
+        }
+        if (nfcRes.ok) {
+          const nfcJson = await nfcRes.json().catch(() => null);
+          if (nfcJson?.success && Array.isArray(nfcJson.data)) {
+            setNfcTags(nfcJson.data);
+            persistNFCCache(nfcJson.data);
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal menyinkronkan data dari server, menggunakan cache sementara:', err);
+      } finally {
+        setLoadingQRs(false);
+        setLoadingNFC(false);
+        snapshotInFlightRef.current = null;
+      }
+    })();
+
+    snapshotInFlightRef.current = run;
+    return run;
+  }, [persistNFCCache, persistQRCache]);
+
+  const checkSyncVersion = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sync/version?t=${Date.now()}`, { cache: 'no-store' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) return;
+      const json = await res.json();
+      if (json.success && json.revision && json.revision !== lastRevisionRef.current) {
+        await fetchSyncSnapshot();
+      }
+    } catch {
+      // Non-blocking background version check
+    }
+  }, [fetchSyncSnapshot]);
+
+  // Idempotent handler for incoming WebSocket / SSE real-time events from other devices
+  const applyRealtimeSyncEvent = useCallback((event: any) => {
+    if (!event || !event.type) return;
+
+    if (event.type === 'connected' || event.type === 'pong') {
+      if (event.revision && event.revision !== lastRevisionRef.current) {
+        void fetchSyncSnapshot();
+      }
+      return;
+    }
+
+    if (event.revision) {
+      lastRevisionRef.current = event.revision;
+    }
+
+    const payload = event.payload || {};
+
+    switch (event.type) {
+      case 'snapshot': {
+        void fetchSyncSnapshot();
+        break;
+      }
+      case 'qr:created': {
+        const created: DynamicQRCode | undefined = payload.qr;
+        if (!created?.id) return;
+        setQrcodes(prev => {
+          const next = prev.some(q => q.id === created.id)
+            ? prev.map(q => (q.id === created.id ? created : q))
+            : [created, ...prev];
+          persistQRCache(next);
           return next;
         });
+        break;
       }
-    } catch {}
-  };
-
-  const fetchQRCodes = async () => {
-    try {
-      const res = await fetch('/api/qrcodes');
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setQrcodes(prev => {
-            const localMap = new Map(prev.map(q => [q.id, q]));
-            const mergedMap = new Map<string, DynamicQRCode>();
-
-            // 1. Add all existing local cached items first
-            for (const local of prev) {
-              mergedMap.set(local.id, local);
-            }
-
-            // 2. Process server items: only replace if server item is genuinely newer
-            for (const serverItem of json.data) {
-              const local = localMap.get(serverItem.id);
-              if (!local) {
-                mergedMap.set(serverItem.id, serverItem);
-              } else {
-                const localTime = new Date(local.updatedAt || local.createdAt || 0).getTime();
-                const serverTime = new Date(serverItem.updatedAt || serverItem.createdAt || 0).getTime();
-                if (serverTime > localTime) {
-                  mergedMap.set(serverItem.id, serverItem);
-                } else if (localTime > serverTime) {
-                  // Local edit is newer! Retain local and sync to serverless instance
-                  mergedMap.set(serverItem.id, local);
-                  syncQRToServer(local);
-                }
-              }
-            }
-
-            const merged = Array.from(mergedMap.values());
-            try {
-              localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(merged));
-            } catch {}
-            return merged;
-          });
-        }
+      case 'qr:batch-created': {
+        const batch: DynamicQRCode[] = Array.isArray(payload.qrcodes) ? payload.qrcodes : [];
+        if (batch.length === 0) return;
+        setQrcodes(prev => {
+          const batchById = new Map(batch.map(q => [q.id, q]));
+          const remaining = prev.filter(q => !batchById.has(q.id));
+          const next = [...batch, ...remaining];
+          persistQRCache(next);
+          return next;
+        });
+        break;
       }
-    } catch (err) {
-      console.warn('Gagal memuat QR dari server, menggunakan cache lokal:', err);
-    } finally {
-      setLoadingQRs(false);
-    }
-  };
+      case 'qr:updated':
+      case 'qr:scanned': {
+        const updated: DynamicQRCode | undefined = payload.qr;
+        if (!updated?.id) return;
+        setQrcodes(prev => {
+          const exists = prev.some(q => q.id === updated.id);
+          const next = exists
+            ? prev.map(q => (q.id === updated.id ? updated : q))
+            : [updated, ...prev];
+          persistQRCache(next);
+          return next;
+        });
+        setAnalyticsQR(prev => (prev && prev.id === updated.id ? updated : prev));
 
-  // Auto sync loaded QR codes to server persistence (Postgres / KV / serverless cache)
-  useEffect(() => {
-    if (qrcodes.length > 0) {
-      const slugMap: Record<string, string> = {};
-      for (const q of qrcodes) {
-        if (q.slug && q.targetUrl) {
-          slugMap[q.slug.toLowerCase().trim()] = q.targetUrl.trim();
-        }
-      }
-      fetch('/api/qrcodes/sync-cloud', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slugMap, qrcodes })
-      }).catch(() => {});
-    }
-  }, [qrcodes.length]);
-
-  const fetchNFCTags = async () => {
-    try {
-      const res = await fetch('/api/nfc');
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
+        const syncedNfcTags: NFCTag[] = Array.isArray(payload.syncedNfcTags) ? payload.syncedNfcTags : [];
+        if (syncedNfcTags.length > 0) {
+          const byId = new Map(syncedNfcTags.map(t => [t.id, t]));
           setNfcTags(prev => {
-            const serverMap = new Map(json.data.map((t: NFCTag) => [t.id, t]));
-            const merged = [...json.data];
-            for (const localItem of prev) {
-              if (!serverMap.has(localItem.id)) {
-                merged.push(localItem);
-              }
-            }
-            try {
-              localStorage.setItem('dinamis_nfc_cache', JSON.stringify(merged));
-            } catch {}
-            return merged;
+            const next = prev.map(t => byId.get(t.id) || t);
+            persistNFCCache(next);
+            return next;
           });
         }
+        break;
       }
-    } catch (err) {
-      console.warn('Gagal memuat NFC dari server, menggunakan cache lokal:', err);
-    } finally {
-      setLoadingNFC(false);
+      case 'qr:deleted': {
+        const deletedId: string | undefined = payload.id;
+        if (!deletedId) return;
+        setQrcodes(prev => {
+          const next = prev.filter(q => q.id !== deletedId);
+          persistQRCache(next);
+          return next;
+        });
+        setAnalyticsQR(prev => (prev && prev.id === deletedId ? null : prev));
+        setQrToDelete(prev => (prev && prev.id === deletedId ? null : prev));
+        break;
+      }
+      case 'nfc:created': {
+        const createdTag: NFCTag | undefined = payload.tag;
+        if (!createdTag?.id) return;
+        setNfcTags(prev => {
+          const next = prev.some(t => t.id === createdTag.id)
+            ? prev.map(t => (t.id === createdTag.id ? createdTag : t))
+            : [createdTag, ...prev];
+          persistNFCCache(next);
+          return next;
+        });
+        break;
+      }
+      case 'nfc:updated':
+      case 'nfc:tapped': {
+        const updatedTag: NFCTag | undefined = payload.tag;
+        if (!updatedTag?.id) return;
+        setNfcTags(prev => {
+          const exists = prev.some(t => t.id === updatedTag.id);
+          const next = exists
+            ? prev.map(t => (t.id === updatedTag.id ? updatedTag : t))
+            : [updatedTag, ...prev];
+          persistNFCCache(next);
+          return next;
+        });
+        break;
+      }
+      case 'nfc:deleted': {
+        const deletedId: string | undefined = payload.id;
+        if (!deletedId) return;
+        setNfcTags(prev => {
+          const next = prev.filter(t => t.id !== deletedId);
+          persistNFCCache(next);
+          return next;
+        });
+        break;
+      }
     }
-  };
+  }, [fetchSyncSnapshot, persistNFCCache, persistQRCache]);
+
+  // Cross-device Real-Time Sync Effect (WebSocket primary + SSE fallback + Version Check & Mobile Resume Resync)
+  useEffect(() => {
+    if (!currentUser || !authToken) return;
+
+    let cancelled = false;
+    let ws: WebSocket | null = null;
+    let eventSource: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+    let versionPollTimer: ReturnType<typeof setInterval> | null = null;
+    let retryAttempt = 0;
+
+    void fetchSyncSnapshot();
+
+    const startSseFallback = () => {
+      if (cancelled || eventSource || typeof EventSource === 'undefined') return;
+      try {
+        eventSource = new EventSource('/api/sync/stream');
+        eventSource.onmessage = (evt) => {
+          try {
+            const parsed = JSON.parse(evt.data);
+            applyRealtimeSyncEvent(parsed);
+          } catch {}
+        };
+        eventSource.onerror = () => {
+          eventSource?.close();
+          eventSource = null;
+        };
+      } catch {}
+    };
+
+    const connectWebSocket = () => {
+      if (cancelled || typeof window === 'undefined' || typeof WebSocket === 'undefined') {
+        startSseFallback();
+        return;
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch {
+        startSseFallback();
+        return;
+      }
+
+      ws.onopen = () => {
+        retryAttempt = 0;
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        void fetchSyncSnapshot();
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            try {
+              ws.send(JSON.stringify({ type: 'ping' }));
+            } catch {}
+          }
+        }, 25000);
+      };
+
+      ws.onmessage = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.data);
+          applyRealtimeSyncEvent(parsed);
+        } catch {}
+      };
+
+      ws.onerror = () => {
+        startSseFallback();
+      };
+
+      ws.onclose = () => {
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+        ws = null;
+        if (cancelled) return;
+        startSseFallback();
+        const delay = Math.min(1000 * Math.pow(2, retryAttempt), 15000);
+        retryAttempt++;
+        reconnectTimer = setTimeout(connectWebSocket, delay);
+      };
+    };
+
+    connectWebSocket();
+
+    // Lightweight version check keeps Mobile & Vercel multi-instance deployments in sync
+    versionPollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void checkSyncVersion();
+      }
+    }, 4000);
+
+    // Resync immediately when switching back to browser on mobile phone or waking screen
+    const handleResumeSync = () => {
+      if (document.visibilityState === 'visible') {
+        void checkSyncVersion();
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
+          retryAttempt = 0;
+          connectWebSocket();
+        }
+      }
+    };
+
+    const handleOnline = () => {
+      void fetchSyncSnapshot();
+      handleResumeSync();
+    };
+
+    document.addEventListener('visibilitychange', handleResumeSync);
+    window.addEventListener('focus', handleResumeSync);
+    window.addEventListener('pageshow', handleResumeSync);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (versionPollTimer) clearInterval(versionPollTimer);
+      document.removeEventListener('visibilitychange', handleResumeSync);
+      window.removeEventListener('focus', handleResumeSync);
+      window.removeEventListener('pageshow', handleResumeSync);
+      window.removeEventListener('online', handleOnline);
+      if (ws) {
+        try { ws.close(); } catch {}
+      }
+      if (eventSource) {
+        try { eventSource.close(); } catch {}
+      }
+    };
+  }, [currentUser, authToken, fetchSyncSnapshot, checkSyncVersion, applyRealtimeSyncEvent]);
 
   const handleLogout = useCallback(async (isAutoTimeout = false) => {
     try {
@@ -562,16 +809,20 @@ export default function App() {
 
   const handleCreatedQR = (newQR: DynamicQRCode) => {
     setQrcodes(prev => {
-      const next = [newQR, ...prev];
-      try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+      const next = prev.some(q => q.id === newQR.id)
+        ? prev.map(q => (q.id === newQR.id ? newQR : q))
+        : [newQR, ...prev];
+      persistQRCache(next);
       return next;
     });
   };
 
   const handleCreatedBatch = (batchQRs: DynamicQRCode[]) => {
     setQrcodes(prev => {
-      const next = [...batchQRs, ...prev];
-      try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+      const batchById = new Map(batchQRs.map(q => [q.id, q]));
+      const remaining = prev.filter(q => !batchById.has(q.id));
+      const next = [...batchQRs, ...remaining];
+      persistQRCache(next);
       return next;
     });
   };
@@ -586,7 +837,7 @@ export default function App() {
       });
       const json = await res.json();
       if (json.success && json.data) {
-        handleUpdateQR(json.data);
+        handleUpdateQR(json.data, json.syncedNfcTags);
       }
     } catch (e) {
       console.error(e);
@@ -599,10 +850,13 @@ export default function App() {
 
   const handleConfirmDelete = async (id: string): Promise<boolean> => {
     try {
-      await fetch(`/api/qrcodes/${id}`, { method: 'DELETE' }).catch(() => {});
+      const res = await fetch(`/api/qrcodes/${id}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) {
+        return false;
+      }
       setQrcodes(prev => {
         const next = prev.filter(q => q.id !== id);
-        try { localStorage.setItem('dinamis_qrcodes_cache', JSON.stringify(next)); } catch {}
+        persistQRCache(next);
         return next;
       });
       if (analyticsQR?.id === id) setAnalyticsQR(null);
@@ -615,19 +869,23 @@ export default function App() {
     }
   };
 
-  // NFC Handlers
+  // NFC Handlers (idempotent for real-time sync compatibility)
   const handleActivatedNFC = (newTag: NFCTag) => {
     setNfcTags(prev => {
-      const next = [newTag, ...prev];
-      try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      const next = prev.some(t => t.id === newTag.id)
+        ? prev.map(t => (t.id === newTag.id ? newTag : t))
+        : [newTag, ...prev];
+      persistNFCCache(next);
       return next;
     });
   };
 
   const handleUpdatedNFCTag = (updated: NFCTag) => {
     setNfcTags(prev => {
-      const next = prev.map(t => t.id === updated.id ? updated : t);
-      try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      const next = prev.some(t => t.id === updated.id)
+        ? prev.map(t => (t.id === updated.id ? updated : t))
+        : [updated, ...prev];
+      persistNFCCache(next);
       return next;
     });
   };
@@ -638,7 +896,7 @@ export default function App() {
       const next = exists
         ? prev.map(t => (t.id === recordedTag.id ? recordedTag : t))
         : [recordedTag, ...prev];
-      try { localStorage.setItem('dinamis_nfc_cache', JSON.stringify(next)); } catch {}
+      persistNFCCache(next);
       return next;
     });
   };
@@ -665,21 +923,14 @@ export default function App() {
     }
   };
 
-  const handleTestNFCTap = async (id: string, pin?: string): Promise<TestTapResult> => {
+  const handleTestNFCTap = async (id: string): Promise<TestTapResult> => {
     try {
       const res = await fetch(`/api/nfc/${id}/test-tap`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pin || undefined, source: 'simulation' })
+        body: JSON.stringify({ source: 'simulation' })
       });
       const json = await res.json();
-      if (json.requirePin) {
-        return {
-          success: false,
-          requirePin: true,
-          error: json.error || 'PIN keamanan NFC diperlukan.'
-        };
-      }
       if (!res.ok || !json.success) {
         return {
           success: false,

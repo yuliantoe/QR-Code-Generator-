@@ -203,76 +203,28 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
           safeTargetUrl = 'https://' + safeTargetUrl;
         }
 
-        let batchItems: DynamicQRCode[] = [];
+        const res = await fetch('/api/qrcodes/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            baseTitle: safeBaseTitle,
+            baseTargetUrl: safeTargetUrl,
+            count: batchCount,
+            baseSlug: slug.trim() || undefined,
+            notes: notes.trim(),
+            style
+          })
+        });
 
-        try {
-          const res = await fetch('/api/qrcodes/batch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              baseTitle: safeBaseTitle,
-              baseTargetUrl: safeTargetUrl,
-              count: batchCount,
-              baseSlug: slug.trim() || undefined,
-              notes: notes.trim(),
-              style
-            })
-          });
-
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const json = await res.json();
-            if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-              batchItems = json.data;
-            }
-          }
-        } catch (fetchErr) {
-          console.warn('Batch API fallback to client generation:', fetchErr);
+        const contentType = res.headers.get('content-type') || '';
+        const json = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
+        if (!res.ok || !json?.success || !Array.isArray(json.data) || json.data.length === 0) {
+          setErrorMessage(json?.error || `Gagal menyimpan batch QR Code ke server (HTTP ${res.status}).`);
+          setIsSubmitting(false);
+          return;
         }
 
-        // Resilient fallback: If API was slow/offline on Vercel, generate items directly
-        if (batchItems.length === 0) {
-          const startNum = nextSeqNum;
-          const cleanBase = (slug.trim() || safeBaseTitle)
-            .toLowerCase()
-            .replace(/[^a-z0-9_-]/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '') || 'meja';
-
-          for (let i = 1; i <= batchCount; i++) {
-            const pad = i.toString().padStart(2, '0');
-            const seq = startNum + (i - 1);
-            const itemCode = `QR ${String(seq).padStart(3, '0')}`;
-
-            const localQR: DynamicQRCode = {
-              id: `qr-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
-              code: itemCode,
-              slug: `${cleanBase}-${pad}`,
-              title: `${safeBaseTitle} #${pad}`,
-              targetUrl: safeTargetUrl,
-              status: 'active',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              tags: ['Batch Stand', safeBaseTitle],
-              notes: notes.trim() || `Dibuat serentak batch ${batchCount} pcs stand meja.`,
-              totalScans: 0,
-              lastScannedAt: null,
-              urlHistory: [{ url: safeTargetUrl, changedAt: new Date().toISOString(), reason: 'Batch generate' }],
-              style: style || {
-                fgColor: '#104F38',
-                bgColor: '#ffffff',
-                dotStyle: 'rounded',
-                cornerStyle: 'rounded',
-                frameStyle: 'bottom-banner',
-                frameText: `PINDAI #${pad}`,
-                frameColor: '#104F38',
-                frameTextColor: '#ffffff',
-                logoType: 'none'
-              }
-            };
-            batchItems.push(localQR);
-          }
-        }
+        const batchItems: DynamicQRCode[] = json.data;
 
         try {
           confetti?.({
@@ -314,53 +266,21 @@ export const CreateQRModal: React.FC<CreateQRModalProps> = ({
           expiryDate: expiryDate || undefined
         };
 
-        let createdQR: DynamicQRCode | null = null;
+        const res = await fetch('/api/qrcodes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-        try {
-          const res = await fetch('/api/qrcodes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          const contentType = res.headers.get('content-type') || '';
-          if (res.ok && contentType.includes('application/json')) {
-            const json = await res.json();
-            if (json.success && json.data) {
-              createdQR = json.data;
-            }
-          }
-        } catch (fetchErr) {
-          console.warn('Single create API fallback to client generation:', fetchErr);
+        const contentType = res.headers.get('content-type') || '';
+        const json = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
+        if (!res.ok || !json?.success || !json?.data) {
+          setErrorMessage(json?.error || `Gagal menyimpan QR Code ke server (HTTP ${res.status}).`);
+          setIsSubmitting(false);
+          return;
         }
 
-        // Resilient fallback if API was offline on Vercel
-        if (!createdQR) {
-          const cleanSlug = (slug.trim() || autoGeneratedCode)
-            .toLowerCase()
-            .replace(/[^a-z0-9_-]/g, '-')
-            .replace(/-+/g, '-')
-            .replace(/^-|-$/g, '') || `qr-${Date.now()}`;
-
-          createdQR = {
-            id: 'qr-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
-            code: code.trim() || autoGeneratedCode,
-            title: title.trim(),
-            targetUrl: safeTargetUrl,
-            slug: cleanSlug,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            tags: [],
-            notes: notes.trim(),
-            totalScans: 0,
-            lastScannedAt: null,
-            urlHistory: [{ url: safeTargetUrl, changedAt: new Date().toISOString(), reason: 'Tautan Awal Dibuat' }],
-            style,
-            password: password.trim() || undefined,
-            expiryDate: expiryDate || undefined
-          };
-        }
+        const createdQR: DynamicQRCode = json.data;
 
         try {
           confetti?.({

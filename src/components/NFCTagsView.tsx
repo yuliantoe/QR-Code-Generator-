@@ -26,7 +26,6 @@ import type { DynamicQRCode, NFCTag } from '../types.ts';
 export interface TestTapResult {
   success: boolean;
   targetUrl?: string | null;
-  requirePin?: boolean;
   locked?: boolean;
   error?: string;
   updatedTag?: NFCTag;
@@ -38,7 +37,7 @@ interface NFCTagsViewProps {
   onOpenActivateModal: (prefill?: { tagUid?: string; qrId?: string; scannedPayload?: string }) => void;
   onOpenEditModal: (tag: NFCTag) => void;
   onDeleteTag: (id: string, pin: string) => Promise<boolean>;
-  onTestTap: (id: string, pin?: string) => Promise<TestTapResult>;
+  onTestTap: (id: string) => Promise<TestTapResult>;
   onTagRecorded: (updatedTag: NFCTag) => void;
   onOpenStandStudio?: (tag: NFCTag) => void;
   viewMode?: 'normal' | 'compact';
@@ -92,20 +91,13 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeletingTag, setIsDeletingTag] = useState(false);
 
-  // Tap PIN Prompt Modal state (for tags with requirePinOnTap)
-  const [pinPromptTag, setPinPromptTag] = useState<NFCTag | null>(null);
-  const [tapPinInput, setTapPinInput] = useState('');
-  const [tapPinError, setTapPinError] = useState<string | null>(null);
-  const [isVerifyingTapPin, setIsVerifyingTapPin] = useState(false);
-
   // Auto-Scan & Record Modal state
   const [isAutoScanOpen, setIsAutoScanOpen] = useState(false);
-  const [autoScanState, setAutoScanState] = useState<'idle' | 'listening' | 'matched-nfc' | 'matched-qr' | 'blank' | 'pin-required' | 'error'>('idle');
+  const [autoScanState, setAutoScanState] = useState<'idle' | 'listening' | 'matched-nfc' | 'matched-qr' | 'blank' | 'error'>('idle');
   const [autoScanMessage, setAutoScanMessage] = useState<string | null>(null);
   const [autoScanPayloadInput, setAutoScanPayloadInput] = useState('');
   const [autoScanUidInput, setAutoScanUidInput] = useState('');
   const [autoScanResult, setAutoScanResult] = useState<any>(null);
-  const [autoScanPinInput, setAutoScanPinInput] = useState('');
 
   // Tap History Modal state
   const [historyTag, setHistoryTag] = useState<NFCTag | null>(null);
@@ -187,12 +179,8 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
     setTapErrorMessage(null);
     try {
       const res = await onTestTap(tag.id);
-      if (res.requirePin) {
-        setPinPromptTag(tag);
-        setTapPinInput('');
-        setTapPinError(null);
-      } else if (res.success && res.targetUrl) {
-        setTapSuccessMessage(`Tag NFC "${tag.placeName}" terbaca & direcord! Dialihkan ke: ${res.targetUrl}`);
+      if (res.success && res.targetUrl) {
+        setTapSuccessMessage(`Tag NFC "${tag.placeName}" terbaca & direcord! Langsung mengarahkan ke: ${res.targetUrl}`);
         setTimeout(() => setTapSuccessMessage(null), 5000);
       } else if (res.error) {
         setTapErrorMessage(res.error);
@@ -202,33 +190,6 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
       console.warn(err);
     } finally {
       setTestingId(null);
-    }
-  };
-
-  const handleVerifyTapPinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pinPromptTag) return;
-    if (!tapPinInput.trim()) {
-      setTapPinError('PIN NFC wajib diisi untuk membuka tautan.');
-      return;
-    }
-
-    setIsVerifyingTapPin(true);
-    setTapPinError(null);
-    try {
-      const res = await onTestTap(pinPromptTag.id, tapPinInput.trim());
-      if (res.success && res.targetUrl) {
-        setTapSuccessMessage(`PIN terverifikasi! Tap NFC "${pinPromptTag.placeName}" direcord dan diarahkan ke: ${res.targetUrl}`);
-        setPinPromptTag(null);
-        setTapPinInput('');
-        setTimeout(() => setTapSuccessMessage(null), 5000);
-      } else {
-        setTapPinError(res.error || 'PIN keamanan NFC salah!');
-      }
-    } catch {
-      setTapPinError('Gagal memverifikasi PIN NFC.');
-    } finally {
-      setIsVerifyingTapPin(false);
     }
   };
 
@@ -291,7 +252,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   };
 
   // Auto-Scan & Record logic
-  const submitScanRecord = async (payload: { tagUid?: string; scannedUrl?: string; scannedText?: string; pin?: string; source?: string }) => {
+  const submitScanRecord = async (payload: { tagUid?: string; scannedUrl?: string; scannedText?: string; source?: string }) => {
     try {
       const res = await fetch('/api/nfc/scan-record', {
         method: 'POST',
@@ -300,12 +261,6 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
       });
       const json = await res.json();
       setAutoScanResult(json);
-
-      if (json.requirePin) {
-        setAutoScanState('pin-required');
-        setAutoScanMessage(json.error || `Tag "${json.tag?.placeName}" dilindungi PIN. Masukkan PIN untuk merecord tap.`);
-        return;
-      }
 
       if (!res.ok || !json.success) {
         setAutoScanState('error');
@@ -331,7 +286,6 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   };
 
   const handleStartWebNFCAutoScan = async () => {
-    setAutoScanPinInput('');
     if (!('NDEFReader' in window)) {
       setAutoScanState('error');
       setAutoScanMessage('Browser ini tidak mendukung Web NFC API (Chrome Android). Gunakan panel Uji / Simulasi Tempel Tag di bawah untuk membaca & merecord tag.');
@@ -386,34 +340,6 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
     });
   };
 
-  const handleUnlockAutoScanWithPin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!autoScanResult?.tag?.id || !autoScanPinInput.trim()) return;
-    try {
-      const res = await fetch(`/api/nfc/${autoScanResult.tag.id}/verify-pin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pin: autoScanPinInput.trim(),
-          action: 'tap',
-          source: 'auto-scan',
-          readPayload: autoScanPayloadInput.trim() || `/nfc/${autoScanResult.tag.id}`
-        })
-      });
-      const json = await res.json();
-      if (res.ok && json.success && json.data) {
-        onTagRecorded(json.data);
-        setAutoScanResult({ ...autoScanResult, tag: json.data, targetUrl: json.targetUrl });
-        setAutoScanState('matched-nfc');
-        setAutoScanMessage(`PIN terverifikasi! Tap NFC "${json.data.placeName}" berhasil direcord.`);
-      } else {
-        setAutoScanMessage(json.error || 'PIN keamanan NFC salah!');
-      }
-    } catch {
-      setAutoScanMessage('Gagal memverifikasi PIN NFC.');
-    }
-  };
-
   const isCompact = activeViewMode === 'compact';
 
   return (
@@ -441,7 +367,6 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                 setAutoScanState('idle');
                 setAutoScanMessage(null);
                 setAutoScanResult(null);
-                setAutoScanPinInput('');
               }}
               className="w-full sm:w-auto justify-center px-4 py-2.5 bg-white hover:bg-[#F4FAF6] text-[#104F38] text-xs font-bold rounded-none border border-[#104F38]/30 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
@@ -799,7 +724,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                         <span aria-hidden="true">·</span>
                         <span className="flex items-center gap-1 text-[#104F38]/80 font-medium">
                           <Lock className="w-3 h-3 text-[#104F38]/50" />
-                          {tag.requirePinOnTap ? 'PIN Wajib Saat Tap & Ubah' : 'PIN Terproteksi'}
+                          Tap Langsung ke Link · PIN Admin
                         </span>
                       </div>
                     </div>
@@ -1067,9 +992,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                   className={`p-3 border text-xs space-y-2 ${
                     autoScanState === 'error'
                       ? 'bg-rose-50 border-rose-300 text-rose-800'
-                      : autoScanState === 'pin-required'
-                        ? 'bg-amber-50 border-amber-300 text-amber-900'
-                        : 'bg-[#F4FAF6] border-[#104F38]/30 text-[#104F38]'
+                      : 'bg-[#F4FAF6] border-[#104F38]/30 text-[#104F38]'
                   }`}
                 >
                   <div className="font-bold flex items-center gap-1.5">
@@ -1077,23 +1000,16 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                     <span>{autoScanMessage}</span>
                   </div>
 
-                  {autoScanState === 'pin-required' && (
-                    <form onSubmit={handleUnlockAutoScanWithPin} className="flex items-center gap-2 pt-1">
-                      <input
-                        type="password"
-                        required
-                        value={autoScanPinInput}
-                        onChange={(e) => setAutoScanPinInput(e.target.value)}
-                        placeholder="Masukkan PIN keamanan NFC..."
-                        className="flex-1 px-2.5 py-1.5 bg-white border border-amber-400 font-mono text-xs text-[#104F38]"
-                      />
-                      <button
-                        type="submit"
-                        className="px-3 py-1.5 bg-[#104F38] text-[#FFE600] font-bold text-xs cursor-pointer whitespace-nowrap"
-                      >
-                        Verifikasi PIN
-                      </button>
-                    </form>
+                  {autoScanState === 'matched-nfc' && (autoScanResult?.targetUrl || autoScanResult?.tag?.googleReviewUrl) && (
+                    <a
+                      href={autoScanResult?.targetUrl || autoScanResult?.tag?.googleReviewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 bg-[#104F38] text-[#FFE600] font-bold text-xs inline-flex items-center gap-1.5 hover:bg-[#0C3B2A]"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Buka Link Google Review Langsung</span>
+                    </a>
                   )}
 
                   {(autoScanState === 'matched-qr' || autoScanState === 'blank') && (
@@ -1277,80 +1193,6 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Verify PIN on Tap (when requirePinOnTap is enabled) */}
-      {pinPromptTag && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a2318]/75">
-          <div
-            className="relative w-full max-w-md bg-white rounded-none shadow-xl border border-[#104F38]/30 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="px-5 py-4 border-b border-[#104F38]/15 bg-[#F4FAF6] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-[#104F38]" />
-                <h3 className="text-base font-bold text-[#104F38]">
-                  Verifikasi PIN Keamanan NFC
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPinPromptTag(null)}
-                aria-label="Tutup verifikasi PIN tap"
-                className="text-[#104F38]/60 hover:text-[#104F38] p-1 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleVerifyTapPinSubmit} className="p-5 space-y-4 text-xs">
-              <p className="text-[#104F38]/80 leading-relaxed">
-                Tag NFC <strong>{pinPromptTag.placeName}</strong> dilindungi PIN saat ditempel. Masukkan PIN untuk merecord tap dan membuka tautan tujuan.
-              </p>
-
-              {tapPinError && (
-                <div className="p-2.5 bg-rose-50 border border-rose-300 text-rose-800 font-medium flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{tapPinError}</span>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="tapVerifyPinInput" className="block font-bold text-[#104F38] mb-1">
-                  PIN Keamanan NFC <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  id="tapVerifyPinInput"
-                  type="password"
-                  autoFocus
-                  required
-                  value={tapPinInput}
-                  onChange={(e) => setTapPinInput(e.target.value)}
-                  placeholder="Masukkan PIN..."
-                  className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 font-mono text-[#104F38]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#104F38]/15">
-                <button
-                  type="button"
-                  onClick={() => setPinPromptTag(null)}
-                  className="px-4 py-2 font-semibold text-[#104F38]/75 bg-white border border-[#104F38]/20 cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isVerifyingTapPin}
-                  className="px-5 py-2 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/25 font-bold cursor-pointer"
-                >
-                  {isVerifyingTapPin ? 'Memverifikasi...' : 'Verifikasi & Record Tap'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

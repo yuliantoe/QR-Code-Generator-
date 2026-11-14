@@ -156,7 +156,10 @@ export const EditLinkModal: React.FC<EditLinkModalProps> = ({
         return;
       }
     } catch (err) {
-      console.warn('Network sync warning, saving via local cache:', err);
+      console.warn('Network sync error:', err);
+      setErrorMessage('Gagal terhubung ke server untuk menyimpan perubahan. Periksa koneksi internet Anda lalu coba lagi.');
+      setIsSubmitting(false);
+      return;
     }
 
     // Apply updated data to React state & localStorage
