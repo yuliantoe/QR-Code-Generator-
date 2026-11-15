@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { AuthUser } from '../types.ts';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AuthUser, token: string) => void;
+  onBackToHome?: () => void;
   sessionExpiredMessage?: string | null;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, sessionExpiredMessage }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBackToHome, sessionExpiredMessage }) => {
   // Form fields start clean & empty - user must input explicitly
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -218,8 +219,20 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, sessionExp
           </button>
         </form>
 
-        <div className="mt-6 pt-3 border-t border-[#104F38]/10 text-center text-[11px] text-[#104F38]/65">
-          Masukkan akun terdaftar Anda untuk mengakses manajemen tautan &amp; desain stand meja.
+        <div className="mt-6 pt-3 border-t border-[#104F38]/10 text-center space-y-2.5">
+          <p className="text-[11px] text-[#104F38]/65">
+            Masukkan akun terdaftar Anda untuk mengakses manajemen tautan &amp; desain stand meja.
+          </p>
+          {onBackToHome && (
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#104F38] hover:underline cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Kembali ke Beranda</span>
+            </button>
+          )}
         </div>
 
       </div>

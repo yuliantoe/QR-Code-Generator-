@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from './components/Navbar.tsx';
+import { LandingSections } from './components/LandingSections.tsx';
+import { DashboardSidebar } from './components/DashboardSidebar.tsx';
+import type { AppTab } from './components/DashboardSidebar.tsx';
 import { QRCard } from './components/QRCard.tsx';
 import { EditLinkModal } from './components/EditLinkModal.tsx';
 import { CreateQRModal } from './components/CreateQRModal.tsx';
@@ -13,7 +16,7 @@ import { StandDesignView } from './components/StandDesignView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { AddUserModal } from './components/AddUserModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { Search, Plus, Radio, LayoutList, Minimize2, SlidersHorizontal, Layers, UserPlus, ShieldCheck } from 'lucide-react';
+import { Search, Plus, LayoutList, Minimize2, SlidersHorizontal, UserPlus, Menu, QrCode, ArrowRight, LogIn } from 'lucide-react';
 import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
@@ -70,8 +73,10 @@ export default function App() {
   const [isChangeCredentialsOpen, setIsChangeCredentialsOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
-  // Navigation tab state ('qr' | 'nfc' | 'stand-design')
-  const [currentTab, setCurrentTab] = useState<'qr' | 'nfc' | 'stand-design'>('qr');
+  // Navigation tab state ('landing' | 'qr' | 'nfc' | 'stand-design')
+  const [currentTab, setCurrentTab] = useState<AppTab>('landing');
+  const [showLoginScreen, setShowLoginScreen] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [standDesignInitialId, setStandDesignInitialId] = useState<string | undefined>(undefined);
 
   // QR Codes State (localStorage is only an offline/cold-start display cache; server is authoritative)
@@ -597,10 +602,14 @@ export default function App() {
     localStorage.removeItem('dinamis_last_activity');
     setCurrentUser(null);
     setAuthToken(null);
+    setIsMobileSidebarOpen(false);
     if (isAutoTimeout) {
       setSessionExpiredMessage(SESSION_EXPIRED_NOTICE);
+      setShowLoginScreen(true);
     } else {
       setSessionExpiredMessage(null);
+      setShowLoginScreen(false);
+      setCurrentTab('landing');
     }
   }, []);
 
@@ -608,6 +617,8 @@ export default function App() {
     setCurrentUser(user);
     setAuthToken(token);
     setSessionExpiredMessage(null);
+    setShowLoginScreen(false);
+    setCurrentTab('qr');
     const now = Date.now();
     lastActivityRef.current = now;
     try {
@@ -815,6 +826,9 @@ export default function App() {
       persistQRCache(next);
       return next;
     });
+    if (currentTab === 'landing') {
+      setCurrentTab('qr');
+    }
   };
 
   const handleCreatedBatch = (batchQRs: DynamicQRCode[]) => {
@@ -825,6 +839,9 @@ export default function App() {
       persistQRCache(next);
       return next;
     });
+    if (currentTab === 'landing') {
+      setCurrentTab('qr');
+    }
   };
 
   const handleToggleStatus = async (qr: DynamicQRCode) => {
@@ -878,6 +895,9 @@ export default function App() {
       persistNFCCache(next);
       return next;
     });
+    if (currentTab === 'landing') {
+      setCurrentTab('nfc');
+    }
   };
 
   const handleUpdatedNFCTag = (updated: NFCTag) => {
@@ -980,11 +1000,17 @@ export default function App() {
     );
   }
 
-  // If not logged in, render dedicated secure Login Screen
-  if (!currentUser || !authToken) {
+  const isAuthenticated = Boolean(currentUser && authToken);
+
+  // Show LoginView when user clicks Login OR attempts to enter Dashboard while unauthenticated
+  if (!isAuthenticated && (showLoginScreen || currentTab !== 'landing')) {
     return (
       <LoginView
         onLoginSuccess={handleLoginSuccess}
+        onBackToHome={() => {
+          setShowLoginScreen(false);
+          setCurrentTab('landing');
+        }}
         sessionExpiredMessage={sessionExpiredMessage}
       />
     );
@@ -1004,31 +1030,163 @@ export default function App() {
     return matchesSearch && matchesStatus;
   });
 
-  return (
-    <div className="min-h-screen bg-white text-[#104F38] flex flex-col font-sans">
-      
-      {/* 3-Zone Top Navigation with Tabs */}
-      <Navbar
-        currentTab={currentTab}
-        onTabChange={(tab) => setCurrentTab(tab)}
-        onOpenCreateModal={() => setIsCreateOpen(true)}
-        onOpenActivateNFCModal={() => setIsActivateNFCOpen(true)}
-        activeCount={qrcodes.length}
-        nfcCount={nfcTags.length}
-        currentUser={currentUser}
-        onLogout={() => handleLogout(false)}
-        onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
-        onOpenAddUser={() => setIsAddUserOpen(true)}
-      />
+  const isLandingPage = currentTab === 'landing';
 
-      {/* Main Viewport Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16">
-        
-        {/* VIEW 1: QR CODE DASHBOARD */}
-        {currentTab === 'qr' && (
+  const handleEnterDashboard = () => {
+    if (isAuthenticated) {
+      setCurrentTab('qr');
+      setShowLoginScreen(false);
+    } else {
+      setShowLoginScreen(true);
+    }
+  };
+
+  const renderFooter = () => (
+    <footer className="border-t border-[#104F38]/10 bg-white py-6 mt-auto text-xs text-[#104F38]/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <span className="font-extrabold text-[#104F38]">Projecttapp 2026</span>
+        </div>
+        {isLandingPage ? (
+          <nav aria-label="Navigasi Footer Beranda" className="flex flex-wrap items-center justify-center gap-5 text-xs font-semibold text-[#104F38]/75">
+            <a href="#harga" className="hover:text-[#104F38] hover:underline underline-offset-4">Harga</a>
+            <a href="#pertanyaan" className="hover:text-[#104F38] hover:underline underline-offset-4">Pertanyaan</a>
+            <a href="#testimoni" className="hover:text-[#104F38] hover:underline underline-offset-4">Apa Kata Customer</a>
+            <button
+              type="button"
+              onClick={handleEnterDashboard}
+              className="text-[#104F38] font-bold hover:underline underline-offset-4 cursor-pointer"
+            >
+              {isAuthenticated ? 'Masuk Dashboard' : 'Login'}
+            </button>
+          </nav>
+        ) : (
+          currentUser && (
+            <div className="text-[11px] text-[#104F38]/70 flex items-center gap-2 flex-wrap justify-center">
+              <span>Masuk sebagai: <strong className="text-[#104F38]">{currentUser.username}</strong></span>
+              <span>·</span>
+              {currentUser.username.toLowerCase() === 'admin' && (
+                <>
+                  <button
+                    onClick={() => setIsAddUserOpen(true)}
+                    className="text-[#104F38] underline hover:text-black font-bold cursor-pointer flex items-center gap-1"
+                  >
+                    <UserPlus className="w-3 h-3 text-[#104F38]" />
+                    Tambah User
+                  </button>
+                  <span>·</span>
+                </>
+              )}
+              <button
+                onClick={() => setIsChangeCredentialsOpen(true)}
+                className="text-[#104F38] underline hover:text-black font-bold cursor-pointer"
+              >
+                {currentUser.username.toLowerCase() === 'admin' ? 'Ganti Password Administrator' : 'Ganti Akun'}
+              </button>
+            </div>
+          )
+        )}
+      </div>
+    </footer>
+  );
+
+  return (
+    <div className={`min-h-screen text-[#104F38] font-sans ${isLandingPage ? 'bg-white flex flex-col' : 'bg-[#F8FAF9] flex'}`}>
+      {isLandingPage ? (
+        /* MAIN LANDING PAGE: Top Bar with ONLY Login Menu (No Dashboard Menus, No Left Panel) */
+        <Navbar
+          isLoggedIn={isAuthenticated}
+          onOpenLogin={() => setShowLoginScreen(true)}
+          onEnterDashboard={() => setCurrentTab('qr')}
+          onBackHome={() => setCurrentTab('landing')}
+        />
+      ) : (
+        /* DASHBOARD WORKSPACE: Left Sidebar Panel for all non-landing menus */
+        currentUser && (
+          <DashboardSidebar
+            currentTab={currentTab}
+            onTabChange={(tab) => {
+              setCurrentTab(tab);
+              setIsMobileSidebarOpen(false);
+            }}
+            qrCount={qrcodes.length}
+            nfcCount={nfcTags.length}
+            onOpenCreateSingle={handleOpenCreateSingle}
+            onOpenCreateBatch={handleOpenCreateBatch}
+            onOpenActivateNFCModal={() => setIsActivateNFCOpen(true)}
+            currentUser={currentUser}
+            onLogout={() => handleLogout(false)}
+            onOpenChangeCredentials={() => setIsChangeCredentialsOpen(true)}
+            onOpenAddUser={() => setIsAddUserOpen(true)}
+            isMobileOpen={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          />
+        )
+      )}
+
+      {/* Content Shell */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {!isLandingPage && (
+          <header className="sticky top-0 z-30 h-16 bg-white border-b border-[#104F38]/15 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4 shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                aria-label="Buka panel menu dashboard"
+                className="lg:hidden min-h-[40px] min-w-[40px] flex items-center justify-center border border-[#104F38]/20 text-[#104F38] hover:bg-[#F4FAF6] cursor-pointer shrink-0"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2 text-xs sm:text-sm min-w-0">
+                <span className="text-[#104F38]/60 font-medium hidden sm:inline">Dashboard</span>
+                <span aria-hidden="true" className="text-[#104F38]/35 hidden sm:inline">/</span>
+                <span className="font-bold text-[#104F38] truncate">
+                  {currentTab === 'qr'
+                    ? 'Daftar QR Dinamis'
+                    : currentTab === 'nfc'
+                      ? 'Aktivasi & Tag NFC'
+                      : 'Desain Stand A6'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {currentTab === 'nfc' ? (
+                <button
+                  type="button"
+                  onClick={() => setIsActivateNFCOpen(true)}
+                  className="px-3 sm:px-4 py-2 text-xs font-bold text-[#104F38] bg-[#FFE600] hover:bg-[#F2DA00] border border-[#104F38]/25 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Aktivasi Tag</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleOpenCreateSingle}
+                  className="px-3 sm:px-4 py-2 text-xs font-bold text-[#104F38] bg-[#FFE600] hover:bg-[#F2DA00] border border-[#104F38]/25 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Buat QR Baru</span>
+                </button>
+              )}
+            </div>
+          </header>
+        )}
+
+        {/* Main Viewport Container */}
+        <main
+          className={
+            isLandingPage
+              ? 'flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-16'
+              : 'flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8'
+          }
+        >
+        {/* VIEW 0: MAIN LANDING PAGE (NO LEFT DASHBOARD PANEL) */}
+        {currentTab === 'landing' && (
           <div className="space-y-16">
             
-            {/* HERO SECTION: Exactly matching image_210c7505 */}
+            {/* HERO SECTION */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center pt-2 pb-6">
               
               {/* Left Column: Heading + Wireframe Bracket CTA Hierarchy */}
@@ -1052,86 +1210,20 @@ export default function App() {
                   <div className="hidden sm:block absolute -left-3 top-2 bottom-3 w-8 border-l-2 border-b-2 border-[#104F38]/30 pointer-events-none" />
 
                   <div className="space-y-3 w-full pl-0 sm:pl-3">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full">
                       
-                      {/* Single Dominant Primary CTA */}
+                      {/* Single Dominant Primary CTA: Login / Masuk Dashboard */}
                       <button
-                        onClick={handleOpenCreateSingle}
-                        className="w-full sm:w-auto justify-center px-5 sm:px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-colors flex items-center gap-2 cursor-pointer"
+                        type="button"
+                        onClick={handleEnterDashboard}
+                        className="w-full sm:w-auto justify-center px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <Plus className="w-4 h-4 text-[#104F38] shrink-0" />
-                        <span>Buat QR Baru</span>
-                      </button>
-
-                      {/* Secondary Outline Action */}
-                      <button
-                        onClick={() => setIsActivateNFCOpen(true)}
-                        className="w-full sm:w-auto justify-center px-4 sm:px-5 py-3 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-colors flex items-center gap-2 cursor-pointer"
-                      >
-                        <Radio className="w-4 h-4 text-[#FFE600] shrink-0" />
-                        <span>Aktivasi NFC Review</span>
-                      </button>
-
-                      {/* Secondary Ghost Action */}
-                      <button
-                        onClick={() => setCurrentTab('stand-design')}
-                        className="w-full sm:w-auto justify-center px-4 sm:px-5 py-3 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 text-xs sm:text-sm font-semibold tracking-tight rounded-none transition-colors flex items-center gap-2 cursor-pointer"
-                      >
-                        <Layers className="w-4 h-4 text-[#104F38] shrink-0" />
-                        <span>Studio Stand A6</span>
+                        <LogIn className="w-4 h-4 text-[#104F38] shrink-0" />
+                        <span>{isAuthenticated ? 'Masuk ke Dashboard' : 'Login ke Dashboard'}</span>
+                        <ArrowRight className="w-4 h-4 text-[#104F38] shrink-0" />
                       </button>
 
                     </div>
-
-                    {/* Quick Batch Generate Shortcut Buttons */}
-                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-[#104F38]">
-                      <span className="text-[11px] font-bold text-[#104F38]/70 mr-1">Buat Massal:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenCreateBatch(5)}
-                        className="px-2.5 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 font-semibold text-[11px] rounded-none transition-colors cursor-pointer hover:border-[#104F38]/50 tabular-nums"
-                      >
-                        5 QR Sekaligus
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenCreateBatch(10)}
-                        className="px-2.5 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 font-semibold text-[11px] rounded-none transition-colors cursor-pointer hover:border-[#104F38]/50 tabular-nums"
-                      >
-                        10 QR Sekaligus
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenCreateBatch(15)}
-                        className="px-2.5 py-1 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 font-semibold text-[11px] rounded-none transition-colors cursor-pointer hover:border-[#104F38]/50 tabular-nums"
-                      >
-                        15 QR Sekaligus
-                      </button>
-                    </div>
-
-                    {/* Administrator Panel: Tambah User Menu (Only for Admin) */}
-                    {currentUser?.username.toLowerCase() === 'admin' && (
-                      <div className="pt-1 flex flex-wrap items-center gap-2">
-                        <div className="inline-flex flex-wrap items-center gap-2.5 py-2 px-3 bg-[#F4FAF6] border border-[#104F38]/20 text-xs">
-                          <span className="font-bold text-[#104F38] flex items-center gap-1.5">
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#104F38]" />
-                            Administrator:
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setIsAddUserOpen(true)}
-                            className="px-2.5 py-1 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                          >
-                            <UserPlus className="w-3.5 h-3.5 text-[#FFE600]" />
-                            <span>Tambah User Baru</span>
-                          </button>
-                          <span className="text-[11px] text-[#104F38]/65 font-medium">
-                            Username admin terkunci
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
                   </div>
                 </div>
 
@@ -1402,8 +1494,70 @@ export default function App() {
 
             </div>
 
+            <LandingSections
+              isAuthenticated={isAuthenticated}
+              onActionLogin={handleEnterDashboard}
+            />
+
+          </div>
+        )}
+
+        {/* VIEW 1: QR CODE DASHBOARD (WITH LEFT SIDEBAR PANEL) */}
+        {currentTab === 'qr' && (
+          <div className="space-y-6">
+            {/* Dashboard Header Card */}
+            <div className="bg-white rounded-none border border-[#104F38]/20 p-6 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="max-w-2xl space-y-1.5">
+                <div className="text-xs font-bold uppercase tracking-wider text-[#104F38]/75 flex items-center gap-1.5">
+                  <QrCode className="w-3.5 h-3.5 text-[#104F38]" />
+                  <span>Manajemen QR Dinamis</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#104F38] leading-tight [text-wrap:balance]">
+                  Daftar QRIS &amp; QR Dinamis
+                </h1>
+                <p className="text-xs sm:text-sm text-[#104F38]/80 leading-relaxed font-medium">
+                  Kelola tautan tujuan, pantau jumlah scan, dan ubah alamat redirect kapan saja tanpa mencetak ulang QR fisik.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCreateBatch(5)}
+                    className="px-2.5 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 font-semibold text-xs rounded-none transition-colors cursor-pointer tabular-nums whitespace-nowrap"
+                  >
+                    +5 QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCreateBatch(10)}
+                    className="px-2.5 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 font-semibold text-xs rounded-none transition-colors cursor-pointer tabular-nums whitespace-nowrap"
+                  >
+                    +10 QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCreateBatch(15)}
+                    className="px-2.5 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/25 font-semibold text-xs rounded-none transition-colors cursor-pointer tabular-nums whitespace-nowrap"
+                  >
+                    +15 QR
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenCreateSingle}
+                  className="px-5 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs font-bold rounded-none border border-[#104F38]/25 transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4 text-[#104F38]" />
+                  <span>Buat QR Baru</span>
+                </button>
+              </div>
+            </div>
+
             {/* FILTER, SEARCH & VIEW TOOLBAR */}
-            <div className="pt-8 border-t border-[#104F38]/10 space-y-4">
+            <div className="space-y-4">
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 
                 {/* Search Bar */}
@@ -1549,7 +1703,7 @@ export default function App() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setIsCreateOpen(true)}
+                  onClick={handleOpenCreateSingle}
                   className="px-5 py-2.5 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs font-bold rounded-none border border-[#104F38]/20 transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4" />
@@ -1589,44 +1743,17 @@ export default function App() {
             qrcodes={qrcodes}
             nfcTags={nfcTags}
             initialSelectedId={standDesignInitialId}
-            onOpenCreateQR={() => setIsCreateOpen(true)}
+            onOpenCreateQR={handleOpenCreateSingle}
             onOpenActivateNFC={() => setIsActivateNFCOpen(true)}
             onUpdateQR={handleUpdateQR}
           />
         )}
 
-      </main>
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-[#104F38]/10 bg-white py-6 mt-16 text-xs text-[#104F38]/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-[#104F38]">Projecttapp 2026</span>
-          </div>
-          <div className="text-[11px] text-[#104F38]/70 flex items-center gap-2 flex-wrap justify-center">
-            <span>Masuk sebagai: <strong className="text-[#104F38]">{currentUser.username}</strong></span>
-            <span>·</span>
-            {currentUser.username.toLowerCase() === 'admin' && (
-              <>
-                <button
-                  onClick={() => setIsAddUserOpen(true)}
-                  className="text-[#104F38] underline hover:text-black font-bold cursor-pointer flex items-center gap-1"
-                >
-                  <UserPlus className="w-3 h-3 text-[#104F38]" />
-                  Tambah User
-                </button>
-                <span>·</span>
-              </>
-            )}
-            <button
-              onClick={() => setIsChangeCredentialsOpen(true)}
-              className="text-[#104F38] underline hover:text-black font-bold cursor-pointer"
-            >
-              {currentUser.username.toLowerCase() === 'admin' ? 'Ganti Password Administrator' : 'Ganti Akun'}
-            </button>
-          </div>
-        </div>
-      </footer>
+        {/* Footer */}
+        {renderFooter()}
+      </div>
 
       {/* Hero Modal: Edit Destination URL */}
       {editingQR && (

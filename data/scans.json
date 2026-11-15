@@ -214,5 +214,14 @@
     "os": "Unknown OS",
     "browser": "Browser",
     "referer": "Direct / Scan Fisik"
+  },
+  {
+    "id": "scan-1794749093037-0kpyi",
+    "qrId": "qr-menu-resto",
+    "timestamp": "2026-11-15T13:24:53.037Z",
+    "device": "desktop",
+    "os": "Unknown OS",
+    "browser": "Browser",
+    "referer": "Direct / Scan Fisik"
   }
 ]
