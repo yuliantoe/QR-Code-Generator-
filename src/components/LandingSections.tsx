@@ -1,22 +1,29 @@
 import React, { useState } from 'react';
-import { Check, ChevronDown, ArrowRight } from 'lucide-react';
+import { Check, ChevronDown, MessageCircle, Copy } from 'lucide-react';
+import { buildWhatsAppUrl } from '../utils/whatsappPresets.ts';
+import standA5PinwheelImg from '../assets/images/stand_a5_pinwheel_1794750491655.jpg';
+import standA5BlueDomeImg from '../assets/images/stand_a5_bluedome_1794750493710.jpg';
+import standA5OnyxImg from '../assets/images/stand_a5_onyx_1794750494730.jpg';
+import standA5BlueCutoutImg from '../assets/images/stand_a5_bluecutout_1794750493803.jpg';
 
-interface LandingSectionsProps {
-  isAuthenticated: boolean;
-  onActionLogin: () => void;
+interface ProductVariant {
+  id: string;
+  label: string;
+  imageSrc: string;
+  alt: string;
 }
 
-interface PricingTier {
+interface AcrylicProduct {
   id: string;
-  name: string;
-  audience: string;
-  monthlyPrice: string;
-  annualPrice: string;
-  unitLabel: string;
-  highlight?: boolean;
   kicker: string;
+  name: string;
+  sizeSpec: string;
+  priceShort: string;
+  priceFull: string;
+  unitLabel: string;
+  summary: string;
   features: string[];
-  ctaLabel: string;
+  variants: ProductVariant[];
 }
 
 interface FaqItem {
@@ -35,90 +42,127 @@ interface TestimonialItem {
   outcome: string;
 }
 
-const PRICING_TIERS: PricingTier[] = [
+const ADMIN_WHATSAPP_PHONE = '6285159746119';
+
+const ACRYLIC_PRODUCTS: AcrylicProduct[] = [
   {
-    id: 'starter',
-    name: 'Starter',
-    audience: 'Cocok untuk 1 outlet, kedai kopi, atau toko ritel mandiri.',
-    monthlyPrice: 'Rp 79.000',
-    annualPrice: 'Rp 63.000',
-    unitLabel: '/bulan',
-    kicker: 'Paket Awal',
+    id: 'acrylic-10x10',
+    kicker: 'Tap Bahan Akrilik · Ukuran 10cm × 10cm',
+    name: 'Akrilik Tap Kotak 10×10 cm',
+    sizeSpec: '10 cm × 10 cm · Flat / Tempel Meja & Kasir',
+    priceShort: '49K',
+    priceFull: 'Rp 49.000',
+    unitLabel: '/ unit',
+    summary:
+      'Desain ringkas berbahan akrilik tebal cetak tajam dengan chip NFC tertanam dan QR Code Dinamis siap pakai.',
     features: [
-      'Hingga 5 QR Code Dinamis aktif',
-      '1 Tag NFC Google Review terhubung',
-      'Ubah link tujuan kapan saja tanpa cetak ulang',
-      'Template Desain Stand Meja A6 siap cetak'
+      'Ukuran presisi 10 cm × 10 cm bahan akrilik kokoh',
+      'Sudah termasuk chip NFC aktif — tap HP langsung ke Google Review',
+      'QR Dinamis terintegrasi (ganti link kapan saja tanpa cetak ulang)',
+      'Pilihan 4 motif siap pakai: Onyx Black, Border 4 Warna, Blue Arc, Pinwheel'
     ],
-    ctaLabel: 'Mulai Paket Starter'
+    variants: [
+      {
+        id: 'sq-onyx',
+        label: 'Onyx Black',
+        imageSrc: '/assets/aistudio/onyx-black-Kotak-1x1-meja-vip-01-1200x1200px_2df2a9f3.png',
+        alt: 'Desain Akrilik Tap NFC & QR 10x10cm motif Onyx Black'
+      },
+      {
+        id: 'sq-border',
+        label: 'Border 4 Warna',
+        imageSrc: '/assets/aistudio/border-4color-Kotak-1x1-meja-vip-01-1200x1200px_5e11edd1.png',
+        alt: 'Desain Akrilik Tap NFC & QR 10x10cm motif Border 4 Warna'
+      },
+      {
+        id: 'sq-blue-arc',
+        label: 'Blue Arc',
+        imageSrc: '/assets/aistudio/blue-arc-Kotak-1x1-meja-vip-01-1200x1200px_7a1da24d.png',
+        alt: 'Desain Akrilik Tap NFC & QR 10x10cm motif Blue Arc'
+      },
+      {
+        id: 'sq-pinwheel',
+        label: 'Pinwheel',
+        imageSrc: '/assets/aistudio/pinwheel-4color-Kotak-1x1-meja-vip-01-1200x1200px_551db738.png',
+        alt: 'Desain Akrilik Tap NFC & QR 10x10cm motif Pinwheel 4 Warna'
+      }
+    ]
   },
   {
-    id: 'bisnis',
-    name: 'Bisnis',
-    audience: 'Pilihan utama restoran, klinik, barbershop, dan kafe ramai.',
-    monthlyPrice: 'Rp 179.000',
-    annualPrice: 'Rp 143.000',
-    unitLabel: '/bulan',
-    highlight: true,
-    kicker: 'Paling Populer · Multi-Meja',
+    id: 'acrylic-a5-fold',
+    kicker: 'Tap Bahan Akrilik Meja Lipat · Ukuran A5',
+    name: 'Akrilik Meja Lipat A5',
+    sizeSpec: 'Ukuran A5 · Stand Meja Lipat Berdiri',
+    priceShort: '69K',
+    priceFull: 'Rp 69.000',
+    unitLabel: '/ unit',
+    summary:
+      'Stand meja akrilik lipat berdiri ukuran A5 yang sangat jelas terbaca di meja tamu, kasir, maupun resepsionis.',
     features: [
-      'Hingga 25 QR Code Dinamis & buat massal',
-      '10 Tag NFC aktif dengan sinkronisasi otomatis ke QR',
-      'Keamanan PIN NFC untuk edit & hapus tag',
-      'Analitik jumlah scan QR & tap NFC real-time',
-      'Kustomisasi warna & logo brand di Stand A6'
+      'Model meja lipat berdiri ukuran A5 berbahan akrilik premium',
+      'Area tap NFC luas & QR Dinamis mudah dipindai dari meja pelanggan',
+      'Sinkronisasi otomatis link Daftar QR Code ke Tag NFC via dashboard',
+      'Pilihan 4 motif siap pakai: Pinwheel, Blue Dome, Onyx Dark, Blue Cutout'
     ],
-    ctaLabel: 'Pilih Paket Bisnis'
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    audience: 'Untuk jaringan franchise, grup kuliner, atau banyak cabang.',
-    monthlyPrice: 'Rp 399.000',
-    annualPrice: 'Rp 319.000',
-    unitLabel: '/bulan',
-    kicker: 'Skala Multi-Cabang',
-    features: [
-      'QR Dinamis & Tag NFC tidak terbatas',
-      'Multi-akun operator cabang & manajemen admin',
-      'Sinkronisasi instan lintas perangkat HP & Web',
-      'Ekspor laporan performa seluruh outlet',
-      'Prioritas pendampingan setup stand massal'
-    ],
-    ctaLabel: 'Gunakan Paket Enterprise'
+    variants: [
+      {
+        id: 'a5-pinwheel',
+        label: 'Pinwheel',
+        imageSrc: standA5PinwheelImg,
+        alt: 'Stand Akrilik Meja Lipat A5 NFC & QR motif Pinwheel 4 Warna'
+      },
+      {
+        id: 'a5-blue-dome',
+        label: 'Blue Dome',
+        imageSrc: standA5BlueDomeImg,
+        alt: 'Stand Akrilik Meja Lipat A5 NFC & QR motif Blue Dome'
+      },
+      {
+        id: 'a5-onyx-dark',
+        label: 'Onyx Dark',
+        imageSrc: standA5OnyxImg,
+        alt: 'Stand Akrilik Meja Lipat A5 NFC & QR motif Onyx Dark'
+      },
+      {
+        id: 'a5-blue-cutout',
+        label: 'Blue Cutout',
+        imageSrc: standA5BlueCutoutImg,
+        alt: 'Stand Akrilik Meja Lipat A5 NFC & QR motif Blue Cutout'
+      }
+    ]
   }
 ];
 
 const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'faq-1',
-    question: 'Apakah QR Code dan tag NFC harus dicetak ulang jika link tujuan diganti?',
+    question: 'Apakah stand akrilik 10×10 cm (49K) dan meja lipat A5 (69K) harus dicetak ulang jika link diganti?',
     answer:
-      'Tidak perlu. Setiap QR Code dan tag NFC Projecttapp menggunakan tautan redirect dinamis. Saat Anda mengganti link Google Review, menu digital, atau halaman promo di dashboard, seluruh stand fisik di meja pelanggan langsung mengarah ke tautan baru dalam hitungan detik.'
+      'Tidak perlu. Setiap unit akrilik sudah terhubung ke sistem QR Dinamis dan NFC Projecttapp. Saat Anda mengganti link Google Review, menu digital, atau tautan promo di dashboard, stand fisik Anda otomatis mengarah ke tautan baru.'
   },
   {
     id: 'faq-2',
     question: 'Apakah pelanggan perlu aplikasi khusus atau memasukkan PIN saat tap NFC?',
     answer:
-      'Tidak perlu. Pelanggan cukup menempelkan smartphone ke titik NFC pada stand meja akrilik, dan halaman ulasan Google Review langsung terbuka otomatis di browser. PIN hanya dipakai oleh pengelola di dashboard saat mengedit atau menghapus data tag NFC.'
+      'Tidak perlu. Pelanggan cukup menempelkan smartphone ke area NFC pada stand akrilik, dan halaman ulasan Google Review langsung terbuka otomatis di browser. PIN hanya dipakai oleh pengelola di dashboard saat mengedit atau menghapus data tag NFC.'
   },
   {
     id: 'faq-3',
     question: 'Bagaimana sinkronisasi data jika tag NFC diaktifkan lewat HP lalu dicek di komputer?',
     answer:
-      'Seluruh aktivasi tag NFC baru, pembaruan link QR, dan catatan jumlah tap tersimpan langsung di server serta tersinkronisasi real-time. Daftar tag yang baru direkam dari HP akan langsung muncul di layar dashboard website tanpa perlu input ulang.'
+      'Seluruh aktivasi tag NFC baru, pembaruan link QR, dan catatan jumlah tap tersimpan langsung di server serta tersinkronisasi real-time. Daftar tag yang baru direkam dari HP langsung tampil di dashboard website tanpa perlu input ulang.'
   },
   {
     id: 'faq-4',
-    question: 'Apakah sudah tersedia desain stand meja akrilik siap cetak?',
+    question: 'Bagaimana cara mendapatkan harga khusus Reseller untuk pembelian grosir?',
     answer:
-      'Ya. Setelah login ke dashboard, Anda dapat langsung membuka Studio Desain Stand A6 untuk mengatur tata letak stand segitiga, kotak, atau L-shape, menggabungkan QR dinamis dan ikon NFC, lalu mengunduhnya dalam resolusi cetak.'
+      'Kami membuka program Welcome Reseller untuk toko, percetakan, agensi digital, maupun pemilik jaringan outlet. Klik tombol Kontak WhatsApp Reseller pada bagian Harga untuk konsultasi minimal order dan daftar harga grosir terbaru.'
   },
   {
     id: 'faq-5',
-    question: 'Bagaimana jika link pada Daftar QR Code diubah, apakah daftar NFC ikut berubah?',
+    question: 'Apakah tersedia pilihan desain motif atau cetak custom brand?',
     answer:
-      'Ya, jika tag NFC diaktifkan menggunakan data QR Code yang sudah ada, perubahan link tujuan pada QR tersebut akan otomatis memperbarui link pada daftar Tag NFC yang terhubung.'
+      'Ya. Tersedia 4 motif populer untuk ukuran 10×10 cm maupun meja lipat A5, dan di dalam dashboard Projecttapp juga tersedia Studio Desain Stand siap ekspor jika Anda ingin menyesuaikan warna atau nama usaha.'
   }
 ];
 
@@ -126,7 +170,7 @@ const TESTIMONIALS: TestimonialItem[] = [
   {
     id: 'testi-1',
     quote:
-      'Dulu pelanggan sering malas mengetik link Google Maps karena terlalu panjang. Setelah taruh 12 stand meja QR dan NFC Projecttapp di kasir, pelanggan tinggal tap HP dan langsung kasih bintang 5. Saat kami ganti link ke promo Ramadhan, tidak ada satu pun stand akrilik yang perlu dicetak ulang.',
+      'Dulu pelanggan sering malas mengetik link Google Maps karena terlalu panjang. Setelah taruh stand akrilik 10×10 cm dan meja lipat A5 Projecttapp di kasir, pelanggan tinggal tap HP dan langsung kasih bintang 5. Tidak ada satu pun stand yang perlu dicetak ulang saat kami ganti link promo.',
     name: 'Rina Kusuma',
     role: 'Pemilik Usaha',
     business: 'Kopi Senja Kemang',
@@ -136,7 +180,7 @@ const TESTIMONIALS: TestimonialItem[] = [
   {
     id: 'testi-2',
     quote:
-      'Tim resepsionis kami mengaktifkan tag NFC langsung dari smartphone saat menempelkan stiker di meja antrean. Begitu dicek di komputer kasir, datanya langsung masuk dan sinkron. Pasien cukup tap tanpa perlu PIN atau instal aplikasi tambahan.',
+      'Tim resepsionis kami mengaktifkan tag NFC langsung dari smartphone saat menaruh stand meja lipat A5 di ruang tunggu. Begitu dicek di komputer kasir, datanya langsung masuk dan sinkron. Pasien cukup tap tanpa perlu PIN atau instal aplikasi tambahan.',
     name: 'Hendra Wijaya',
     role: 'Manajer Operasional',
     business: 'Klinik Gigi Sehat Sentosa',
@@ -146,7 +190,7 @@ const TESTIMONIALS: TestimonialItem[] = [
   {
     id: 'testi-3',
     quote:
-      'Mengelola 6 cabang sekaligus jadi jauh lebih rapi karena setiap QR punya kode berurutan dan template Stand A6 siap cetak sudah satu paket. Jika satu link menu berubah, seluruh stand cabang langsung mengikuti otomatis.',
+      'Awalnya pesan beberapa unit 10×10 cm untuk coba di 2 meja, lalu lanjut ambil harga reseller untuk 6 cabang sekaligus. Hasil cetak akriliknya rapi, NFC responsif, dan rating rata-rata seluruh cabang naik stabil.',
     name: 'Sari Wulandari',
     role: 'Co-Founder',
     business: 'Bakmi Nusantara Grup',
@@ -155,15 +199,40 @@ const TESTIMONIALS: TestimonialItem[] = [
   }
 ];
 
-export const LandingSections: React.FC<LandingSectionsProps> = ({
-  isAuthenticated,
-  onActionLogin
-}) => {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+export const LandingSections: React.FC = () => {
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({
+    'acrylic-10x10': ACRYLIC_PRODUCTS[0].variants[0].id,
+    'acrylic-a5-fold': ACRYLIC_PRODUCTS[1].variants[0].id
+  });
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [resellerNote, setResellerNote] = useState('');
+  const [copiedResellerMsg, setCopiedResellerMsg] = useState(false);
   const [openFaqId, setOpenFaqId] = useState<string | null>(FAQ_ITEMS[0].id);
 
   const toggleFaq = (id: string) => {
     setOpenFaqId((prev) => (prev === id ? null : id));
+  };
+
+  const handleSelectVariant = (productId: string, variantId: string) => {
+    setSelectedVariants((prev) => ({ ...prev, [productId]: variantId }));
+  };
+
+  const handleImageError = (imageSrc: string) => {
+    setFailedImages((prev) => ({ ...prev, [imageSrc]: true }));
+  };
+
+  const resellerMessage = resellerNote.trim()
+    ? `Halo Admin Projecttapp, saya tertarik program Welcome Reseller untuk Tap Akrilik NFC & QR Dinamis. Info saya: ${resellerNote.trim()}. Mohon info daftar harga reseller-nya.`
+    : 'Halo Admin Projecttapp, saya tertarik program Welcome Reseller untuk Tap Akrilik 10x10cm (49K) & Meja Lipat A5 (69K). Mohon info daftar harga reseller dan minimal ordernya.';
+
+  const resellerWaHref = buildWhatsAppUrl(ADMIN_WHATSAPP_PHONE, resellerMessage);
+
+  const handleCopyResellerMsg = async () => {
+    try {
+      await navigator.clipboard.writeText(resellerMessage);
+      setCopiedResellerMsg(true);
+      setTimeout(() => setCopiedResellerMsg(false), 2000);
+    } catch {}
   };
 
   return (
@@ -173,115 +242,230 @@ export const LandingSections: React.FC<LandingSectionsProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="max-w-2xl space-y-2">
             <p className="font-serif-italic text-sm sm:text-base text-[#104F38]">
-              Harga Transparan Tanpa Biaya Cetak Ulang
+              Media Fisik Siap Pakai · NFC + QR Dinamis
             </p>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-[#104F38] tracking-tight leading-tight">
-              Pilihan Paket Projecttapp
+              Harga Tap Bahan Akrilik
             </h2>
             <p className="text-xs sm:text-sm text-[#104F38]/75 leading-relaxed">
-              Pilih kapasitas QR Code dinamis dan aktivasi NFC tag sesuai jumlah meja atau cabang usaha Anda.
+              Pilih ukuran akrilik sesuai penempatan di meja atau kasir Anda. Klik motif desain di bawah foto untuk melihat pratinjau warna.
             </p>
           </div>
 
-          {/* Interactive Billing Cycle Segmented Control */}
-          <div
-            role="group"
-            aria-label="Pilih siklus penagihan"
-            className="inline-flex items-center gap-1 p-1 bg-[#F4FAF6] border border-[#104F38]/20 self-start md:self-auto shrink-0"
-          >
-            <button
-              type="button"
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-3.5 py-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                billingCycle === 'monthly'
-                  ? 'bg-[#104F38] text-white'
-                  : 'text-[#104F38]/75 hover:text-[#104F38]'
-              }`}
-            >
-              Bulanan
-            </button>
-            <button
-              type="button"
-              onClick={() => setBillingCycle('annual')}
-              className={`px-3.5 py-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                billingCycle === 'annual'
-                  ? 'bg-[#FFE600] text-[#104F38]'
-                  : 'text-[#104F38]/75 hover:text-[#104F38]'
-              }`}
-            >
-              Tahunan · Hemat 20%
-            </button>
+          <div className="text-xs font-semibold text-[#104F38]/75 flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
+            <span>Sudah termasuk chip NFC + QR Dinamis</span>
+            <span aria-hidden="true">·</span>
+            <span>Welcome Reseller tersedia</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {PRICING_TIERS.map((tier) => {
-            const activePrice = billingCycle === 'annual' ? tier.annualPrice : tier.monthlyPrice;
+        {/* 2 Product Cards: 10x10cm (49K) & Meja Lipat A5 (69K) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          {ACRYLIC_PRODUCTS.map((product) => {
+            const activeVariantId = selectedVariants[product.id] || product.variants[0].id;
+            const activeVariant =
+              product.variants.find((v) => v.id === activeVariantId) || product.variants[0];
+            const isBroken = Boolean(failedImages[activeVariant.imageSrc]);
+
+            const productWaMessage = `Halo Admin Projecttapp, saya ingin pesan ${product.name} (${product.sizeSpec}) harga ${product.priceFull}, pilihan motif: ${activeVariant.label}.`;
+            const productWaHref = buildWhatsAppUrl(ADMIN_WHATSAPP_PHONE, productWaMessage);
+
             return (
-              <div
-                key={tier.id}
-                className={`flex flex-col justify-between p-6 sm:p-7 border transition-colors ${
-                  tier.highlight
-                    ? 'bg-[#F4FAF6] border-[#104F38]'
-                    : 'bg-white border-[#104F38]/20'
-                }`}
+              <article
+                key={product.id}
+                className="flex flex-col justify-between bg-white border border-[#104F38]/20 p-6 sm:p-7"
               >
-                <div className="space-y-5">
-                  <div className="space-y-1.5">
-                    <div className="text-xs font-semibold text-[#104F38]/70">
-                      {tier.kicker}
+                <div className="space-y-6">
+                  {/* Top Product Header & Price */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-[#104F38]/15">
+                    <div className="space-y-1.5">
+                      <div className="text-xs font-semibold text-[#104F38]/70">
+                        {product.kicker}
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-extrabold text-[#104F38] tracking-tight">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-[#104F38]/70">
+                        {product.sizeSpec}
+                      </p>
                     </div>
-                    <h3 className="text-xl font-extrabold text-[#104F38] tracking-tight">
-                      {tier.name}
-                    </h3>
-                    <p className="text-xs text-[#104F38]/75 leading-relaxed">
-                      {tier.audience}
-                    </p>
+
+                    <div className="sm:text-right shrink-0">
+                      <div className="flex sm:justify-end items-baseline gap-1.5">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-[#104F38] tabular-nums tracking-tight">
+                          {product.priceShort}
+                        </span>
+                        <span className="text-xs font-semibold text-[#104F38]/65">
+                          {product.unitLabel}
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-[#104F38]/75 tabular-nums">
+                        {product.priceFull}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="pt-4 border-t border-[#104F38]/15">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-3xl font-extrabold text-[#104F38] tabular-nums tracking-tight">
-                        {activePrice}
-                      </span>
-                      <span className="text-xs font-medium text-[#104F38]/65">
-                        {tier.unitLabel}
-                      </span>
+                  {/* Product Visual Preview Stage + Interactive 4-Design Switcher */}
+                  <div className="space-y-3">
+                    <div className="h-72 sm:h-80 w-full bg-[#F4FAF6] border border-[#104F38]/15 flex items-center justify-center p-5 relative overflow-hidden">
+                      {!isBroken ? (
+                        <img
+                          src={activeVariant.imageSrc}
+                          alt={activeVariant.alt}
+                          referrerPolicy="no-referrer"
+                          onError={() => handleImageError(activeVariant.imageSrc)}
+                          className="max-h-full max-w-full w-auto h-auto object-contain shadow-sm"
+                        />
+                      ) : (
+                        <div className="text-center space-y-2 p-6">
+                          <div className="text-sm font-extrabold text-[#104F38]">{product.name}</div>
+                          <div className="text-xs text-[#104F38]/70">Motif: {activeVariant.label}</div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[11px] text-[#104F38]/60 mt-1 tabular-nums">
-                      {billingCycle === 'annual'
-                        ? 'Ditagih tahunan · bebas biaya pembaruan link'
-                        : 'Tanpa kontrak jangka panjang · bisa upgrade kapan saja'}
-                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-[#104F38]/75">
+                      <span>
+                        Motif dipilih: <strong className="text-[#104F38]">{activeVariant.label}</strong>
+                      </span>
+                      <span className="tabular-nums">4 pilihan desain</span>
+                    </div>
+
+                    {/* 4 Design Thumbnails */}
+                    <div className="grid grid-cols-4 gap-2.5" role="group" aria-label={`Pilih motif ${product.name}`}>
+                      {product.variants.map((variant) => {
+                        const isSelected = variant.id === activeVariant.id;
+                        const thumbBroken = Boolean(failedImages[variant.imageSrc]);
+                        return (
+                          <button
+                            key={variant.id}
+                            type="button"
+                            onClick={() => handleSelectVariant(product.id, variant.id)}
+                            aria-pressed={isSelected}
+                            className={`p-1.5 bg-[#F4FAF6] border text-left transition-colors cursor-pointer flex flex-col items-center gap-1.5 ${
+                              isSelected
+                                ? 'border-[#104F38] ring-1 ring-[#104F38] bg-[#FFE600]/20'
+                                : 'border-[#104F38]/15 hover:border-[#104F38]/45'
+                            }`}
+                          >
+                            <div className="w-full h-14 flex items-center justify-center bg-white border border-[#104F38]/10 p-1 overflow-hidden">
+                              {!thumbBroken ? (
+                                <img
+                                  src={variant.imageSrc}
+                                  alt={variant.label}
+                                  referrerPolicy="no-referrer"
+                                  onError={() => handleImageError(variant.imageSrc)}
+                                  className="max-h-full max-w-full w-auto h-auto object-contain"
+                                />
+                              ) : (
+                                <span className="text-[10px] font-bold text-[#104F38] truncate">{variant.label}</span>
+                              )}
+                            </div>
+                            <span className="text-[11px] font-bold text-[#104F38] truncate w-full text-center">
+                              {variant.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <ul className="space-y-2.5 pt-2 text-xs sm:text-sm text-[#104F38]/85">
-                    {tier.features.map((feat) => (
-                      <li key={feat} className="flex items-start gap-2.5">
-                        <Check className="w-4 h-4 text-[#104F38] shrink-0 mt-0.5" />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Description & Features */}
+                  <div className="space-y-3 pt-2">
+                    <p className="text-xs sm:text-sm text-[#104F38]/80 leading-relaxed">
+                      {product.summary}
+                    </p>
+                    <ul className="space-y-2 text-xs sm:text-sm text-[#104F38]/85">
+                      {product.features.map((feat) => (
+                        <li key={feat} className="flex items-start gap-2.5">
+                          <Check className="w-4 h-4 text-[#104F38] shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
-                <div className="pt-6 mt-6 border-t border-[#104F38]/10">
-                  <button
-                    type="button"
-                    onClick={onActionLogin}
-                    className={`w-full py-2.5 px-4 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${
-                      tier.highlight
-                        ? 'bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30'
-                        : 'bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/30'
-                    }`}
+                {/* Actions Footer */}
+                <div className="pt-6 mt-6 border-t border-[#104F38]/15">
+                  <a
+                    href={productWaHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 px-4 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 text-xs font-extrabold flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
                   >
-                    <span>{isAuthenticated ? 'Buka Dashboard' : tier.ctaLabel}</span>
-                    <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-                  </button>
+                    <MessageCircle className="w-4 h-4 shrink-0" />
+                    <span>Pesan WhatsApp · {product.priceShort}</span>
+                  </a>
                 </div>
-              </div>
+              </article>
             );
           })}
+        </div>
+
+        {/* WELCOME RESELLER — HARGA KONTAK WHATSAPP */}
+        <div className="bg-[#104F38] text-white border border-[#104F38] p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center">
+          <div className="lg:col-span-7 space-y-3">
+            <div className="text-xs font-bold text-[#FFE600]">
+              Welcome Reseller · Harga Khusus Grosir
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+              Welcome Reseller — Harga Kontak WhatsApp
+            </h3>
+            <p className="text-xs sm:text-sm text-white/85 leading-relaxed max-w-2xl">
+              Dapatkan penawaran harga khusus reseller untuk pembelian grosir Tap Bahan Akrilik 10×10 cm dan Meja Lipat A5. Cocok untuk mitra percetakan, agensi digital, dropshipper, maupun pengadaan jaringan restoran dan klinik.
+            </p>
+            <div className="pt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/80 font-medium tabular-nums">
+              <span>WhatsApp: 085159746119</span>
+              <span aria-hidden="true">·</span>
+              <span>Harga khusus qty grosir</span>
+              <span aria-hidden="true">·</span>
+              <span>Siap kirim seluruh Indonesia</span>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 bg-[#0C3B2A] border border-white/15 p-5 space-y-3.5">
+            <label htmlFor="reseller-note-input" className="block text-xs font-bold text-white">
+              Catatan Pesanan / Kota (Opsional)
+            </label>
+            <input
+              id="reseller-note-input"
+              type="text"
+              value={resellerNote}
+              onChange={(e) => setResellerNote(e.target.value)}
+              placeholder="Contoh: Reseller Jakarta · 25 pcs campur 10x10 & A5"
+              className="w-full px-3.5 py-2 text-xs bg-white text-[#104F38] placeholder:text-[#104F38]/45 border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#FFE600]"
+            />
+
+            <div className="flex flex-col sm:flex-row items-stretch gap-2.5">
+              <a
+                href={resellerWaHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-2.5 px-4 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs font-extrabold flex items-center justify-center gap-2 transition-colors whitespace-nowrap"
+              >
+                <MessageCircle className="w-4 h-4 shrink-0" />
+                <span>Kontak WhatsApp Reseller</span>
+              </a>
+              <button
+                type="button"
+                onClick={handleCopyResellerMsg}
+                className="py-2.5 px-3.5 bg-transparent hover:bg-white/10 text-white border border-white/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {copiedResellerMsg ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-[#FFE600]" />
+                    <span>Tersalin</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Salin Pesan</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -296,7 +480,7 @@ export const LandingSections: React.FC<LandingSectionsProps> = ({
               Pertanyaan Seputar QR &amp; NFC
             </h2>
             <p className="text-xs sm:text-sm text-[#104F38]/75 leading-relaxed">
-              Semua detail teknis mengenai cara kerja pengalihan tautan instan, keamanan PIN pengelola, hingga desain cetak stand meja akrilik A6.
+              Informasi lengkap mengenai stand akrilik 10×10 cm, meja lipat A5, sistem QR Dinamis &amp; tap NFC langsung, hingga harga grosir reseller.
             </p>
           </div>
 

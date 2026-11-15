@@ -1494,10 +1494,7 @@ export default function App() {
 
             </div>
 
-            <LandingSections
-              isAuthenticated={isAuthenticated}
-              onActionLogin={handleEnterDashboard}
-            />
+            <LandingSections />
 
           </div>
         )}
