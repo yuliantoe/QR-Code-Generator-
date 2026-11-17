@@ -6,6 +6,7 @@ interface NavbarProps {
   onOpenLogin: () => void;
   onEnterDashboard: () => void;
   onBackHome: () => void;
+  onOpenPublicActivation: () => void;
 }
 
 const LANDING_NAV_ITEMS = [
@@ -18,7 +19,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isLoggedIn,
   onOpenLogin,
   onEnterDashboard,
-  onBackHome
+  onBackHome,
+  onOpenPublicActivation
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -92,6 +94,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               {item.label}
             </a>
           ))}
+          <a
+            href="/aktivasi"
+            onClick={(e) => {
+              e.preventDefault();
+              setMobileMenuOpen(false);
+              onOpenPublicActivation();
+            }}
+            className="hover:text-[#104F38] hover:underline underline-offset-4 transition-colors whitespace-nowrap shrink-0 py-1"
+          >
+            Aktivasi NFC
+          </a>
         </nav>
 
         {/* Zone 3: Single Primary Action + Mobile Menu Trigger */}
@@ -147,6 +160,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               {item.label}
             </a>
           ))}
+          <a
+            href="/aktivasi"
+            onClick={(e) => {
+              e.preventDefault();
+              setMobileMenuOpen(false);
+              onOpenPublicActivation();
+            }}
+            className="px-3 py-2.5 text-sm font-bold text-[#104F38] hover:bg-[#F4FAF6] transition-colors"
+          >
+            Aktivasi NFC
+          </a>
         </nav>
       )}
     </header>

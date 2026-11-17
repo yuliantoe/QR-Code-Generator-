@@ -14,6 +14,7 @@ import { ActivateNFCModal } from './components/ActivateNFCModal.tsx';
 import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
 import { DriveBackupView } from './components/DriveBackupView.tsx';
+import { PublicNFCActivationView } from './components/PublicNFCActivationView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { AddUserModal } from './components/AddUserModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
@@ -90,8 +91,65 @@ export default function App() {
   // Navigation tab state ('landing' | 'qr' | 'nfc' | 'stand-design')
   const [currentTab, setCurrentTab] = useState<AppTab>('landing');
   const [showLoginScreen, setShowLoginScreen] = useState(false);
+  const [isPublicActivationMode, setIsPublicActivationMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const p = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    return p.startsWith('/aktivasi') || params.get('mode') === 'aktivasi';
+  });
+  const [activationNfcId, setActivationNfcId] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('nfcId') || '';
+  });
+  const [activationQrQuery, setActivationQrQuery] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('qr') || '';
+  });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [standDesignInitialId, setStandDesignInitialId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = () => {
+      const p = window.location.pathname;
+      const params = new URLSearchParams(window.location.search);
+      const isAct = p.startsWith('/aktivasi') || params.get('mode') === 'aktivasi';
+      setIsPublicActivationMode(isAct);
+      setActivationNfcId(params.get('nfcId') || '');
+      setActivationQrQuery(params.get('qr') || '');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const enterPublicActivation = useCallback((nfcId?: string, qrCode?: string) => {
+    setShowLoginScreen(false);
+    setIsPublicActivationMode(true);
+    setActivationNfcId(nfcId || '');
+    setActivationQrQuery(qrCode || '');
+    if (typeof window !== 'undefined') {
+      const qs = new URLSearchParams();
+      if (nfcId) qs.set('nfcId', nfcId);
+      if (qrCode) qs.set('qr', qrCode);
+      const targetPath = `/aktivasi${qs.toString() ? `?${qs.toString()}` : ''}`;
+      if (window.location.pathname + window.location.search !== targetPath) {
+        window.history.pushState({}, '', targetPath);
+      }
+    }
+  }, []);
+
+  const exitPublicActivation = useCallback((openLogin = false) => {
+    setIsPublicActivationMode(false);
+    setActivationNfcId('');
+    setActivationQrQuery('');
+    setShowLoginScreen(openLogin);
+    if (!openLogin) {
+      setCurrentTab('landing');
+    }
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/aktivasi')) {
+      window.history.pushState({}, '', '/');
+    }
+  }, []);
 
   // QR Codes State (localStorage is only an offline/cold-start display cache; server is authoritative)
   const [qrcodes, setQrcodes] = useState<DynamicQRCode[]>(() => {
@@ -252,12 +310,20 @@ export default function App() {
         })
           .then(res => res.json())
           .then(json => {
+            if (json.unactivated) {
+              window.location.replace(`/aktivasi?nfcId=${encodeURIComponent(nfcId)}`);
+              return;
+            }
             if (!normalizeAndRedirect(json.targetUrl)) {
-              redirectNfcFromLocalCache();
+              if (!redirectNfcFromLocalCache()) {
+                window.location.replace(`/aktivasi?nfcId=${encodeURIComponent(nfcId)}`);
+              }
             }
           })
           .catch(() => {
-            redirectNfcFromLocalCache();
+            if (!redirectNfcFromLocalCache()) {
+              window.location.replace(`/aktivasi?nfcId=${encodeURIComponent(nfcId)}`);
+            }
           });
       }
     }
@@ -643,7 +709,11 @@ export default function App() {
     setAuthToken(token);
     setSessionExpiredMessage(null);
     setShowLoginScreen(false);
+    setIsPublicActivationMode(false);
     setCurrentTab('qr');
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/aktivasi')) {
+      window.history.pushState({}, '', '/');
+    }
     const now = Date.now();
     lastActivityRef.current = now;
     try {
@@ -1168,6 +1238,18 @@ export default function App() {
     );
   }
 
+  // Public Self-Activation Menu: accessible WITHOUT username & password, strictly isolated to activation only
+  if (isPublicActivationMode) {
+    return (
+      <PublicNFCActivationView
+        initialNfcId={activationNfcId}
+        initialQrQuery={activationQrQuery}
+        onBackHome={() => exitPublicActivation(false)}
+        onOpenLogin={() => exitPublicActivation(true)}
+      />
+    );
+  }
+
   const isAuthenticated = Boolean(currentUser && authToken);
 
   // Show LoginView when user clicks Login OR attempts to enter Dashboard while unauthenticated
@@ -1179,6 +1261,7 @@ export default function App() {
           setShowLoginScreen(false);
           setCurrentTab('landing');
         }}
+        onOpenPublicActivation={() => enterPublicActivation()}
         sessionExpiredMessage={sessionExpiredMessage}
       />
     );
@@ -1261,12 +1344,13 @@ export default function App() {
   return (
     <div className={`min-h-screen text-[#104F38] font-sans ${isLandingPage ? 'bg-white flex flex-col' : 'bg-[#F8FAF9] flex'}`}>
       {isLandingPage ? (
-        /* MAIN LANDING PAGE: Top Bar with ONLY Login Menu (No Dashboard Menus, No Left Panel) */
+        /* MAIN LANDING PAGE: Top Bar with Landing Menus + Login (No Left Panel) */
         <Navbar
           isLoggedIn={isAuthenticated}
           onOpenLogin={() => setShowLoginScreen(true)}
           onEnterDashboard={() => setCurrentTab('qr')}
           onBackHome={() => setCurrentTab('landing')}
+          onOpenPublicActivation={() => enterPublicActivation()}
         />
       ) : (
         /* DASHBOARD WORKSPACE: Left Sidebar Panel for all non-landing menus */

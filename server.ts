@@ -456,31 +456,14 @@ app.get(['/nfc/:id', '/nfc/:id/*', '/n/:id', '/n/:id/*'], async (req: Request, r
   cleanId = cleanId.trim().replace(/\/+$/, '');
   let tag = await db.getNFCTagById(cleanId);
 
-  if (!tag) {
-    return res.status(404).send(`
-      <!DOCTYPE html>
-      <html lang="id">
-      <head>
-        <meta charset="utf-8"/>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>NFC Tag Belum Terdaftar - Projecttapp</title>
-        <style>
-          body { font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F4FAF6; color: #104F38; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-          .card { background: white; max-width: 440px; width: 100%; border: 1px solid rgba(16,79,56,0.2); padding: 36px 28px; text-align: center; }
-          h1 { font-size: 20px; font-weight: 800; margin: 0 0 10px; color: #104F38; }
-          p { font-size: 14px; color: rgba(16,79,56,0.75); line-height: 1.6; margin: 0 0 24px; }
-          a { display: inline-block; background: #104F38; color: #FFE600; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h1>NFC Tag Belum Terdaftar</h1>
-          <p>Tag NFC ini belum diaktivasi di sistem Projecttapp.</p>
-          <a href="/">Buka Dashboard Projecttapp</a>
-        </div>
-      </body>
-      </html>
-    `);
+  if (!tag || tag.status === 'pending') {
+    const query = new URLSearchParams();
+    if (cleanId) query.set('nfcId', cleanId);
+    if (tag?.linkedQrCode) query.set('qr', String(tag.linkedQrCode));
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    return res.redirect(302, `/aktivasi?${query.toString()}`);
   }
 
   if (tag.status === 'locked') {
@@ -1316,6 +1299,18 @@ app.post('/api/nfc/scan-record', async (req: Request, res: Response) => {
     }
 
     if (matchedTag) {
+      if (matchedTag.status === 'pending') {
+        return res.json({
+          success: true,
+          matchedType: 'pending-nfc',
+          unactivated: true,
+          tagId: matchedTag.id,
+          tagUid: cleanUid || matchedTag.tagUid,
+          scannedPayload: rawPayload || `/nfc/${matchedTag.id}`,
+          message: `Tag NFC "/nfc/${matchedTag.id}" belum diaktivasi. Pilih Kode QR untuk mengaktifkannya.`
+        });
+      }
+
       if (matchedTag.status === 'locked') {
         return res.status(403).json({
           success: false,
@@ -1605,7 +1600,22 @@ app.post('/api/nfc/:id/test-tap', async (req: Request, res: Response) => {
   const tag = await db.getNFCTagById(id);
 
   if (!tag) {
-    return res.status(404).json({ success: false, error: 'Tag NFC tidak ditemukan' });
+    return res.status(404).json({
+      success: false,
+      unactivated: true,
+      nfcId: id,
+      error: 'Tag NFC belum teraktivasi.'
+    });
+  }
+
+  if (tag.status === 'pending') {
+    return res.status(403).json({
+      success: false,
+      unactivated: true,
+      nfcId: tag.id,
+      linkedQrCode: tag.linkedQrCode || null,
+      error: 'Tag NFC belum diaktivasi. Silakan aktivasi menggunakan kode QR.'
+    });
   }
 
   if (tag.status === 'locked') {
@@ -1657,6 +1667,308 @@ app.post('/api/nfc/:id/test-tap', async (req: Request, res: Response) => {
     record,
     data: tag
   });
+});
+
+// ==========================================
+// PUBLIC SELF-ACTIVATION API (No Username/Password Required)
+// Restricted strictly to activating unactivated NFC tags via QR codes (e.g., QR001)
+// ==========================================
+function normalizeQRCodeKey(value?: string | null): string {
+  return String(value || '').replace(/[\s_-]+/g, '').toUpperCase().trim();
+}
+
+function extractQRCodeNum(code?: string | null): number {
+  const match = String(code || '').match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+app.get('/api/public/qrcodes/activation', async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  try {
+    const rawQuery = String(req.query.q || '').trim();
+    const normQuery = normalizeQRCodeKey(rawQuery);
+    const lowerQuery = rawQuery.toLowerCase();
+
+    const [qrcodes, nfcTags] = await Promise.all([db.getQRCodes(), db.getNFCTags()]);
+
+    const nfcCountByQrId = new Map<string, number>();
+    for (const tag of nfcTags) {
+      if (tag.status !== 'pending' && tag.linkedQrId) {
+        nfcCountByQrId.set(tag.linkedQrId, (nfcCountByQrId.get(tag.linkedQrId) || 0) + 1);
+      }
+    }
+
+    const mapped = qrcodes
+      .filter((qr) => qr.status !== 'paused')
+      .filter((qr) => {
+        if (!rawQuery) return true;
+        const normCode = normalizeQRCodeKey(qr.code);
+        const normSlug = normalizeQRCodeKey(qr.slug);
+        return (
+          (normQuery && normCode.includes(normQuery)) ||
+          (normQuery && normSlug.includes(normQuery)) ||
+          (qr.code || '').toLowerCase().includes(lowerQuery) ||
+          qr.slug.toLowerCase().includes(lowerQuery) ||
+          qr.title.toLowerCase().includes(lowerQuery)
+        );
+      })
+      .sort((a, b) => {
+        const numDiff = extractQRCodeNum(a.code) - extractQRCodeNum(b.code);
+        if (numDiff !== 0) return numDiff;
+        return String(a.code || a.slug).localeCompare(String(b.code || b.slug));
+      })
+      .map((qr) => ({
+        id: qr.id,
+        code: qr.code || `QR-${qr.slug.toUpperCase()}`,
+        normalizedCode: normalizeQRCodeKey(qr.code || qr.slug),
+        slug: qr.slug,
+        title: qr.title,
+        targetUrl: qr.targetUrl,
+        status: qr.status,
+        notes: qr.notes || '',
+        linkedNfcCount: nfcCountByQrId.get(qr.id) || 0
+      }));
+
+    res.json({ success: true, data: mapped });
+  } catch (err: any) {
+    console.error('[Public Activation QR List] Error:', err);
+    res.status(500).json({ success: false, error: 'Gagal memuat daftar kode QR untuk aktivasi.' });
+  }
+});
+
+app.get('/api/public/nfc/status/:id', async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  try {
+    const cleanId = decodeURIComponent(String(req.params.id || '')).trim().replace(/\/+$/, '');
+    if (!cleanId) {
+      return res.status(400).json({ success: false, error: 'ID Tag NFC tidak valid.' });
+    }
+    const tag = await db.getNFCTagById(cleanId);
+    if (!tag) {
+      return res.json({
+        success: true,
+        exists: false,
+        activated: false,
+        id: cleanId
+      });
+    }
+    if (tag.status === 'pending') {
+      return res.json({
+        success: true,
+        exists: true,
+        activated: false,
+        id: tag.id,
+        status: 'pending',
+        placeName: tag.placeName || '',
+        linkedQrId: tag.linkedQrId || null,
+        linkedQrCode: tag.linkedQrCode || null
+      });
+    }
+    return res.json({
+      success: true,
+      exists: true,
+      activated: true,
+      id: tag.id,
+      status: tag.status,
+      placeName: tag.placeName,
+      targetUrl: tag.googleReviewUrl,
+      linkedQrCode: tag.linkedQrCode || null
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Gagal memeriksa status tag NFC.' });
+  }
+});
+
+app.post('/api/public/nfc/self-activate', async (req: Request, res: Response) => {
+  try {
+    const {
+      requestedTagId,
+      qrId,
+      qrCode,
+      placeName,
+      googleReviewUrl,
+      pin,
+      tagUid,
+      notes,
+      syncQrTarget,
+      initialRecord
+    } = req.body || {};
+
+    const qrcodes = await db.getQRCodes();
+    const normInputCode = normalizeQRCodeKey(qrCode);
+    const matchedQr =
+      (qrId ? qrcodes.find((q) => q.id === qrId) : undefined) ||
+      (normInputCode ? qrcodes.find((q) => normalizeQRCodeKey(q.code) === normInputCode) : undefined) ||
+      (normInputCode ? qrcodes.find((q) => normalizeQRCodeKey(q.slug) === normInputCode) : undefined);
+
+    if (!matchedQr) {
+      return res.status(400).json({
+        success: false,
+        error: 'Kode QR tidak ditemukan. Silakan masukkan kode seperti QR001 lalu klik kode QR dari daftar.'
+      });
+    }
+
+    const tags = await db.getNFCTags();
+    const cleanRequestedId = typeof requestedTagId === 'string'
+      ? requestedTagId.trim().replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      : '';
+
+    let existingPendingTag: any = null;
+    if (cleanRequestedId) {
+      const existingById = tags.find((t: any) => t.id === cleanRequestedId);
+      if (existingById) {
+        if (existingById.status !== 'pending') {
+          return res.status(409).json({
+            success: false,
+            alreadyActivated: true,
+            error: `Tag NFC "/nfc/${existingById.id}" sudah teraktivasi sebelumnya atas nama "${existingById.placeName}".`
+          });
+        }
+        existingPendingTag = existingById;
+      }
+    }
+
+    const normalizedUid = tagUid ? String(tagUid).trim().toUpperCase() : '';
+    if (normalizedUid) {
+      const duplicateUid = tags.find(
+        (t: any) =>
+          (t.tagUid || '').trim().toUpperCase() === normalizedUid &&
+          (!existingPendingTag || t.id !== existingPendingTag.id)
+      );
+      if (duplicateUid) {
+        return res.status(409).json({
+          success: false,
+          error: `Chip NFC dengan UID ${normalizedUid} sudah teraktivasi atas nama "${duplicateUid.placeName}".`
+        });
+      }
+    }
+
+    const rawPin = typeof pin === 'string' ? pin.trim() : '';
+    if (rawPin.length > 0 && rawPin.length < 4) {
+      return res.status(400).json({
+        success: false,
+        error: 'Jika diisi, PIN keamanan minimal 4 karakter/angka.'
+      });
+    }
+    const finalPin = rawPin.length >= 4
+      ? rawPin
+      : String(Math.floor(1000 + Math.random() * 9000));
+
+    const resolvedPlaceName = (placeName || '').trim() || matchedQr.title;
+    let resolvedUrl = (googleReviewUrl || '').trim() || matchedQr.targetUrl;
+    if (!resolvedUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tautan tujuan (Google Review) wajib diisi.'
+      });
+    }
+    if (!/^https?:\/\//i.test(resolvedUrl)) {
+      resolvedUrl = 'https://' + resolvedUrl;
+    }
+
+    let finalId = existingPendingTag?.id || cleanRequestedId;
+    if (!finalId) {
+      let baseSlug = 'nfc-' + normalizeQRCodeKey(matchedQr.code || matchedQr.slug).toLowerCase();
+      if (baseSlug === 'nfc-' || baseSlug.length < 5) {
+        baseSlug = 'nfc-' + Math.random().toString(36).substring(2, 7);
+      }
+      finalId = baseSlug;
+      let counter = 1;
+      while (tags.some((t: any) => t.id === finalId)) {
+        finalId = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
+
+    const now = new Date().toISOString();
+    const autoUid = normalizedUid || existingPendingTag?.tagUid || [
+      '04',
+      Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
+      Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
+      Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
+      Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
+      Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase(),
+      '80'
+    ].join(':');
+
+    const tapHistory: NFCTapRecord[] = Array.isArray(existingPendingTag?.tapHistory)
+      ? [...existingPendingTag.tapHistory]
+      : [];
+    if (initialRecord) {
+      const ua = parseUserAgent(req.headers['user-agent']);
+      tapHistory.unshift({
+        id: 'tap-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+        tagId: finalId,
+        tagUid: autoUid,
+        timestamp: now,
+        device: ua.device,
+        os: ua.os,
+        browser: ua.browser,
+        source: 'auto-scan',
+        pinVerified: false,
+        readPayload: typeof initialRecord === 'string' ? initialRecord : 'Aktivasi Mandiri User'
+      });
+    }
+
+    const shouldSyncQr = Boolean(syncQrTarget);
+    if (shouldSyncQr && resolvedUrl !== matchedQr.targetUrl) {
+      const updatedQr: DynamicQRCode = {
+        ...matchedQr,
+        targetUrl: resolvedUrl,
+        title: resolvedPlaceName || matchedQr.title,
+        updatedAt: now,
+        urlHistory: [
+          {
+            url: resolvedUrl,
+            changedAt: now,
+            reason: `Aktivasi Mandiri NFC (${matchedQr.code || matchedQr.slug})`
+          },
+          ...(Array.isArray(matchedQr.urlHistory) ? matchedQr.urlHistory : [])
+        ]
+      };
+      await db.saveQRCode(updatedQr);
+      void broadcastSyncEvent('qr:updated', { qr: updatedQr });
+    }
+
+    const activatedTag = {
+      ...(existingPendingTag || {}),
+      id: finalId,
+      tagUid: autoUid,
+      placeName: resolvedPlaceName,
+      googleReviewUrl: resolvedUrl,
+      pin: finalPin,
+      requirePinOnTap: false,
+      linkedQrId: matchedQr.id,
+      linkedQrSlug: matchedQr.slug,
+      linkedQrCode: matchedQr.code || null,
+      syncWithQr: shouldSyncQr || resolvedUrl === matchedQr.targetUrl,
+      status: 'active',
+      totalTaps: tapHistory.length,
+      lastTappedAt: tapHistory.length > 0 ? now : null,
+      notes: (notes || '').trim() || `Aktivasi mandiri via ${matchedQr.code || matchedQr.slug}`,
+      tapHistory,
+      createdAt: existingPendingTag?.createdAt || now,
+      updatedAt: now
+    };
+
+    await db.saveNFCTag(activatedTag);
+    void broadcastSyncEvent(existingPendingTag ? 'nfc:updated' : 'nfc:created', { tag: activatedTag });
+
+    const { pin: _hiddenPin, ...publicTagData } = activatedTag;
+    return res.status(201).json({
+      success: true,
+      data: publicTagData,
+      recoveryPin: finalPin,
+      redirectUrl: `/nfc/${activatedTag.id}`,
+      message: `Tag NFC untuk "${activatedTag.placeName}" berhasil diaktivasi melalui kode ${matchedQr.code || matchedQr.slug}!`
+    });
+  } catch (err: any) {
+    console.error('[Public Self-Activate NFC] Error:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Gagal melakukan aktivasi mandiri NFC: ' + (err?.message || 'Error')
+    });
+  }
 });
 
 // Batch create QR codes (5, 10, or 15 at once)

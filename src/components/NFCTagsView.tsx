@@ -546,8 +546,12 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                             )}
                           </button>
                           <span aria-hidden="true" className="text-[#104F38]/30 text-[10px]">·</span>
-                          <span className={`text-[10px] font-bold ${isLocked ? 'text-rose-700' : 'text-[#104F38]'}`}>
-                            {isLocked ? 'Dikunci' : 'Aktif'}
+                          <span
+                            className={`text-[10px] font-bold ${
+                              isLocked ? 'text-rose-700' : tag.status === 'pending' ? 'text-amber-700' : 'text-[#104F38]'
+                            }`}
+                          >
+                            {isLocked ? 'Dikunci' : tag.status === 'pending' ? 'Belum Aktif' : 'Aktif'}
                           </span>
                           {tag.linkedQrCode && (
                             <>
@@ -701,8 +705,12 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                           )}
                         </button>
                         <span aria-hidden="true" className="text-[#104F38]/30">·</span>
-                        <span className={`text-[11px] font-bold ${isLocked ? 'text-rose-700' : 'text-[#104F38]'}`}>
-                          {isLocked ? 'Dikunci' : 'Aktif'}
+                        <span
+                          className={`text-[11px] font-bold ${
+                            isLocked ? 'text-rose-700' : tag.status === 'pending' ? 'text-amber-700' : 'text-[#104F38]'
+                          }`}
+                        >
+                          {isLocked ? 'Dikunci' : tag.status === 'pending' ? 'Belum Aktif' : 'Aktif'}
                         </span>
                         {tag.linkedQrCode && (
                           <>

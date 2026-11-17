@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock, ArrowLeft } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock, ArrowLeft, Radio } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { AuthUser } from '../types.ts';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AuthUser, token: string) => void;
   onBackToHome?: () => void;
+  onOpenPublicActivation?: () => void;
   sessionExpiredMessage?: string | null;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBackToHome, sessionExpiredMessage }) => {
+export const LoginView: React.FC<LoginViewProps> = ({
+  onLoginSuccess,
+  onBackToHome,
+  onOpenPublicActivation,
+  sessionExpiredMessage
+}) => {
   // Form fields start clean & empty - user must input explicitly
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -219,7 +225,26 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, onBackToHo
           </button>
         </form>
 
-        <div className="mt-6 pt-3 border-t border-[#104F38]/10 text-center space-y-2.5">
+        <div className="mt-6 pt-3 border-t border-[#104F38]/10 text-center space-y-3">
+          {onOpenPublicActivation && (
+            <div className="p-3 bg-[#F4FAF6] border border-[#104F38]/20 space-y-2 text-left">
+              <div className="text-xs font-extrabold text-[#104F38]">
+                Aktivasi Tag NFC Mandiri
+              </div>
+              <p className="text-[11px] text-[#104F38]/75 leading-snug">
+                Ingin aktivasi tag NFC dengan kode QR (misal QR001) tanpa username &amp; password?
+              </p>
+              <button
+                type="button"
+                onClick={onOpenPublicActivation}
+                className="w-full py-2 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/25 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>Buka Menu Aktivasi Tag NFC</span>
+              </button>
+            </div>
+          )}
+
           <p className="text-[11px] text-[#104F38]/65">
             Masukkan akun terdaftar Anda untuk mengakses manajemen tautan &amp; desain stand meja.
           </p>
