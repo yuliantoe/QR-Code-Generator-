@@ -13,10 +13,24 @@ import type { TestTapResult } from './components/NFCTagsView.tsx';
 import { ActivateNFCModal } from './components/ActivateNFCModal.tsx';
 import { EditNFCLinkModal } from './components/EditNFCLinkModal.tsx';
 import { StandDesignView } from './components/StandDesignView.tsx';
+import { DriveBackupView } from './components/DriveBackupView.tsx';
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { AddUserModal } from './components/AddUserModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { Search, Plus, LayoutList, Minimize2, SlidersHorizontal, UserPlus, Menu, QrCode, ArrowRight, LogIn } from 'lucide-react';
+import { Search, Plus, LayoutList, Minimize2, SlidersHorizontal, UserPlus, Menu, QrCode, CloudUpload } from 'lucide-react';
+import type { User as FirebaseUser } from 'firebase/auth';
+import {
+  initDriveAuth,
+  googleDriveSignIn,
+  googleDriveSignOut,
+  getDriveAccessToken,
+  clearDriveTokenOnError,
+  uploadDriveBackup,
+  loadAutoBackupConfig,
+  saveAutoBackupConfig,
+  type AutoBackupConfig,
+  type DriveBackupFile
+} from './utils/googleDriveBackup.ts';
 import { INITIAL_DEFAULT_QRCODES } from './data/initialSocialQRs.ts';
 import type { DynamicQRCode, AuthUser, NFCTag } from './types.ts';
 
@@ -150,6 +164,17 @@ export default function App() {
   const [isActivateNFCOpen, setIsActivateNFCOpen] = useState(false);
   const [activateNfcPrefill, setActivateNfcPrefill] = useState<{ tagUid?: string; qrId?: string; scannedPayload?: string } | null>(null);
   const [editingNFCTag, setEditingNFCTag] = useState<NFCTag | null>(null);
+
+  // Google Drive Auto-Backup & Restore state (token cached strictly in memory)
+  const [driveUser, setDriveUser] = useState<FirebaseUser | null>(null);
+  const [driveAccessToken, setDriveAccessToken] = useState<string | null>(() => getDriveAccessToken());
+  const [isConnectingDrive, setIsConnectingDrive] = useState(false);
+  const [isBackingUpDrive, setIsBackingUpDrive] = useState(false);
+  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveNotice, setDriveNotice] = useState<string | null>(null);
+  const [autoBackupConfig, setAutoBackupConfig] = useState<AutoBackupConfig>(() => loadAutoBackupConfig());
+  const autoBackupInFlightRef = useRef(false);
+  const lastObservedDataSignatureRef = useRef<string>('');
 
   // Client-side redirect fallback if /r/:slug or /nfc/:id serves SPA index.html
   useEffect(() => {
@@ -625,6 +650,149 @@ export default function App() {
       localStorage.setItem('dinamis_last_activity', String(now));
     } catch {}
   };
+
+  // Initialize Firebase Google Drive auth listener (clears in-memory token on sign-out)
+  useEffect(() => {
+    const unsubscribe = initDriveAuth(
+      (fbUser, token) => {
+        setDriveUser(fbUser);
+        setDriveAccessToken(token);
+      },
+      () => {
+        setDriveAccessToken(null);
+      }
+    );
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const handleUpdateAutoBackupConfig = useCallback((next: AutoBackupConfig) => {
+    setAutoBackupConfig(next);
+    saveAutoBackupConfig(next);
+  }, []);
+
+  const handleConnectGoogleDrive = useCallback(async () => {
+    setIsConnectingDrive(true);
+    setDriveError(null);
+    try {
+      const { user: fbUser, accessToken } = await googleDriveSignIn();
+      setDriveUser(fbUser);
+      setDriveAccessToken(accessToken);
+      setDriveNotice(`Google Drive terhubung (${fbUser.email || fbUser.displayName || 'Akun Google'}).`);
+    } catch (err: any) {
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setDriveError('Login Google dibatalkan sebelum selesai.');
+      } else {
+        setDriveError(err?.message || 'Gagal menghubungkan akun Google Drive.');
+      }
+    } finally {
+      setIsConnectingDrive(false);
+    }
+  }, []);
+
+  const handleDisconnectGoogleDrive = useCallback(async () => {
+    await googleDriveSignOut();
+    setDriveUser(null);
+    setDriveAccessToken(null);
+    setDriveNotice('Koneksi Google Drive telah diputuskan dari sesi ini.');
+  }, []);
+
+  const performDriveBackup = useCallback(
+    async (reason: 'manual' | 'auto-schedule' | 'auto-change'): Promise<DriveBackupFile | null> => {
+      const token = driveAccessToken || getDriveAccessToken();
+      if (!token) return null;
+      if (autoBackupInFlightRef.current) return null;
+
+      autoBackupInFlightRef.current = true;
+      setIsBackingUpDrive(true);
+      setDriveError(null);
+
+      try {
+        const exportRes = await fetch(`/api/backup/export?t=${Date.now()}`, { cache: 'no-store' });
+        const exportJson = await exportRes.json();
+        if (!exportRes.ok || !exportJson.success || !exportJson.data) {
+          throw new Error(exportJson.error || 'Gagal mengambil snapshot data untuk backup.');
+        }
+
+        const created = await uploadDriveBackup(token, exportJson.data, reason);
+        const updatedConfig: AutoBackupConfig = {
+          ...autoBackupConfig,
+          lastBackupAt: new Date().toISOString(),
+          lastBackupFileName: created.name,
+          lastBackedUpRevision: exportJson.data.revision || lastRevisionRef.current
+        };
+        setAutoBackupConfig(updatedConfig);
+        saveAutoBackupConfig(updatedConfig);
+        return created;
+      } catch (err: any) {
+        if (err?.message === 'AUTH_EXPIRED') {
+          clearDriveTokenOnError();
+          setDriveAccessToken(null);
+          setDriveError('Sesi Google Drive berakhir. Klik "Sign in with Google" untuk melanjutkan backup.');
+        } else {
+          setDriveError(err?.message || 'Gagal menyimpan cadangan ke Google Drive.');
+        }
+        return null;
+      } finally {
+        autoBackupInFlightRef.current = false;
+        setIsBackingUpDrive(false);
+      }
+    },
+    [driveAccessToken, autoBackupConfig]
+  );
+
+  // Automatic backup on QR/NFC data change (when user enabled Auto-Backup + Drive is connected)
+  useEffect(() => {
+    const signature = `${qrcodes.length}:${nfcTags.length}:${qrcodes
+      .map((q) => `${q.id}:${q.updatedAt || ''}:${q.targetUrl}`)
+      .join('|')}::${nfcTags.map((t) => `${t.id}:${t.updatedAt || ''}:${t.googleReviewUrl}`).join('|')}`;
+
+    if (!lastObservedDataSignatureRef.current) {
+      lastObservedDataSignatureRef.current = signature;
+      return;
+    }
+
+    if (signature === lastObservedDataSignatureRef.current) {
+      return;
+    }
+    lastObservedDataSignatureRef.current = signature;
+
+    if (!currentUser || !authToken || !driveAccessToken || !autoBackupConfig.enabled || !autoBackupConfig.autoOnDataChange) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void performDriveBackup('auto-change').then((created) => {
+        if (created) {
+          setDriveNotice(`Auto-backup perubahan data tersimpan: ${created.name}`);
+        }
+      });
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [qrcodes, nfcTags, currentUser, authToken, driveAccessToken, autoBackupConfig.enabled, autoBackupConfig.autoOnDataChange, performDriveBackup]);
+
+  // Scheduled interval backup runner
+  useEffect(() => {
+    if (!currentUser || !authToken || !driveAccessToken || !autoBackupConfig.enabled) {
+      return;
+    }
+
+    const intervalMs = Math.max(1, autoBackupConfig.intervalMinutes) * 60 * 1000;
+    const checkTimer = setInterval(() => {
+      const lastMs = autoBackupConfig.lastBackupAt ? new Date(autoBackupConfig.lastBackupAt).getTime() : 0;
+      if (Date.now() - lastMs >= intervalMs) {
+        void performDriveBackup('auto-schedule').then((created) => {
+          if (created) {
+            setDriveNotice(`Auto-backup terjadwal tersimpan: ${created.name}`);
+          }
+        });
+      }
+    }, 60 * 1000);
+
+    return () => clearInterval(checkTimer);
+  }, [currentUser, authToken, driveAccessToken, autoBackupConfig.enabled, autoBackupConfig.intervalMinutes, autoBackupConfig.lastBackupAt, performDriveBackup]);
 
   // 3-Minute Inactivity Auto-Logout Effect
   useEffect(() => {
@@ -1145,7 +1313,9 @@ export default function App() {
                     ? 'Daftar QR Dinamis'
                     : currentTab === 'nfc'
                       ? 'Aktivasi & Tag NFC'
-                      : 'Desain Stand A6'}
+                      : currentTab === 'stand-design'
+                        ? 'Desain Stand A6'
+                        : 'Backup & Restore Google Drive'}
                 </span>
               </div>
             </div>
@@ -1160,6 +1330,28 @@ export default function App() {
                   <Plus className="w-3.5 h-3.5" />
                   <span>Aktivasi Tag</span>
                 </button>
+              ) : currentTab === 'backup-restore' ? (
+                driveAccessToken ? (
+                  <button
+                    type="button"
+                    onClick={() => void performDriveBackup('manual')}
+                    disabled={isBackingUpDrive}
+                    className="px-3 sm:px-4 py-2 text-xs font-bold text-[#104F38] bg-[#FFE600] hover:bg-[#F2DA00] border border-[#104F38]/25 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5" />
+                    <span>{isBackingUpDrive ? 'Mengunggah...' : 'Backup Sekarang'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void handleConnectGoogleDrive()}
+                    disabled={isConnectingDrive}
+                    className="px-3 sm:px-4 py-2 text-xs font-bold text-[#104F38] bg-[#FFE600] hover:bg-[#F2DA00] border border-[#104F38]/25 transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5" />
+                    <span>{isConnectingDrive ? 'Menghubungkan...' : 'Hubungkan Drive'}</span>
+                  </button>
+                )
               ) : (
                 <button
                   type="button"
@@ -1202,30 +1394,6 @@ export default function App() {
                 <p className="text-sm sm:text-base text-[#104F38]/80 max-w-xl leading-relaxed font-medium">
                   Buat QR Code dinamis dan stand akrilik NFC Google Review yang tautannya dapat diganti kapan saja tanpa perlu cetak ulang media fisik.
                 </p>
-
-                {/* Architectural Wireframe Bracket framing the Action Buttons */}
-                <div className="pt-2 relative">
-                  
-                  {/* Architectural Wireframe Bracket Line */}
-                  <div className="hidden sm:block absolute -left-3 top-2 bottom-3 w-8 border-l-2 border-b-2 border-[#104F38]/30 pointer-events-none" />
-
-                  <div className="space-y-3 w-full pl-0 sm:pl-3">
-                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full">
-                      
-                      {/* Single Dominant Primary CTA: Login / Masuk Dashboard */}
-                      <button
-                        type="button"
-                        onClick={handleEnterDashboard}
-                        className="w-full sm:w-auto justify-center px-6 py-3 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] text-xs sm:text-sm font-bold tracking-tight rounded-none border border-[#104F38]/30 transition-colors flex items-center gap-2 cursor-pointer"
-                      >
-                        <LogIn className="w-4 h-4 text-[#104F38] shrink-0" />
-                        <span>{isAuthenticated ? 'Masuk ke Dashboard' : 'Login ke Dashboard'}</span>
-                        <ArrowRight className="w-4 h-4 text-[#104F38] shrink-0" />
-                      </button>
-
-                    </div>
-                  </div>
-                </div>
 
               </div>
 
@@ -1743,6 +1911,35 @@ export default function App() {
             onOpenCreateQR={handleOpenCreateSingle}
             onOpenActivateNFC={() => setIsActivateNFCOpen(true)}
             onUpdateQR={handleUpdateQR}
+          />
+        )}
+
+        {/* VIEW 4: GOOGLE DRIVE AUTO-BACKUP & RESTORE */}
+        {currentTab === 'backup-restore' && (
+          <DriveBackupView
+            qrcodes={qrcodes}
+            nfcTags={nfcTags}
+            driveUser={driveUser}
+            driveAccessToken={driveAccessToken}
+            isConnectingDrive={isConnectingDrive}
+            isBackingUp={isBackingUpDrive}
+            autoConfig={autoBackupConfig}
+            lastError={driveError}
+            lastNotice={driveNotice}
+            onConnectDrive={handleConnectGoogleDrive}
+            onDisconnectDrive={handleDisconnectGoogleDrive}
+            onTriggerBackupNow={() => performDriveBackup('manual')}
+            onUpdateAutoConfig={handleUpdateAutoBackupConfig}
+            onRestoreComplete={({ qrcodes: restoredQRs, nfcTags: restoredTags }) => {
+              setQrcodes(restoredQRs);
+              persistQRCache(restoredQRs);
+              setNfcTags(restoredTags);
+              persistNFCCache(restoredTags);
+            }}
+            onClearBanner={() => {
+              setDriveError(null);
+              setDriveNotice(null);
+            }}
           />
         )}
 

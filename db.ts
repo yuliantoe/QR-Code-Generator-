@@ -1625,6 +1625,191 @@ export const db = {
     }
     await recordDeletedId(`nfc:${id}`);
     return deletedPg || exists;
+  },
+
+  async restoreSnapshot(payload: {
+    qrcodes: DynamicQRCode[];
+    nfcTags: any[];
+    scans?: ScanRecord[];
+    mode?: 'replace' | 'merge';
+  }): Promise<{
+    qrcodes: DynamicQRCode[];
+    nfcTags: any[];
+    scansCount: number;
+    revision: string;
+  }> {
+    const mode = payload.mode === 'merge' ? 'merge' : 'replace';
+    const incomingQRs = Array.isArray(payload.qrcodes) ? payload.qrcodes : [];
+    const incomingTags = Array.isArray(payload.nfcTags) ? payload.nfcTags : [];
+    const incomingScans = Array.isArray(payload.scans) ? payload.scans : [];
+
+    if (mode === 'replace') {
+      const ok = await ensurePostgres();
+      if (ok && pool) {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query('DELETE FROM dinamis_scans');
+          await client.query('DELETE FROM dinamis_qrcodes');
+          await client.query('DELETE FROM dinamis_nfc_tags');
+
+          for (const qr of incomingQRs) {
+            if (!qr?.id || !qr?.slug) continue;
+            const cleanSlug = qr.slug.trim().toLowerCase();
+            await client.query(
+              `INSERT INTO dinamis_qrcodes (id, code, slug, title, target_url, status, data, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               ON CONFLICT (slug) DO UPDATE
+               SET id = EXCLUDED.id,
+                   code = EXCLUDED.code,
+                   title = EXCLUDED.title,
+                   target_url = EXCLUDED.target_url,
+                   status = EXCLUDED.status,
+                   data = EXCLUDED.data,
+                   updated_at = EXCLUDED.updated_at`,
+              [
+                qr.id,
+                qr.code || null,
+                cleanSlug,
+                qr.title || 'QR Dinamis',
+                (qr.targetUrl || '').trim(),
+                qr.status || 'active',
+                JSON.stringify({ ...qr, slug: cleanSlug }),
+                qr.createdAt || new Date().toISOString(),
+                qr.updatedAt || new Date().toISOString()
+              ]
+            );
+          }
+
+          for (const tag of incomingTags) {
+            if (!tag?.id) continue;
+            await client.query(
+              `INSERT INTO dinamis_nfc_tags (id, tag_uid, place_name, google_review_url, pin, status, total_taps, data, created_at, updated_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+               ON CONFLICT (id) DO UPDATE
+               SET tag_uid = EXCLUDED.tag_uid,
+                   place_name = EXCLUDED.place_name,
+                   google_review_url = EXCLUDED.google_review_url,
+                   pin = EXCLUDED.pin,
+                   status = EXCLUDED.status,
+                   total_taps = EXCLUDED.total_taps,
+                   data = EXCLUDED.data,
+                   updated_at = EXCLUDED.updated_at`,
+              [
+                tag.id,
+                tag.tagUid || `NFC-${tag.id.slice(-6)}`,
+                tag.placeName || 'Tag NFC',
+                tag.googleReviewUrl || '',
+                tag.pin || '1234',
+                tag.status || 'active',
+                tag.totalTaps || 0,
+                JSON.stringify(tag),
+                tag.createdAt || new Date().toISOString(),
+                tag.updatedAt || new Date().toISOString()
+              ]
+            );
+          }
+
+          for (const scan of incomingScans.slice(0, 2000)) {
+            if (!scan?.id || !scan?.qrId) continue;
+            await client.query(
+              `INSERT INTO dinamis_scans (id, qr_id, timestamp, device, os, browser, referer)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
+               ON CONFLICT (id) DO NOTHING`,
+              [
+                scan.id,
+                scan.qrId,
+                scan.timestamp || new Date().toISOString(),
+                scan.device || 'unknown',
+                scan.os || 'Unknown OS',
+                scan.browser || 'Browser',
+                scan.referer || 'Backup Restore'
+              ]
+            );
+          }
+
+          await client.query('COMMIT');
+        } catch (err) {
+          await client.query('ROLLBACK').catch(() => {});
+          console.error('[DB] restoreSnapshot Postgres error:', err);
+          throw err;
+        } finally {
+          client.release();
+        }
+      }
+
+      // Reset tombstones and replace JSON/memory/KV cleanly
+      memoryDeletedIds = [];
+      writeJsonFile(DELETED_FILE, []);
+      if (isKVConfigured) {
+        await kvSetJson('dinamis:deleted:ids', []);
+      }
+
+      const normalizedQRs = incomingQRs.map(q => ({
+        ...q,
+        slug: (q.slug || '').trim().toLowerCase() || q.slug,
+        targetUrl: (q.targetUrl || '').trim()
+      }));
+      memoryQRCodes = normalizedQRs;
+      writeJsonFile(QR_FILE, normalizedQRs);
+
+      memoryNFCTags = [...incomingTags];
+      writeJsonFile(NFC_FILE, memoryNFCTags);
+
+      const trimmedScans = incomingScans.slice(-2000);
+      memoryScans = trimmedScans;
+      writeJsonFile(SCANS_FILE, trimmedScans);
+
+      if (isKVConfigured) {
+        await kvSetJson('dinamis:qrcodes:all', normalizedQRs);
+        for (const qr of normalizedQRs) {
+          if (qr.slug) await kvSetJson(`dinamis:qr:slug:${qr.slug}`, qr);
+        }
+        await kvSetJson('dinamis:nfc:all', memoryNFCTags);
+        await kvSetJson('dinamis:scans:all', trimmedScans);
+      }
+
+      return {
+        qrcodes: normalizedQRs,
+        nfcTags: memoryNFCTags,
+        scansCount: trimmedScans.length,
+        revision: computeSyncRevision(normalizedQRs, memoryNFCTags)
+      };
+    }
+
+    // Merge mode: preserve existing items and upsert incoming items
+    for (const qr of incomingQRs) {
+      if (qr?.id && qr?.slug) {
+        await this.saveQRCode(qr);
+      }
+    }
+    for (const tag of incomingTags) {
+      if (tag?.id) {
+        await this.saveNFCTag(tag);
+      }
+    }
+    if (incomingScans.length > 0) {
+      const existingScans = await this.getScans();
+      const existingScanIds = new Set(existingScans.map(s => s.id));
+      for (const scan of incomingScans) {
+        if (scan?.id && scan?.qrId && !existingScanIds.has(scan.id)) {
+          await this.addScan(scan);
+        }
+      }
+    }
+
+    const [finalQRs, finalTags, finalScans] = await Promise.all([
+      this.getQRCodes(),
+      this.getNFCTags(),
+      this.getScans()
+    ]);
+
+    return {
+      qrcodes: finalQRs,
+      nfcTags: finalTags,
+      scansCount: finalScans.length,
+      revision: computeSyncRevision(finalQRs, finalTags)
+    };
   }
 };
 

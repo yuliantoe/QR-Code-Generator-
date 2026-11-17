@@ -618,6 +618,79 @@ app.get('/api/sync/stream', async (req: Request, res: Response) => {
   });
 });
 
+// Export & Restore full snapshot for Google Drive Automatisasi Backup & Restore
+app.get('/api/backup/export', async (_req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  try {
+    const [{ revision, qrcodes, nfcTags }, scans] = await Promise.all([
+      getSyncedSnapshot(),
+      db.getScans()
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        version: '1.0',
+        app: 'Projecttapp',
+        exportedAt: new Date().toISOString(),
+        revision,
+        summary: {
+          qrCount: qrcodes.length,
+          nfcCount: nfcTags.length,
+          scanCount: scans.length
+        },
+        qrcodes,
+        nfcTags,
+        scans
+      }
+    });
+  } catch (err: any) {
+    console.error('[Backup Export] Error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Gagal mengekspor cadangan data: ' + (err?.message || 'Error')
+    });
+  }
+});
+
+app.post('/api/backup/restore', async (req: Request, res: Response) => {
+  try {
+    const { qrcodes, nfcTags, scans = [], mode = 'replace' } = req.body || {};
+
+    if (!Array.isArray(qrcodes) && !Array.isArray(nfcTags)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Format file cadangan tidak valid. Data qrcodes atau nfcTags tidak ditemukan.'
+      });
+    }
+
+    const result = await db.restoreSnapshot({
+      qrcodes: Array.isArray(qrcodes) ? qrcodes : [],
+      nfcTags: Array.isArray(nfcTags) ? nfcTags : [],
+      scans: Array.isArray(scans) ? scans : [],
+      mode: mode === 'merge' ? 'merge' : 'replace'
+    });
+
+    lastKnownRevision = result.revision;
+    void broadcastSyncEvent('snapshot', {
+      qrcodes: result.qrcodes,
+      nfcTags: result.nfcTags
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Data berhasil dipulihkan (${result.qrcodes.length} QR Code, ${result.nfcTags.length} Tag NFC, ${result.scansCount} riwayat scan).`
+    });
+  } catch (err: any) {
+    console.error('[Backup Restore] Error:', err);
+    res.status(500).json({
+      success: false,
+      error: 'Gagal memulihkan data dari cadangan: ' + (err?.message || 'Error')
+    });
+  }
+});
+
 // Database Connection Status Check (Vercel Postgres Diagnostics)
 app.get('/api/db/status', async (_req: Request, res: Response) => {
   try {

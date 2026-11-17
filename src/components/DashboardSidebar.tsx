@@ -10,11 +10,12 @@ import {
   LogOut,
   User,
   X,
-  CopyPlus
+  CopyPlus,
+  CloudUpload
 } from 'lucide-react';
 import type { AuthUser } from '../types.ts';
 
-export type AppTab = 'landing' | 'qr' | 'nfc' | 'stand-design';
+export type AppTab = 'landing' | 'qr' | 'nfc' | 'stand-design' | 'backup-restore';
 
 interface DashboardSidebarProps {
   currentTab: AppTab;
@@ -196,6 +197,21 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <span className="flex items-center gap-2.5 min-w-0">
               <Layers className={`w-4 h-4 shrink-0 ${currentTab === 'stand-design' ? 'text-[#FFE600]' : 'text-[#104F38]/70'}`} />
               <span className="truncate whitespace-nowrap">Desain Stand A6</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSelectTab('backup-restore')}
+            className={`w-full min-h-[42px] px-3 py-2 text-xs flex items-center justify-between gap-2 transition-colors cursor-pointer border ${
+              currentTab === 'backup-restore'
+                ? 'bg-[#104F38] text-white border-[#104F38] font-bold'
+                : 'bg-white text-[#104F38]/85 border-transparent hover:bg-[#F4FAF6] hover:text-[#104F38] font-semibold'
+            }`}
+          >
+            <span className="flex items-center gap-2.5 min-w-0">
+              <CloudUpload className={`w-4 h-4 shrink-0 ${currentTab === 'backup-restore' ? 'text-[#FFE600]' : 'text-[#104F38]/70'}`} />
+              <span className="truncate whitespace-nowrap">Backup &amp; Restore Drive</span>
             </span>
           </button>
         </div>
