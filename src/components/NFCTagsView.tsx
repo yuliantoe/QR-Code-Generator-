@@ -27,6 +27,9 @@ export interface TestTapResult {
   success: boolean;
   targetUrl?: string | null;
   locked?: boolean;
+  unactivated?: boolean;
+  nfcId?: string;
+  linkedQrCode?: string | null;
   error?: string;
   updatedTag?: NFCTag;
 }
@@ -40,6 +43,7 @@ interface NFCTagsViewProps {
   onTestTap: (id: string) => Promise<TestTapResult>;
   onTagRecorded: (updatedTag: NFCTag) => void;
   onOpenStandStudio?: (tag: NFCTag) => void;
+  onOpenPublicActivation?: (nfcId?: string, qrCode?: string) => void;
   viewMode?: 'normal' | 'compact';
   onViewModeChange?: (mode: 'normal' | 'compact') => void;
 }
@@ -53,6 +57,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   onTestTap,
   onTagRecorded,
   onOpenStandStudio,
+  onOpenPublicActivation,
   viewMode: propViewMode,
   onViewModeChange
 }) => {
@@ -75,6 +80,12 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
   const [testingId, setTestingId] = useState<string | null>(null);
   const [tapSuccessMessage, setTapSuccessMessage] = useState<string | null>(null);
   const [tapErrorMessage, setTapErrorMessage] = useState<string | null>(null);
+  const [unactivatedTapNotice, setUnactivatedTapNotice] = useState<{
+    nfcId: string;
+    placeName?: string;
+    linkedQrCode?: string | null;
+    message: string;
+  } | null>(null);
 
   // Program Chip modal + PIN gate state
   const [writePayloadModalTag, setWritePayloadModalTag] = useState<NFCTag | null>(null);
@@ -93,7 +104,7 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
 
   // Auto-Scan & Record Modal state
   const [isAutoScanOpen, setIsAutoScanOpen] = useState(false);
-  const [autoScanState, setAutoScanState] = useState<'idle' | 'listening' | 'matched-nfc' | 'matched-qr' | 'blank' | 'error'>('idle');
+  const [autoScanState, setAutoScanState] = useState<'idle' | 'listening' | 'matched-nfc' | 'matched-qr' | 'unactivated' | 'blank' | 'error'>('idle');
   const [autoScanMessage, setAutoScanMessage] = useState<string | null>(null);
   const [autoScanPayloadInput, setAutoScanPayloadInput] = useState('');
   const [autoScanUidInput, setAutoScanUidInput] = useState('');
@@ -177,11 +188,19 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
     setTestingId(tag.id);
     setTapSuccessMessage(null);
     setTapErrorMessage(null);
+    setUnactivatedTapNotice(null);
     try {
       const res = await onTestTap(tag.id);
       if (res.success && res.targetUrl) {
         setTapSuccessMessage(`Tag NFC "${tag.placeName}" terbaca & direcord! Langsung mengarahkan ke: ${res.targetUrl}`);
         setTimeout(() => setTapSuccessMessage(null), 5000);
+      } else if (res.unactivated) {
+        setUnactivatedTapNotice({
+          nfcId: res.nfcId || tag.id,
+          placeName: tag.placeName,
+          linkedQrCode: res.linkedQrCode ?? tag.linkedQrCode ?? null,
+          message: res.error || `Tag NFC "/nfc/${tag.id}" belum diaktivasi. Silakan aktivasi untuk menghubungkannya ke Kode QR.`
+        });
       } else if (res.error) {
         setTapErrorMessage(res.error);
         setTimeout(() => setTapErrorMessage(null), 5000);
@@ -272,6 +291,9 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
         onTagRecorded(json.tag);
         setAutoScanState('matched-nfc');
         setAutoScanMessage(json.message);
+      } else if (json.matchedType === 'pending-nfc' || json.unactivated) {
+        setAutoScanState('unactivated');
+        setAutoScanMessage(json.message || 'Tag NFC ini belum diaktivasi. Silakan masuk ke menu Aktivasi Tag NFC Mandiri.');
       } else if (json.matchedType === 'qr' && json.qr) {
         setAutoScanState('matched-qr');
         setAutoScanMessage(json.message);
@@ -397,6 +419,59 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
         <div className="p-4 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-none flex items-start gap-2.5 animate-in fade-in">
           <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div className="font-semibold">{tapErrorMessage}</div>
+        </div>
+      )}
+
+      {unactivatedTapNotice && (
+        <div
+          role="alert"
+          aria-live="polite"
+          className="bg-white border border-[#104F38]/30 shadow-xs animate-in fade-in"
+        >
+          <div className="h-1 bg-[#FFE600] border-b border-[#104F38]/15" />
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 bg-[#FFF9CC] border border-[#104F38]/25 text-[#104F38] flex items-center justify-center shrink-0">
+                <AlertCircle className="w-4 h-4" />
+              </div>
+              <div className="space-y-1 text-xs">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 block">
+                  Pemberitahuan Sistem Info NFC
+                </span>
+                <div className="font-extrabold text-sm text-[#104F38]">
+                  Tag NFC /nfc/{unactivatedTapNotice.nfcId} Belum Diaktivasi
+                </div>
+                <p className="text-[#104F38]/80 leading-relaxed">
+                  {unactivatedTapNotice.message}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {onOpenPublicActivation && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetId = unactivatedTapNotice.nfcId;
+                    const targetQr = unactivatedTapNotice.linkedQrCode || undefined;
+                    setUnactivatedTapNotice(null);
+                    onOpenPublicActivation(targetId, targetQr);
+                  }}
+                  className="px-4 py-2 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 text-xs font-extrabold cursor-pointer whitespace-nowrap"
+                >
+                  Masuk Aktivasi Tag NFC Mandiri
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setUnactivatedTapNotice(null)}
+                aria-label="Tutup pemberitahuan tag NFC"
+                className="px-3 py-2 bg-white hover:bg-[#F4FAF6] text-[#104F38]/75 border border-[#104F38]/20 text-xs font-semibold cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -997,15 +1072,28 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
 
               {autoScanMessage && (
                 <div
-                  className={`p-3 border text-xs space-y-2 ${
+                  className={`p-3.5 border text-xs space-y-2.5 ${
                     autoScanState === 'error'
                       ? 'bg-rose-50 border-rose-300 text-rose-800'
-                      : 'bg-[#F4FAF6] border-[#104F38]/30 text-[#104F38]'
+                      : autoScanState === 'unactivated' || autoScanState === 'blank'
+                        ? 'bg-[#FFFDF0] border-[#104F38]/30 text-[#104F38]'
+                        : 'bg-[#F4FAF6] border-[#104F38]/30 text-[#104F38]'
                   }`}
                 >
-                  <div className="font-bold flex items-center gap-1.5">
-                    {autoScanState === 'matched-nfc' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                    <span>{autoScanMessage}</span>
+                  <div className="font-bold flex items-start gap-2">
+                    {autoScanState === 'matched-nfc' ? (
+                      <Check className="w-4 h-4 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
+                    )}
+                    <div className="space-y-0.5">
+                      {(autoScanState === 'unactivated' || autoScanState === 'blank') && (
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 block">
+                          Pemberitahuan: Tag NFC Belum Diaktivasi
+                        </span>
+                      )}
+                      <span>{autoScanMessage}</span>
+                    </div>
                   </div>
 
                   {autoScanState === 'matched-nfc' && (autoScanResult?.targetUrl || autoScanResult?.tag?.googleReviewUrl) && (
@@ -1020,22 +1108,40 @@ export const NFCTagsView: React.FC<NFCTagsViewProps> = ({
                     </a>
                   )}
 
-                  {(autoScanState === 'matched-qr' || autoScanState === 'blank') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAutoScanOpen(false);
-                        onOpenActivateModal({
-                          tagUid: autoScanResult?.tagUid || autoScanUidInput || undefined,
-                          qrId: autoScanResult?.qr?.id,
-                          scannedPayload: autoScanResult?.scannedPayload || autoScanPayloadInput || undefined
-                        });
-                      }}
-                      className="px-3 py-1.5 bg-[#104F38] text-[#FFE600] font-bold text-xs cursor-pointer inline-flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Aktivasi Tag NFC dari Data Ini</span>
-                    </button>
+                  {(autoScanState === 'unactivated' || autoScanState === 'matched-qr' || autoScanState === 'blank') && (
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                      {onOpenPublicActivation && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAutoScanOpen(false);
+                            onOpenPublicActivation(
+                              autoScanResult?.tagId || undefined,
+                              autoScanResult?.linkedQrCode || autoScanResult?.qr?.code || undefined
+                            );
+                          }}
+                          className="px-3.5 py-2 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 font-extrabold text-xs cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <Radio className="w-3.5 h-3.5" />
+                          <span>Masuk Aktivasi Tag NFC Mandiri</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAutoScanOpen(false);
+                          onOpenActivateModal({
+                            tagUid: autoScanResult?.tagUid || autoScanUidInput || undefined,
+                            qrId: autoScanResult?.qr?.id,
+                            scannedPayload: autoScanResult?.scannedPayload || autoScanPayloadInput || undefined
+                          });
+                        }}
+                        className="px-3 py-2 bg-[#104F38] text-[#FFE600] font-bold text-xs cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Aktivasi via Admin</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

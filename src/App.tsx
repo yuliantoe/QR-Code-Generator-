@@ -18,7 +18,7 @@ import { PublicNFCActivationView } from './components/PublicNFCActivationView.ts
 import { ChangeCredentialsModal } from './components/ChangeCredentialsModal.tsx';
 import { AddUserModal } from './components/AddUserModal.tsx';
 import { DeleteQRConfirmModal } from './components/DeleteQRConfirmModal.tsx';
-import { Search, Plus, LayoutList, Minimize2, SlidersHorizontal, UserPlus, Menu, QrCode, CloudUpload } from 'lucide-react';
+import { Search, Plus, LayoutList, Minimize2, SlidersHorizontal, UserPlus, Menu, QrCode, CloudUpload, AlertCircle, Radio, ArrowRight } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import {
   initDriveAuth,
@@ -107,6 +107,11 @@ export default function App() {
   });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [standDesignInitialId, setStandDesignInitialId] = useState<string | undefined>(undefined);
+  const [unactivatedNfcNotice, setUnactivatedNfcNotice] = useState<{
+    nfcId: string;
+    linkedQrCode?: string | null;
+    message?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -123,6 +128,7 @@ export default function App() {
   }, []);
 
   const enterPublicActivation = useCallback((nfcId?: string, qrCode?: string) => {
+    setUnactivatedNfcNotice(null);
     setShowLoginScreen(false);
     setIsPublicActivationMode(true);
     setActivationNfcId(nfcId || '');
@@ -311,18 +317,30 @@ export default function App() {
           .then(res => res.json())
           .then(json => {
             if (json.unactivated) {
-              window.location.replace(`/aktivasi?nfcId=${encodeURIComponent(nfcId)}`);
+              setUnactivatedNfcNotice({
+                nfcId,
+                linkedQrCode: json.linkedQrCode || null,
+                message: json.error || 'Tag NFC ini belum teraktivasi. Silakan lakukan aktivasi terlebih dahulu.'
+              });
               return;
             }
             if (!normalizeAndRedirect(json.targetUrl)) {
               if (!redirectNfcFromLocalCache()) {
-                window.location.replace(`/aktivasi?nfcId=${encodeURIComponent(nfcId)}`);
+                setUnactivatedNfcNotice({
+                  nfcId,
+                  linkedQrCode: null,
+                  message: 'Tag NFC ini belum teraktivasi. Silakan lakukan aktivasi terlebih dahulu.'
+                });
               }
             }
           })
           .catch(() => {
             if (!redirectNfcFromLocalCache()) {
-              window.location.replace(`/aktivasi?nfcId=${encodeURIComponent(nfcId)}`);
+              setUnactivatedNfcNotice({
+                nfcId,
+                linkedQrCode: null,
+                message: 'Tag NFC ini belum teraktivasi. Silakan lakukan aktivasi terlebih dahulu.'
+              });
             }
           });
       }
@@ -1193,6 +1211,9 @@ export default function App() {
         return {
           success: false,
           locked: json.locked,
+          unactivated: Boolean(json.unactivated),
+          nfcId: json.nfcId || id,
+          linkedQrCode: json.linkedQrCode || null,
           error: json.error || 'Gagal membaca tag NFC.'
         };
       }
@@ -1219,12 +1240,108 @@ export default function App() {
     }
   };
 
-  // If user opened a physical QR redirect (/r/:slug) or NFC (/nfc/:id), show redirect screen immediately without prompting login
+  // If user opened a physical QR redirect (/r/:slug) or NFC (/nfc/:id), show redirect screen or unactivated notice without prompting login
   const isRedirectPath = typeof window !== 'undefined' && (
     window.location.pathname.startsWith('/r/') ||
     window.location.pathname.startsWith('/nfc/') ||
     window.location.pathname.startsWith('/n/')
   );
+
+  if (isRedirectPath && unactivatedNfcNotice) {
+    return (
+      <div className="min-h-screen bg-[#F8FAF9] text-[#104F38] font-sans flex flex-col">
+        <header className="bg-white border-b border-[#104F38]/15 px-4 py-3.5">
+          <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 font-extrabold text-base text-[#104F38]">
+              <div className="w-8 h-8 bg-[#104F38] text-[#FFE600] flex items-center justify-center shrink-0">
+                <Radio className="w-4 h-4" />
+              </div>
+              <span>Projecttapp</span>
+            </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#104F38]/70">
+              Sistem Info NFC Tag
+            </span>
+          </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div
+            role="alert"
+            aria-live="polite"
+            className="bg-white border border-[#104F38]/25 max-w-md w-full shadow-lg"
+          >
+            <div className="h-1.5 bg-[#FFE600] border-b border-[#104F38]/20" />
+            <div className="p-6 sm:p-7 space-y-5">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 bg-[#FFF9CC] border border-[#104F38]/25 text-[#104F38] flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 block">
+                    Pemberitahuan Sistem NFC
+                  </span>
+                  <h1 className="text-xl font-extrabold text-[#104F38] leading-tight">
+                    Tag NFC Belum Diaktivasi
+                  </h1>
+                </div>
+              </div>
+
+              <p className="text-sm text-[#104F38]/85 leading-relaxed">
+                {unactivatedNfcNotice.message ||
+                  'Tag NFC yang Anda tap belum terhubung ke tautan Google Review atau halaman usaha tujuan. Silakan lakukan aktivasi terlebih dahulu.'}
+              </p>
+
+              <div className="bg-[#F4FAF6] border border-[#104F38]/15 p-3.5 text-xs space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#104F38]/65 font-semibold">ID Tag NFC</span>
+                  <span className="font-mono font-bold text-[#104F38]">/nfc/{unactivatedNfcNotice.nfcId}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 border-t border-[#104F38]/10 pt-2">
+                  <span className="text-[#104F38]/65 font-semibold">Status Tag</span>
+                  <span className="font-bold text-amber-800">Belum Diaktivasi</span>
+                </div>
+                {unactivatedNfcNotice.linkedQrCode && (
+                  <div className="flex items-center justify-between gap-2 border-t border-[#104F38]/10 pt-2">
+                    <span className="text-[#104F38]/65 font-semibold">Kode QR Terkait</span>
+                    <span className="font-mono font-bold text-[#104F38]">{unactivatedNfcNotice.linkedQrCode}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    enterPublicActivation(
+                      unactivatedNfcNotice.nfcId,
+                      unactivatedNfcNotice.linkedQrCode || undefined
+                    )
+                  }
+                  className="w-full py-3.5 px-4 bg-[#FFE600] hover:bg-[#F2DA00] text-[#104F38] border border-[#104F38]/30 text-sm font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  <span>Masuk Aktivasi Tag NFC Mandiri</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUnactivatedNfcNotice(null);
+                    setCurrentTab('landing');
+                    if (typeof window !== 'undefined') {
+                      window.history.pushState({}, '', '/');
+                    }
+                  }}
+                  className="w-full py-2.5 px-4 bg-white hover:bg-[#F4FAF6] text-[#104F38] border border-[#104F38]/20 text-xs font-bold cursor-pointer transition-colors"
+                >
+                  Kembali ke Beranda
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (isRedirectPath) {
     return (
@@ -1981,6 +2098,7 @@ export default function App() {
               setStandDesignInitialId('nfc-' + tag.id);
               setCurrentTab('stand-design');
             }}
+            onOpenPublicActivation={(nfcId, qrCode) => enterPublicActivation(nfcId, qrCode)}
             viewMode={viewMode}
             onViewModeChange={handleSetViewMode}
           />

@@ -460,10 +460,328 @@ app.get(['/nfc/:id', '/nfc/:id/*', '/n/:id', '/n/:id/*'], async (req: Request, r
     const query = new URLSearchParams();
     if (cleanId) query.set('nfcId', cleanId);
     if (tag?.linkedQrCode) query.set('qr', String(tag.linkedQrCode));
+    const activationHref = `/aktivasi?${query.toString()}`;
+
+    const escapeHtml = (str: string) =>
+      String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const safeTagId = escapeHtml(cleanId || 'tag-baru');
+    const safeLinkedQr = tag?.linkedQrCode ? escapeHtml(String(tag.linkedQrCode)) : '';
+    const safePlaceName = tag?.placeName ? escapeHtml(String(tag.placeName)) : '';
+
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    return res.redirect(302, `/aktivasi?${query.toString()}`);
+    res.setHeader('Surrogate-Control', 'no-store');
+    return res.status(200).send(`
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Tag NFC Belum Diaktivasi - Projecttapp</title>
+        <style>
+          * { box-sizing: border-box; }
+          body {
+            font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #F8FAF9;
+            color: #104F38;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+          }
+          .topbar {
+            background: #FFFFFF;
+            border-bottom: 1px solid rgba(16, 79, 56, 0.15);
+            padding: 14px 20px;
+          }
+          .topbar-inner {
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          }
+          .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #104F38;
+            font-weight: 800;
+            font-size: 16px;
+          }
+          .brand-mark {
+            width: 34px;
+            height: 34px;
+            background: #104F38;
+            color: #FFE600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+          .sys-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: rgba(16, 79, 56, 0.7);
+          }
+          .main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px 40px;
+          }
+          .card {
+            background: #FFFFFF;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(16, 79, 56, 0.22);
+            box-shadow: 0 12px 32px -12px rgba(16, 79, 56, 0.14);
+          }
+          .accent-strip {
+            height: 6px;
+            background: #FFE600;
+            border-bottom: 1px solid rgba(16, 79, 56, 0.2);
+          }
+          .card-body {
+            padding: 28px 24px;
+          }
+          .notice-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 18px;
+          }
+          .icon-box {
+            width: 48px;
+            height: 48px;
+            background: #FFF9CC;
+            border: 1px solid rgba(16, 79, 56, 0.25);
+            color: #104F38;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+          .kicker {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #9A6700;
+            margin: 0 0 4px;
+          }
+          h1 {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.25;
+            margin: 0;
+            color: #104F38;
+          }
+          .desc {
+            font-size: 14px;
+            line-height: 1.65;
+            color: rgba(16, 79, 56, 0.85);
+            margin: 0 0 18px;
+          }
+          .meta-box {
+            background: #F4FAF6;
+            border: 1px solid rgba(16, 79, 56, 0.16);
+            padding: 14px;
+            margin-bottom: 18px;
+            font-size: 12px;
+          }
+          .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 4px 0;
+          }
+          .meta-row + .meta-row {
+            border-top: 1px solid rgba(16, 79, 56, 0.1);
+            margin-top: 4px;
+            padding-top: 8px;
+          }
+          .meta-key {
+            color: rgba(16, 79, 56, 0.65);
+            font-weight: 600;
+          }
+          .meta-val {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-weight: 700;
+            color: #104F38;
+            text-align: right;
+            word-break: break-all;
+          }
+          .status-pending {
+            color: #9A6700;
+            font-family: inherit;
+          }
+          .steps {
+            border: 1px solid rgba(16, 79, 56, 0.12);
+            background: #FFFFFF;
+            padding: 12px 14px;
+            margin-bottom: 22px;
+            font-size: 12px;
+            color: rgba(16, 79, 56, 0.82);
+          }
+          .steps-title {
+            font-weight: 800;
+            color: #104F38;
+            margin-bottom: 8px;
+            font-size: 12px;
+          }
+          .steps ol {
+            margin: 0;
+            padding-left: 18px;
+            line-height: 1.6;
+          }
+          .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+          .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 18px;
+            background: #FFE600;
+            color: #104F38;
+            border: 1px solid rgba(16, 79, 56, 0.35);
+            font-size: 14px;
+            font-weight: 800;
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.15s ease;
+          }
+          .btn-primary:hover {
+            background: #F2DA00;
+          }
+          .btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 11px 16px;
+            background: #FFFFFF;
+            color: #104F38;
+            border: 1px solid rgba(16, 79, 56, 0.2);
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            text-align: center;
+          }
+          .btn-secondary:hover {
+            background: #F4FAF6;
+          }
+          @media (max-width: 480px) {
+            .card-body { padding: 22px 18px; }
+            h1 { font-size: 19px; }
+          }
+        </style>
+      </head>
+      <body>
+        <header class="topbar">
+          <div class="topbar-inner">
+            <a href="/" class="brand">
+              <div class="brand-mark" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path>
+                  <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path>
+                  <circle cx="12" cy="12" r="2"></circle>
+                  <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path>
+                  <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"></path>
+                </svg>
+              </div>
+              <span>Projecttapp</span>
+            </a>
+            <span class="sys-label">Sistem Info NFC Tag</span>
+          </div>
+        </header>
+
+        <main class="main">
+          <section class="card" role="alert" aria-live="polite">
+            <div class="accent-strip"></div>
+            <div class="card-body">
+              <div class="notice-header">
+                <div class="icon-box" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <div>
+                  <p class="kicker">Pemberitahuan Sistem NFC</p>
+                  <h1>Tag NFC Belum Diaktivasi</h1>
+                </div>
+              </div>
+
+              <p class="desc">
+                Tag NFC yang Anda tap saat ini belum terhubung ke tautan Google Review atau halaman usaha tujuan.
+                Silakan lakukan aktivasi terlebih dahulu agar tag dapat langsung digunakan pelanggan saat ditempelkan ke smartphone.
+              </p>
+
+              <div class="meta-box">
+                <div class="meta-row">
+                  <span class="meta-key">ID Tag NFC</span>
+                  <span class="meta-val">/nfc/${safeTagId}</span>
+                </div>
+                <div class="meta-row">
+                  <span class="meta-key">Status Tag</span>
+                  <span class="meta-val status-pending">Belum Diaktivasi</span>
+                </div>
+                ${safeLinkedQr ? `
+                <div class="meta-row">
+                  <span class="meta-key">Kode QR Terkait</span>
+                  <span class="meta-val">${safeLinkedQr}</span>
+                </div>` : ''}
+                ${safePlaceName ? `
+                <div class="meta-row">
+                  <span class="meta-key">Nama Terdaftar</span>
+                  <span class="meta-val" style="font-family:inherit;">${safePlaceName}</span>
+                </div>` : ''}
+              </div>
+
+              <div class="steps">
+                <div class="steps-title">Cara Aktivasi Mandiri (Tanpa Username &amp; Password):</div>
+                <ol>
+                  <li>Klik tombol <strong>Masuk Aktivasi Tag NFC Mandiri</strong> di bawah.</li>
+                  <li>Masukkan kode produk Anda (contoh: <strong>QR001</strong>, <strong>QR002</strong>) lalu klik Kode QR tersebut.</li>
+                  <li>Isi atau periksa tautan Google Review Anda, lalu klik <strong>Aktifkan Tag NFC</strong>.</li>
+                </ol>
+              </div>
+
+              <div class="actions">
+                <a href="${escapeHtml(activationHref)}" class="btn-primary">
+                  <span>Masuk Aktivasi Tag NFC Mandiri</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </a>
+                <a href="/" class="btn-secondary">Kembali ke Beranda</a>
+              </div>
+            </div>
+          </section>
+        </main>
+      </body>
+      </html>
+    `);
   }
 
   if (tag.status === 'locked') {
@@ -1306,8 +1624,9 @@ app.post('/api/nfc/scan-record', async (req: Request, res: Response) => {
           unactivated: true,
           tagId: matchedTag.id,
           tagUid: cleanUid || matchedTag.tagUid,
+          linkedQrCode: matchedTag.linkedQrCode || null,
           scannedPayload: rawPayload || `/nfc/${matchedTag.id}`,
-          message: `Tag NFC "/nfc/${matchedTag.id}" belum diaktivasi. Pilih Kode QR untuk mengaktifkannya.`
+          message: `Tag NFC "/nfc/${matchedTag.id}" belum diaktivasi. Silakan masuk ke Aktivasi Tag NFC Mandiri.`
         });
       }
 
