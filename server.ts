@@ -1,5 +1,7 @@
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import crypto from 'crypto';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
@@ -12,6 +14,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
+// HTTP Security Headers Middleware
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // Real-time cross-device sync hub (WebSocket + SSE)
 type SyncEventType =
@@ -1007,23 +1019,269 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// Authentication: Login
-app.post('/api/auth/login', async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
+// ==========================================
+// AUTHENTICATION SECURITY, SIGNED TOKENS & RATE LIMITING MIDDLEWARE
+// ==========================================
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ||
+  crypto.createHash('sha256').update(`${process.cwd()}:projecttapp_session_hmac_v2`).digest('hex');
+
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 jam masa berlaku token server
+const revokedSessionTokens = new Set<string>();
+
+interface SessionPayload {
+  u: string;
+  iat: number;
+  exp: number;
+  jti: string;
+}
+
+interface AuthenticatedRequest extends Request {
+  authUser?: any;
+  authToken?: string;
+}
+
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(String(a), 'utf-8');
+  const bufB = Buffer.from(String(b), 'utf-8');
+  if (bufA.length !== bufB.length) {
+    // Compare equal-length dummy buffer to preserve constant timing
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+function createSignedSessionToken(username: string): string {
+  const now = Date.now();
+  const payload: SessionPayload = {
+    u: username.trim().toLowerCase(),
+    iat: now,
+    exp: now + SESSION_TTL_MS,
+    jti: crypto.randomBytes(8).toString('hex')
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload), 'utf-8').toString('base64url');
+  const signatureB64 = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
+  return `auth_v2.${payloadB64}.${signatureB64}`;
+}
+
+function verifySignedSessionToken(token: string): SessionPayload | null {
+  if (!token || revokedSessionTokens.has(token)) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3 || parts[0] !== 'auth_v2') return null;
+
+  const [, payloadB64, signatureB64] = parts;
+  if (!payloadB64 || !signatureB64) return null;
+
+  const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
+  if (!timingSafeStringEqual(signatureB64, expectedSig)) return null;
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8')) as SessionPayload;
+    if (!parsed || typeof parsed.u !== 'string' || typeof parsed.exp !== 'number') return null;
+    if (Date.now() > parsed.exp) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function getRetryAfterSeconds(req: Request, fallbackSeconds: number, propName: string = 'rateLimit'): number {
+  const rl = (req as any)[propName];
+  if (rl?.resetTime instanceof Date) {
+    const diff = Math.ceil((rl.resetTime.getTime() - Date.now()) / 1000);
+    if (diff > 0) return diff;
+  }
+  return fallbackSeconds;
+}
+
+// 1. Express Rate Limit: Proteksi Brute-Force Login per IP
+const loginIpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  limit: 20, // Maksimal 20 percobaan login per IP dalam 15 menit
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    const retryAfterSeconds = getRetryAfterSeconds(req, 15 * 60, 'rateLimit');
+    const retryMinutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      rateLimited: true,
+      limitType: 'ip',
+      retryAfterSeconds,
+      error: `Terlalu banyak permintaan login dari perangkat Anda. Coba lagi dalam ${retryMinutes} menit (${retryAfterSeconds} detik).`
+    });
+  }
+});
+
+// 2. Express Rate Limit: Rate Limit User Middleware per Username + IP (hanya hitung percobaan gagal)
+const loginUserRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  limit: 5, // Maksimal 5 kali login gagal per akun dalam 15 menit
+  skipSuccessfulRequests: true,
+  requestPropertyName: 'rateLimitUser',
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const rawUser = typeof req.body?.username === 'string' ? req.body.username.trim().toLowerCase() : 'anonymous';
+    const ipKey = ipKeyGenerator(req.ip || '127.0.0.1');
+    return `login_user:${rawUser || 'anonymous'}:ip:${ipKey}`;
+  },
+  handler: (req: Request, res: Response) => {
+    const retryAfterSeconds = getRetryAfterSeconds(req, 15 * 60, 'rateLimitUser');
+    const retryMinutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+    const attemptedUser = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      rateLimited: true,
+      limitType: 'user',
+      retryAfterSeconds,
+      error: attemptedUser
+        ? `Akun "${attemptedUser}" sementara dikunci karena 5 kali gagal login. Silakan tunggu ${retryMinutes} menit (${retryAfterSeconds} detik).`
+        : `Terlalu banyak percobaan login gagal. Silakan tunggu ${retryMinutes} menit (${retryAfterSeconds} detik).`
+    });
+  }
+});
+
+// 3. Express Rate Limit: Registrasi & Endpoint Sensitif Akun / Admin
+const authRegisterRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    const retryAfterSeconds = getRetryAfterSeconds(req, 15 * 60);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      rateLimited: true,
+      retryAfterSeconds,
+      error: `Terlalu banyak percobaan pendaftaran akun. Silakan tunggu ${Math.ceil(retryAfterSeconds / 60)} menit.`
+    });
+  }
+});
+
+const authSensitiveUserRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 25,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req: AuthenticatedRequest) => {
+    const uname = req.authUser?.username ? String(req.authUser.username).toLowerCase() : 'guest';
+    const ipKey = ipKeyGenerator(req.ip || '127.0.0.1');
+    return `auth_user:${uname}:ip:${ipKey}`;
+  },
+  handler: (req: Request, res: Response) => {
+    const retryAfterSeconds = getRetryAfterSeconds(req, 15 * 60);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      rateLimited: true,
+      retryAfterSeconds,
+      error: `Batas permintaan keamanan akun tercapai. Coba lagi dalam ${Math.ceil(retryAfterSeconds / 60)} menit.`
+    });
+  }
+});
+
+const publicActivationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    const retryAfterSeconds = getRetryAfterSeconds(req, 15 * 60);
+    res.setHeader('Retry-After', String(retryAfterSeconds));
+    res.status(429).json({
+      success: false,
+      rateLimited: true,
+      retryAfterSeconds,
+      error: `Terlalu banyak permintaan aktivasi. Silakan tunggu ${Math.ceil(retryAfterSeconds / 60)} menit.`
+    });
+  }
+});
+
+// 4. User Middleware: Verifikasi Token Sesi & Muat Profil User Terotentikasi
+async function requireAuthUser(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      authError: true,
+      error: 'Sesi belum terautentikasi. Silakan login terlebih dahulu.'
+    });
+  }
+
+  const token = authHeader.substring(7).trim();
+  const payload = verifySignedSessionToken(token);
+  if (!payload) {
+    return res.status(401).json({
+      success: false,
+      authError: true,
+      error: 'Token sesi tidak valid atau sudah kedaluwarsa. Silakan login ulang.'
+    });
+  }
+
+  try {
+    const user = await db.getUserByUsername(payload.u);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        authError: true,
+        error: 'Akun pengguna tidak ditemukan. Silakan login kembali.'
+      });
+    }
+    req.authUser = user;
+    req.authToken = token;
+    return next();
+  } catch (err) {
+    console.error('[Auth Middleware] Error:', err);
+    return res.status(500).json({ success: false, error: 'Gagal memverifikasi sesi pengguna.' });
+  }
+}
+
+// 5. Admin Middleware: Pastikan User Terotentikasi adalah Administrator
+function requireAdminUser(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.authUser || String(req.authUser.username || '').toLowerCase() !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Akses ditolak. Hanya Administrator yang diizinkan mengakses menu ini.'
+    });
+  }
+  return next();
+}
+
+// Authentication: Login (Protected by express-rate-limit per IP + per User)
+app.post('/api/auth/login', loginIpRateLimiter, loginUserRateLimiter, async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  const rawUsername = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+  const rawPassword = typeof req.body?.password === 'string' ? req.body.password : '';
+
+  if (!rawUsername || !rawPassword) {
     return res.status(400).json({ success: false, error: 'Username dan password wajib diisi' });
   }
 
   const users = await db.getUsers();
   const user = users.find(
-    (u: any) => u.username.toLowerCase() === username.trim().toLowerCase()
+    (u: any) => u.username.toLowerCase() === rawUsername.toLowerCase()
   );
 
-  if (!user || user.password !== password) {
-    return res.status(401).json({ success: false, error: 'Username atau password salah. Silakan coba lagi.' });
+  if (!user || !timingSafeStringEqual(String(user.password || ''), rawPassword)) {
+    const userRl = (req as any).rateLimitUser;
+    const remainingAttempts = typeof userRl?.remaining === 'number' ? Math.max(0, userRl.remaining) : undefined;
+    return res.status(401).json({
+      success: false,
+      remainingAttempts,
+      error:
+        remainingAttempts !== undefined && remainingAttempts <= 2 && remainingAttempts > 0
+          ? `Username atau password salah. Sisa ${remainingAttempts} kali percobaan sebelum akun dikunci sementara.`
+          : 'Username atau password salah. Silakan coba lagi.'
+    });
   }
 
-  const token = 'auth_' + Buffer.from(`${user.username}:${Date.now()}:${Math.random()}`).toString('base64');
+  const token = createSignedSessionToken(user.username);
   return res.json({
     success: true,
     token,
@@ -1041,7 +1299,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 });
 
 // Authentication: Register New User (Trial 3 Hari)
-app.post('/api/auth/register', async (req: Request, res: Response) => {
+app.post('/api/auth/register', authRegisterRateLimiter, async (req: Request, res: Response) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   const { username, password, name, fullName, phone, email } = req.body;
   const userNameVal = (name || fullName || '').trim();
 
@@ -1093,7 +1352,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     createdAt: now.toISOString()
   });
 
-  const token = 'auth_' + Buffer.from(`${newUser.username}:${Date.now()}:${Math.random()}`).toString('base64');
+  const token = createSignedSessionToken(newUser.username);
 
   return res.status(201).json({
     success: true,
@@ -1113,22 +1372,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 });
 
 // Authentication: Upgrade Subscription Plan (Bulanan / Tahunan)
-app.post('/api/auth/upgrade-plan', async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
-  }
-
-  const token = authHeader.substring(7);
-  let targetUsername = 'admin';
-  try {
-    const raw = Buffer.from(token.replace(/^auth_/, ''), 'base64').toString('ascii');
-    const parts = raw.split(':');
-    if (parts[0]) targetUsername = parts[0];
-  } catch {
-    // fallback
-  }
-
+app.post('/api/auth/upgrade-plan', requireAuthUser, authSensitiveUserRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
+  const targetUsername = req.authUser.username;
   const { plan = 'monthly' } = req.body;
   if (plan !== 'monthly' && plan !== 'yearly') {
     return res.status(400).json({ success: false, error: 'Pilihan paket harus bulanan ("monthly") atau tahunan ("yearly").' });
@@ -1156,30 +1401,8 @@ app.post('/api/auth/upgrade-plan', async (req: Request, res: Response) => {
 });
 
 // Authentication: Current User
-app.get('/api/auth/me', async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
-  }
-
-  const token = authHeader.substring(7);
-  let targetUsername = '';
-  try {
-    const raw = Buffer.from(token.replace(/^auth_/, ''), 'base64').toString('ascii');
-    const parts = raw.split(':');
-    if (parts[0]) targetUsername = parts[0];
-  } catch {
-    // ignore
-  }
-
-  const user = targetUsername ? await db.getUserByUsername(targetUsername) : null;
-  const currentUser = user || (await db.getUsers())[0] || {
-    username: 'admin',
-    name: 'Administrator',
-    plan: 'yearly',
-    isWatermarkActive: false
-  };
-
+app.get('/api/auth/me', requireAuthUser, async (req: AuthenticatedRequest, res: Response) => {
+  const currentUser = req.authUser;
   return res.json({
     success: true,
     user: {
@@ -1195,18 +1418,24 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
   });
 });
 
-// Authentication: Logout
-app.post('/api/auth/logout', (_req: Request, res: Response) => {
+// Authentication: Logout (Revokes active signed token if sent)
+app.post('/api/auth/logout', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    if (token) {
+      revokedSessionTokens.add(token);
+      if (revokedSessionTokens.size > 5000) {
+        const first = revokedSessionTokens.values().next().value;
+        if (first) revokedSessionTokens.delete(first);
+      }
+    }
+  }
   res.json({ success: true, message: 'Berhasil keluar' });
 });
 
-// Authentication: Change Username and Password (Admin username is strictly protected)
-app.post('/api/auth/change-credentials', async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Sesi belum terautentikasi' });
-  }
-
+// Authentication: Change Username and Password (Protected by User Middleware + Rate Limit)
+app.post('/api/auth/change-credentials', requireAuthUser, authSensitiveUserRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const { currentPassword, newUsername, newPassword } = req.body;
   if (!currentPassword || !newUsername || !newPassword) {
     return res.status(400).json({
@@ -1224,18 +1453,8 @@ app.post('/api/auth/change-credentials', async (req: Request, res: Response) => 
     return res.status(400).json({ success: false, error: 'Password baru minimal 4 karakter.' });
   }
 
-  let tokenUsername = '';
-  try {
-    const raw = Buffer.from(authHeader.substring(7).replace(/^auth_/, ''), 'base64').toString('ascii');
-    tokenUsername = (raw.split(':')[0] || '').trim().toLowerCase();
-  } catch {
-    // fallback
-  }
-
-  const users = await db.getUsers();
-  const user = (tokenUsername ? users.find(u => u.username.toLowerCase() === tokenUsername) : null) || users[0];
-
-  if (!user || user.password !== currentPassword) {
+  const user = req.authUser;
+  if (!user || !timingSafeStringEqual(String(user.password || ''), String(currentPassword))) {
     return res.status(401).json({ success: false, error: 'Password saat ini tidak sesuai.' });
   }
 
@@ -1267,8 +1486,8 @@ app.post('/api/auth/change-credentials', async (req: Request, res: Response) => 
   });
 });
 
-// Admin Dashboard: List All Users
-app.get('/api/admin/users', async (_req: Request, res: Response) => {
+// Admin Dashboard: List All Users (Protected by requireAuthUser + requireAdminUser + Rate Limit)
+app.get('/api/admin/users', requireAuthUser, requireAdminUser, authSensitiveUserRateLimiter, async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const users = await db.getUsers();
     const sanitized = users.map(u => ({
@@ -1289,8 +1508,8 @@ app.get('/api/admin/users', async (_req: Request, res: Response) => {
   }
 });
 
-// Admin Dashboard: Add New User
-app.post('/api/admin/users', async (req: Request, res: Response) => {
+// Admin Dashboard: Add New User (Protected by requireAuthUser + requireAdminUser + Rate Limit)
+app.post('/api/admin/users', requireAuthUser, requireAdminUser, authSensitiveUserRateLimiter, async (req: AuthenticatedRequest, res: Response) => {
   const { username, password, name, plan, isWatermarkActive } = req.body;
   if (!username || !password || !name) {
     return res.status(400).json({
@@ -2098,7 +2317,7 @@ app.get('/api/public/nfc/status/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/public/nfc/self-activate', async (req: Request, res: Response) => {
+app.post('/api/public/nfc/self-activate', publicActivationRateLimiter, async (req: Request, res: Response) => {
   try {
     const {
       requestedTagId,

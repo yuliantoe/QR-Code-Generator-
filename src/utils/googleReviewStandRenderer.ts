@@ -9,11 +9,14 @@ export type StandTemplateId =
   | 'a6-blue-dome'      // A6 Kubah Biru Google (Dome Curve)
   | 'a6-pinwheel'       // A6 4-Warna Kuadran Google (Quadrant Color)
   // DESAIN STAND MEJA SOSIAL MEDIA - A6 (105 x 148 mm)
-  | 'a6-whatsapp'       // A6 WhatsApp: Chat & Order Langsung
-  | 'a6-instagram'      // A6 Instagram: Follow & Tag Story
-  | 'a6-tiktok'         // A6 TikTok: Tonton Keseruan & Review
-  | 'a6-facebook'       // A6 Facebook: Komunitas & Fanspage
-  | 'a6-social-all'     // A6 Multi-Sosmed All-in-One (WA • IG • TikTok • FB)
+  | 'a6-whatsapp'         // A6 WhatsApp: Chat & Order Langsung
+  | 'a6-whatsapp-green'   // A6 WhatsApp: Full Hijau Contact Us On (Tap & Scan)
+  | 'a6-instagram'        // A6 Instagram: Follow & Tag Story
+  | 'a6-instagram-sunset' // A6 Instagram: Full Gradien Sunset Follow Us
+  | 'a6-tiktok'           // A6 TikTok: Tonton Keseruan & Review
+  | 'a6-facebook'         // A6 Facebook: Komunitas & Fanspage
+  | 'a6-facebook-blue'    // A6 Facebook: Full Biru Follow Us On
+  | 'a6-social-all'       // A6 Multi-Sosmed All-in-One (WA • IG • TikTok • FB)
   // DESAIN UNIVERSAL / KOTAK PERSEGI (1:1) - GOOGLE REVIEW
   | 'classic-blue'      // Biru Klasik Meja
   | 'blue-arc'          // Lengkung Biru Modern
@@ -21,11 +24,14 @@ export type StandTemplateId =
   | 'border-4color'     // Bingkai 4 Warna Google
   | 'onyx-black'        // Onyx Dark Minimalis
   // DESAIN STAND MEJA SOSIAL MEDIA - KOTAK PERSEGI (1:1)
-  | 'square-whatsapp'   // Persegi: WhatsApp Stand Akrilik
-  | 'square-instagram'  // Persegi: Instagram Acrylic Card
-  | 'square-tiktok'     // Persegi: TikTok Neon Dark
-  | 'square-facebook'   // Persegi: Facebook Stand Meja
-  | 'square-social-all';// Persegi: Semua Sosmed (1:1)
+  | 'square-whatsapp'         // Persegi: WhatsApp Stand Akrilik
+  | 'square-whatsapp-green'   // Persegi: WhatsApp Full Hijau Contact Us On
+  | 'square-instagram'        // Persegi: Instagram Acrylic Card
+  | 'square-instagram-sunset' // Persegi: Instagram Full Gradien Sunset Follow Us
+  | 'square-tiktok'           // Persegi: TikTok Neon Dark
+  | 'square-facebook'         // Persegi: Facebook Stand Meja
+  | 'square-facebook-blue'    // Persegi: Facebook Full Biru Follow Us On
+  | 'square-social-all';      // Persegi: Semua Sosmed (1:1)
 
 export interface StandTemplateMeta {
   id: StandTemplateId;
@@ -50,6 +56,15 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
     previewColors: ['#25D366', '#075E54', '#FFFFFF']
   },
   {
+    id: 'a6-whatsapp-green',
+    name: 'WhatsApp: Full Hijau Contact Us A6 (105×148mm)',
+    badge: 'WhatsApp Hijau A6',
+    category: 'whatsapp',
+    formatSize: 'a6',
+    description: 'Format A6 latar full hijau WhatsApp (#229A42) bergaya ikonik dengan logo garis putih, kotak Tap Your Phone & Scan QR Code berdampingan.',
+    previewColors: ['#229A42', '#FFFFFF', '#187B32']
+  },
+  {
     id: 'square-whatsapp',
     name: 'WhatsApp: Stand Meja Persegi (1:1)',
     badge: 'WhatsApp 1:1',
@@ -57,6 +72,15 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
     formatSize: 'square',
     description: 'Format kotak 1:1 stand akrilik WhatsApp. Bingkai hijau segar, lencana chat resmi, dan layout seimbang untuk pemesanan meja kasir.',
     previewColors: ['#25D366', '#128C7E', '#FFFFFF']
+  },
+  {
+    id: 'square-whatsapp-green',
+    name: 'WhatsApp: Full Hijau Contact Us Persegi (1:1)',
+    badge: 'WhatsApp Hijau 1:1',
+    category: 'whatsapp',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 latar full hijau WhatsApp (#229A42) dengan logo garis putih, kotak Tap Your Phone & Scan QR Code putih kontras.',
+    previewColors: ['#229A42', '#FFFFFF', '#187B32']
   },
 
   // === TEMPLATE STAND INSTAGRAM ===
@@ -70,6 +94,15 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
     previewColors: ['#833AB4', '#FD1D1D', '#FCB045', '#FFFFFF']
   },
   {
+    id: 'a6-instagram-sunset',
+    name: 'Instagram: Full Gradien Follow Us A6 (105×148mm)',
+    badge: 'Instagram Gradien A6',
+    category: 'instagram',
+    formatSize: 'a6',
+    description: 'Format A6 latar full gradien sunset Instagram dengan tipografi script klasik, ikon kamera garis putih, dan split Tap NFC & Scan QR berbingkai siku putih.',
+    previewColors: ['#5B2AE8', '#EE2A5B', '#FDB827', '#FFFFFF']
+  },
+  {
     id: 'square-instagram',
     name: 'Instagram: Acrylic Card Persegi (1:1)',
     badge: 'Instagram 1:1',
@@ -77,6 +110,15 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
     formatSize: 'square',
     description: 'Format kotak 1:1 stand akrilik Instagram. Bingkai gradien warna-warni, logo kamera resmi, dan tampilan profil feeds modern.',
     previewColors: ['#E1306C', '#833AB4', '#FFDC80']
+  },
+  {
+    id: 'square-instagram-sunset',
+    name: 'Instagram: Full Gradien Follow Us Persegi (1:1)',
+    badge: 'Instagram Gradien 1:1',
+    category: 'instagram',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 latar full gradien sunset Instagram, wordmark script putih, ikon kamera outline, serta aksi Tap NFC & Scan QR berbingkai putih.',
+    previewColors: ['#5B2AE8', '#EE2A5B', '#FDB827', '#FFFFFF']
   },
 
   // === TEMPLATE STAND TIKTOK ===
@@ -112,6 +154,15 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
     previewColors: ['#1877F2', '#0C4A9E', '#FFFFFF']
   },
   {
+    id: 'a6-facebook-blue',
+    name: 'Facebook: Full Biru Follow Us A6 (105×148mm)',
+    badge: 'Facebook Biru A6',
+    category: 'facebook',
+    formatSize: 'a6',
+    description: 'Format A6 latar full biru royal Facebook (#15479B) bergaya ikonik dengan logo f putih, kotak Tap Your Phone & Scan QR Code berdampingan.',
+    previewColors: ['#15479B', '#FFFFFF', '#0D3475']
+  },
+  {
     id: 'square-facebook',
     name: 'Facebook: Stand Meja Persegi (1:1)',
     badge: 'Facebook 1:1',
@@ -119,6 +170,15 @@ export const STAND_TEMPLATES: StandTemplateMeta[] = [
     formatSize: 'square',
     description: 'Format kotak 1:1 stand akrilik Facebook. Lencana biru royal elegan, tata letak proporsional untuk kasir atau meja ruang tunggu.',
     previewColors: ['#1877F2', '#FFFFFF', '#E7F3FF']
+  },
+  {
+    id: 'square-facebook-blue',
+    name: 'Facebook: Full Biru Follow Us Persegi (1:1)',
+    badge: 'Facebook Biru 1:1',
+    category: 'facebook',
+    formatSize: 'square',
+    description: 'Format kotak 1:1 latar full biru royal Facebook (#15479B) dengan logo f lingkaran putih, kotak Tap Your Phone & Scan QR Code putih kontras.',
+    previewColors: ['#15479B', '#FFFFFF', '#0D3475']
   },
 
   // === TEMPLATE STAND ALL-IN-ONE (SEMUA SOSMED) ===
@@ -234,9 +294,12 @@ export function isA6Template(templateId: StandTemplateId): boolean {
     templateId === 'a6-blue-dome' ||
     templateId === 'a6-pinwheel' ||
     templateId === 'a6-whatsapp' ||
+    templateId === 'a6-whatsapp-green' ||
     templateId === 'a6-instagram' ||
+    templateId === 'a6-instagram-sunset' ||
     templateId === 'a6-tiktok' ||
     templateId === 'a6-facebook' ||
+    templateId === 'a6-facebook-blue' ||
     templateId === 'a6-social-all'
   );
 }
@@ -353,6 +416,36 @@ const WHATSAPP_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96
   <path fill="#ffffff" d="M48 18c-16.57 0-30 13.43-30 30 0 5.3 1.38 10.28 3.79 14.61L18 78l16.03-3.69C38.12 76.4 42.9 78 48 78c16.57 0 30-13.43 30-30s-13.43-30-30-30zm17.48 42.42c-.74 2.08-3.66 3.82-5.99 4.32-1.6.34-3.68.61-10.7-2.3-9.01-3.73-14.77-12.87-15.22-13.47-.44-.6-3.63-4.83-3.63-9.21s2.29-6.53 3.1-7.42c.81-.89 1.77-1.11 2.36-1.11.59 0 1.18.01 1.7.03.55.02 1.28-.21 2 .1.54 1.3 2.66 6.5 2.89 7.09.23.59.39 1.28-.01 2.06-.4.78-.6 1.27-1.19 1.96-.59.69-1.24 1.54-1.77 2.07-.59.59-1.2 1.23-.52 2.4 1.39 2.39 3.08 4.78 5.79 7.19 3.5 3.12 6.45 4.19 7.64 4.79 1.19.6 1.88.5 2.57-.3.69-.79 2.97-3.46 3.76-4.65.79-1.19 1.58-1 2.66-.6 1.09.4 6.89 3.25 8.08 3.84 1.19.59 1.98.89 2.28 1.38.3.49.3 2.86-.44 4.94z"/>
 </svg>`;
 
+// WhatsApp White Outline Logo SVG String (transparent bubble + crisp white ring & handset)
+const WHATSAPP_WHITE_OUTLINE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <path fill="none" stroke="#ffffff" stroke-width="6.8" stroke-linejoin="round" stroke-linecap="round" d="M48 12c-19.88 0-36 16.12-36 36 0 6.72 1.84 13.01 5.05 18.4L12.6 83.4l17.46-4.54A35.84 35.84 0 0 0 48 84c19.88 0 36-16.12 36-36S67.88 12 48 12z"/>
+  <path fill="#ffffff" d="M62.6 56.1c-.8-.4-4.74-2.34-5.48-2.61-.74-.27-1.27-.4-1.81.4-.54.8-2.08 2.61-2.54 3.15-.47.54-.94.6-1.74.2-.8-.4-3.39-1.25-6.46-3.98-2.39-2.13-4-4.76-4.47-5.56-.47-.8-.05-1.23.35-1.63.36-.36.8-.94 1.2-1.4.4-.47.54-.8.8-1.34.27-.54.13-1-.07-1.4-.2-.4-1.81-4.35-2.48-5.96-.65-1.57-1.32-1.36-1.81-1.38-.47-.02-1-.03-1.54-.03-.54 0-1.4.2-2.14 1-.74.8-2.81 2.74-2.81 6.69s2.88 7.76 3.28 8.3c.4.54 5.66 8.64 13.72 12.12 1.92.83 3.41 1.32 4.58 1.69 1.92.61 3.67.52 5.06.32 1.54-.23 4.74-1.94 5.41-3.82.67-1.88.67-3.49.47-3.82-.2-.34-.74-.54-1.54-.94z"/>
+</svg>`;
+
+// Hand Holding Smartphone with NFC Contact Waves SVG (crisp white outline over specified solid bgColor)
+function createHandTapPhoneWhiteSvg(bgColor: string = '#229A42'): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Smartphone Body -->
+  <rect x="31" y="15" width="42" height="75" rx="7" fill="none" stroke="#ffffff" stroke-width="3.2"/>
+  <line x1="47" y1="21" x2="57" y2="21" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- Contactless / NFC Signal Waves inside Screen -->
+  <circle cx="52" cy="56" r="2.3" fill="#ffffff"/>
+  <path d="M46.5 50.5 Q52 45.5 57.5 50.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M42.5 45.5 Q52 37.5 61.5 45.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M38.5 40.5 Q52 29.5 65.5 40.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- Fingers Gripping Left Side of Phone -->
+  <rect x="20" y="39" width="16" height="8" rx="4" fill="${bgColor}" stroke="#ffffff" stroke-width="3"/>
+  <rect x="18" y="49" width="18" height="8" rx="4" fill="${bgColor}" stroke="#ffffff" stroke-width="3"/>
+  <rect x="19" y="59" width="17" height="8" rx="4" fill="${bgColor}" stroke="#ffffff" stroke-width="3"/>
+  <rect x="22" y="69" width="14" height="7.5" rx="3.75" fill="${bgColor}" stroke="#ffffff" stroke-width="3"/>
+  <!-- Palm & Thumb Gripping Right Side of Phone -->
+  <path d="M73 29 C81 36, 86 50, 86 67 L75 82 L64 82 C66 75, 68 69, 68 62 C68 56, 62 50, 65 44 C67 39, 72 41, 73 46" fill="${bgColor}" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Angled Sleeve Cuff at Bottom Right -->
+  <path d="M87 65 L103 81 L88 100 L72 84 Z" fill="${bgColor}" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="88" cy="83" r="1.8" fill="#ffffff"/>
+</svg>`;
+}
+
 // Instagram Logo SVG String (with sunset gradient)
 const INSTAGRAM_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
   <defs>
@@ -368,6 +461,49 @@ const INSTAGRAM_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 9
   <rect x="20" y="20" width="56" height="56" rx="16" fill="none" stroke="#ffffff" stroke-width="6"/>
   <circle cx="48" cy="48" r="14" fill="none" stroke="#ffffff" stroke-width="6"/>
   <circle cx="64" cy="32" r="3.5" fill="#ffffff"/>
+</svg>`;
+
+// Instagram White Outline Camera SVG (transparent interior for full-bleed sunset gradient)
+const INSTAGRAM_WHITE_OUTLINE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <rect x="10" y="10" width="76" height="76" rx="22" fill="none" stroke="#ffffff" stroke-width="7.2"/>
+  <circle cx="48" cy="48" r="18.5" fill="none" stroke="#ffffff" stroke-width="7.2"/>
+  <circle cx="69.5" cy="26.5" r="4.8" fill="#ffffff"/>
+</svg>`;
+
+// Instagram Sunset NFC Circle + Waves + Transparent-Masked Hand Holding Phone SVG
+const INSTAGRAM_NFC_HAND_WHITE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <mask id="ig-nfc-phone-mask">
+      <rect width="120" height="120" fill="#ffffff"/>
+      <rect x="53" y="29" width="38" height="68" rx="6" fill="#000000"/>
+      <path d="M89 52 L106 72 L96 98 L71 95 Z" fill="#000000"/>
+    </mask>
+  </defs>
+  <!-- Outer NFC Circle & Contactless Waves (masked cleanly behind phone & hand) -->
+  <g mask="url(#ig-nfc-phone-mask)">
+    <circle cx="46" cy="54" r="34" fill="none" stroke="#ffffff" stroke-width="3.2"/>
+    <path d="M40 42 Q47 54 40 66" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <path d="M32 36 Q42 54 32 72" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    <path d="M24 30 Q36 54 24 78" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <!-- Smartphone Outline -->
+  <rect x="54" y="30" width="36" height="66" rx="6" fill="none" stroke="#ffffff" stroke-width="3.2"/>
+  <line x1="67" y1="36" x2="77" y2="36" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="72" y="54" text-anchor="middle" fill="#ffffff" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="800" font-size="11">NFC</text>
+  <!-- Hand Fingers & Thumb Gripping Phone Right Edge -->
+  <path d="M86 58 C82 54, 77 56, 77 62 C77 69, 82 77, 87 84 L94 98 M90 48 C96 54, 100 66, 100 79 L106 94" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="88" cy="64" r="3" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+</svg>`;
+
+// Facebook Solid White Circle with Transparent Cutout "f" SVG
+const FACEBOOK_WHITE_CIRCLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <defs>
+    <mask id="fb-cutout-mask">
+      <rect width="96" height="96" fill="#ffffff"/>
+      <path fill="#000000" d="M54.2 88V52.5h11.8l1.8-13.8H54.2v-8.8c0-4 1.1-6.7 6.8-6.7h7.3V10.9c-1.3-.2-5.6-.6-10.6-.6-10.5 0-17.7 6.4-17.7 18.2v10.2H28v13.8h12V88h14.2z"/>
+    </mask>
+  </defs>
+  <circle cx="48" cy="48" r="42" fill="#ffffff" mask="url(#fb-cutout-mask)"/>
 </svg>`;
 
 // TikTok Logo SVG String
@@ -1784,6 +1920,257 @@ async function renderSquareWhatsApp(
 }
 
 /**
+ * Shared Dual White-Outlined Tap & QR Boxes Helper for Full-Green WhatsApp Stands
+ */
+async function drawWhatsAppGreenActionRow(
+  ctx: CanvasRenderingContext2D,
+  params: {
+    centerX: number;
+    boxY: number;
+    boxSize: number;
+    gap: number;
+    scale: number;
+    qrText: string;
+    registrationCode?: string;
+    handTapImg: HTMLImageElement | null;
+    captionFontSize: number;
+    orRadius: number;
+  }
+) {
+  const {
+    centerX,
+    boxY,
+    boxSize,
+    gap,
+    scale,
+    qrText,
+    registrationCode,
+    handTapImg,
+    captionFontSize,
+    orRadius
+  } = params;
+
+  const leftBoxX = centerX - gap / 2 - boxSize;
+  const rightBoxX = centerX + gap / 2;
+  const leftCx = leftBoxX + boxSize / 2;
+  const rightCx = rightBoxX + boxSize / 2;
+  const boxCenterY = boxY + boxSize / 2;
+  const cornerRadius = 26 * scale;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.94)';
+  ctx.lineWidth = 4.2 * scale;
+
+  // Left Outlined Box: Tap Your Phone
+  drawRoundedRectPath(ctx, leftBoxX, boxY, boxSize, boxSize, cornerRadius);
+  ctx.stroke();
+
+  if (handTapImg) {
+    const iconSize = boxSize * 0.82;
+    ctx.drawImage(
+      handTapImg,
+      leftCx - iconSize / 2,
+      boxCenterY - iconSize / 2,
+      iconSize,
+      iconSize
+    );
+  }
+
+  // Right Outlined Box: White QR Code directly on WhatsApp Green
+  drawRoundedRectPath(ctx, rightBoxX, boxY, boxSize, boxSize, cornerRadius);
+  ctx.stroke();
+
+  const qrSize = Math.round(boxSize * 0.80);
+  const qrCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrCanvas, qrText, {
+    width: qrSize,
+    margin: 0,
+    color: {
+      dark: '#ffffff',
+      light: '#00000000'
+    },
+    errorCorrectionLevel: 'M'
+  });
+  ctx.drawImage(qrCanvas, rightCx - qrSize / 2, boxCenterY - qrSize / 2, qrSize, qrSize);
+
+  // Center "or" Badge Circle
+  ctx.beginPath();
+  ctx.arc(centerX, boxCenterY, orRadius, 0, Math.PI * 2);
+  ctx.lineWidth = 3 * scale;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 ${Math.round(orRadius * 0.86)}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('or', centerX, boxCenterY + 1 * scale);
+
+  // Captions Under Both Boxes
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${captionFontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  const captionY = boxY + boxSize + 44 * scale;
+  ctx.fillText('TAP YOUR PHONE', leftCx, captionY);
+  ctx.fillText('SCAN QR CODE', rightCx, captionY);
+
+  if (registrationCode && registrationCode.trim()) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.font = `700 ${Math.round(captionFontSize * 0.78)}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(registrationCode.trim(), rightCx, captionY + 30 * scale);
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 2b. A6 WhatsApp Green Full-Bleed Contact Us On (105 x 148 mm)
+ */
+async function renderA6WhatsAppGreen(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  waWhiteLogoImg: HTMLImageElement | null,
+  handTapImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName, customHeading, registrationCode } = options;
+  const cx = width / 2;
+
+  // Full-Bleed Rich WhatsApp Green Background
+  ctx.fillStyle = '#229A42';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Heading ("CONTACT US ON" by default; uses customHeading only if explicitly customized)
+  const isCustom = customHeading && customHeading.trim() !== '' && customHeading.trim() !== 'Hubungi & Pesan Menu di';
+  const topHeading = isCustom ? customHeading.trim().toUpperCase() : 'CONTACT US ON';
+  let topFontSize = 52 * scale;
+  if (topHeading.length > 26) topFontSize = 36 * scale;
+  else if (topHeading.length > 18) topFontSize = 42 * scale;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${topFontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText(topHeading, cx, 175 * scale);
+
+  // Large White Outline WhatsApp Speech Bubble Logo
+  if (waWhiteLogoImg) {
+    const logoSize = 335 * scale;
+    ctx.drawImage(waWhiteLogoImg, cx - logoSize / 2, 245 * scale, logoSize, logoSize);
+  }
+
+  // Crisp White "WhatsApp" Wordmark
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${112 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('WhatsApp', cx, 695 * scale);
+
+  // Optional Place Name
+  const hasPlace = Boolean(showPlaceName && placeName && placeName.trim());
+  if (hasPlace) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.font = `700 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(placeName!.trim(), cx, 762 * scale);
+  }
+
+  // Dual White-Outlined Boxes: Tap Your Phone & Scan QR Code
+  await drawWhatsAppGreenActionRow(ctx, {
+    centerX: cx,
+    boxY: hasPlace ? 845 * scale : 820 * scale,
+    boxSize: 360 * scale,
+    gap: 116 * scale,
+    scale,
+    qrText,
+    registrationCode,
+    handTapImg,
+    captionFontSize: 27 * scale,
+    orRadius: 27 * scale
+  });
+
+  // Bottom Clean Brand Attribution
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.font = `600 ${25 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Powered by Projecttapp', cx, 1585 * scale);
+}
+
+/**
+ * 2c. Persegi 1:1 WhatsApp Green Full-Bleed Contact Us On (1200 x 1200 px)
+ */
+async function renderSquareWhatsAppGreen(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  waWhiteLogoImg: HTMLImageElement | null,
+  handTapImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName, customHeading, registrationCode } = options;
+  const cx = width / 2;
+
+  // Full-Bleed Rich WhatsApp Green Background
+  ctx.fillStyle = '#229A42';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Heading ("CONTACT US ON" by default)
+  const isCustom = customHeading && customHeading.trim() !== '' && customHeading.trim() !== 'Hubungi & Pesan Menu di';
+  const topHeading = isCustom ? customHeading.trim().toUpperCase() : 'CONTACT US ON';
+  let topFontSize = 42 * scale;
+  if (topHeading.length > 26) topFontSize = 30 * scale;
+  else if (topHeading.length > 18) topFontSize = 35 * scale;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${topFontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText(topHeading, cx, 112 * scale);
+
+  // White Outline WhatsApp Speech Bubble Logo
+  if (waWhiteLogoImg) {
+    const logoSize = 232 * scale;
+    ctx.drawImage(waWhiteLogoImg, cx - logoSize / 2, 155 * scale, logoSize, logoSize);
+  }
+
+  // Crisp White "WhatsApp" Wordmark
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${86 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('WhatsApp', cx, 472 * scale);
+
+  // Optional Place Name
+  const hasPlace = Boolean(showPlaceName && placeName && placeName.trim());
+  if (hasPlace) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.font = `700 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(placeName!.trim(), cx, 520 * scale);
+  }
+
+  // Dual White-Outlined Boxes: Tap Your Phone & Scan QR Code
+  await drawWhatsAppGreenActionRow(ctx, {
+    centerX: cx,
+    boxY: hasPlace ? 565 * scale : 548 * scale,
+    boxSize: 320 * scale,
+    gap: 108 * scale,
+    scale,
+    qrText,
+    registrationCode,
+    handTapImg,
+    captionFontSize: 25 * scale,
+    orRadius: 24 * scale
+  });
+
+  // Bottom Clean Brand Attribution
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.font = `600 ${23 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Powered by Projecttapp', cx, 1134 * scale);
+}
+
+/**
  * 3. A6 Instagram: Follow & Tag Story (105 x 148 mm)
  */
 async function renderA6Instagram(
@@ -1958,6 +2345,276 @@ async function renderSquareInstagram(
     whitePadBackground: true,
     customLabel: 'SCAN QR INSTAGRAM',
     registrationCode: options.registrationCode
+  });
+}
+
+/**
+ * Shared Helper: Instagram Full-Sunset Diagonal Background + Split NFC & Bracketed QR Row
+ */
+async function drawInstagramSunsetStandLayout(
+  ctx: CanvasRenderingContext2D,
+  params: {
+    width: number;
+    height: number;
+    scale: number;
+    options: StandDesignOptions;
+    igOutlineImg: HTMLImageElement | null;
+    igNfcHandImg: HTMLImageElement | null;
+    isA6: boolean;
+  }
+) {
+  const { width, height, scale, options, igOutlineImg, igNfcHandImg, isA6 } = params;
+  const { qrText, placeName, showPlaceName, registrationCode } = options;
+  const cx = width / 2;
+
+  if (typeof document !== 'undefined' && 'fonts' in document) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // ignore font loading timeout
+    }
+  }
+
+  // Full-Bleed Diagonal Sunset Gradient (Top-Right Violet-Blue -> Pink -> Bottom-Left Orange-Gold)
+  const grad = ctx.createLinearGradient(width * 0.88, 0, width * 0.12, height);
+  grad.addColorStop(0.0, '#4E24DF');
+  grad.addColorStop(0.28, '#A228B8');
+  grad.addColorStop(0.56, '#EE2A5B');
+  grad.addColorStop(0.84, '#FF6D24');
+  grad.addColorStop(1.0, '#FDB827');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+
+  // Script "Instagram" Top Wordmark
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  const scriptSize = isA6 ? 172 * scale : 132 * scale;
+  ctx.font = `400 ${scriptSize}px "Grand Hotel", "Pacifico", "Brush Script MT", cursive`;
+  ctx.fillText('Instagram', cx, isA6 ? 255 * scale : 168 * scale);
+
+  // Crisp White Outline Camera Icon
+  if (igOutlineImg) {
+    const camSize = isA6 ? 355 * scale : 242 * scale;
+    const camY = isA6 ? 320 * scale : 202 * scale;
+    ctx.drawImage(igOutlineImg, cx - camSize / 2, camY, camSize, camSize);
+  }
+
+  // Centered Two-Line White Callout + Flanking Sparkle Lines
+  const line1Y = isA6 ? 800 * scale : 532 * scale;
+  const line2Y = isA6 ? 882 * scale : 596 * scale;
+  const calloutSize = isA6 ? 68 * scale : 52 * scale;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${calloutSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('Tap your phone', cx, line1Y);
+  ctx.fillText('to follow us!', cx, line2Y);
+
+  // Left & Right Radial Sparkle Lines around Callout
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = (isA6 ? 6.5 : 5.2) * scale;
+  ctx.lineCap = 'round';
+  const burstMidY = (line1Y + line2Y) / 2 - 18 * scale;
+  const burstOffsetX = isA6 ? 315 * scale : 252 * scale;
+  const rayLen = isA6 ? 54 * scale : 42 * scale;
+  const angles = [-0.42, 0, 0.42];
+
+  angles.forEach((ang) => {
+    // Left burst rays pointing outward-left
+    const lx1 = cx - burstOffsetX;
+    const ly1 = burstMidY + Math.sin(ang) * 32 * scale;
+    ctx.beginPath();
+    ctx.moveTo(lx1, ly1);
+    ctx.lineTo(lx1 - Math.cos(ang) * rayLen, ly1 + Math.sin(ang) * rayLen);
+    ctx.stroke();
+
+    // Right burst rays pointing outward-right
+    const rx1 = cx + burstOffsetX;
+    const ry1 = burstMidY + Math.sin(ang) * 32 * scale;
+    ctx.beginPath();
+    ctx.moveTo(rx1, ry1);
+    ctx.lineTo(rx1 + Math.cos(ang) * rayLen, ry1 + Math.sin(ang) * rayLen);
+    ctx.stroke();
+  });
+  ctx.restore();
+
+  // Optional Place Name
+  const hasPlace = Boolean(showPlaceName && placeName && placeName.trim());
+  if (hasPlace) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+    ctx.font = `700 ${(isA6 ? 30 : 24) * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(placeName!.trim(), cx, line2Y + (isA6 ? 56 : 40) * scale);
+  }
+
+  // Bottom Dual Action Section (Left: NFC Hand Circle | Center: Vertical "or" | Right: Bracketed QR Pad)
+  const actionCenterY = isA6
+    ? (hasPlace ? 1235 * scale : 1200 * scale)
+    : (hasPlace ? 865 * scale : 842 * scale);
+  const leftCx = width * 0.275;
+  const rightCx = width * 0.725;
+  const itemBoxSize = isA6 ? 310 * scale : 272 * scale;
+
+  // Left NFC Hand Icon
+  if (igNfcHandImg) {
+    ctx.drawImage(
+      igNfcHandImg,
+      leftCx - itemBoxSize / 2,
+      actionCenterY - itemBoxSize / 2,
+      itemBoxSize,
+      itemBoxSize
+    );
+  }
+
+  // Right White Rounded-Square QR Pad + White Corner Viewfinder Brackets
+  const padSize = isA6 ? 276 * scale : 242 * scale;
+  const padX = rightCx - padSize / 2;
+  const padY = actionCenterY - padSize / 2;
+
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  drawRoundedRectPath(ctx, padX, padY, padSize, padSize, 16 * scale);
+  ctx.fill();
+
+  const qrSize = Math.round(padSize * 0.86);
+  const qrCanvas = document.createElement('canvas');
+  await QRCode.toCanvas(qrCanvas, qrText, {
+    width: qrSize,
+    margin: 0,
+    color: { dark: '#0f172a', light: '#ffffff' },
+    errorCorrectionLevel: 'M'
+  });
+  ctx.drawImage(qrCanvas, rightCx - qrSize / 2, actionCenterY - qrSize / 2, qrSize, qrSize);
+
+  // 4 White Corner Viewfinder Brackets Outside the QR Pad
+  const bPad = 18 * scale;
+  const bLen = 42 * scale;
+  const bR = 16 * scale;
+  const bx1 = padX - bPad;
+  const by1 = padY - bPad;
+  const bx2 = padX + padSize + bPad;
+  const by2 = padY + padSize + bPad;
+
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = (isA6 ? 5.5 : 4.5) * scale;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Top-left bracket
+  ctx.beginPath();
+  ctx.moveTo(bx1, by1 + bLen);
+  ctx.lineTo(bx1, by1 + bR);
+  ctx.quadraticCurveTo(bx1, by1, bx1 + bR, by1);
+  ctx.lineTo(bx1 + bLen, by1);
+  ctx.stroke();
+
+  // Top-right bracket
+  ctx.beginPath();
+  ctx.moveTo(bx2 - bLen, by1);
+  ctx.lineTo(bx2 - bR, by1);
+  ctx.quadraticCurveTo(bx2, by1, bx2, by1 + bR);
+  ctx.lineTo(bx2, by1 + bLen);
+  ctx.stroke();
+
+  // Bottom-left bracket
+  ctx.beginPath();
+  ctx.moveTo(bx1, by2 - bLen);
+  ctx.lineTo(bx1, by2 - bR);
+  ctx.quadraticCurveTo(bx1, by2, bx1 + bR, by2);
+  ctx.lineTo(bx1 + bLen, by2);
+  ctx.stroke();
+
+  // Bottom-right bracket
+  ctx.beginPath();
+  ctx.moveTo(bx2 - bLen, by2);
+  ctx.lineTo(bx2 - bR, by2);
+  ctx.quadraticCurveTo(bx2, by2, bx2, by2 - bR);
+  ctx.lineTo(bx2, by2 - bLen);
+  ctx.stroke();
+  ctx.restore();
+
+  // Center Vertical Line Divider with "or"
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+  ctx.lineWidth = 3 * scale;
+  ctx.lineCap = 'round';
+  const divTopY = actionCenterY - (isA6 ? 140 : 122) * scale;
+  const divBotY = actionCenterY + (isA6 ? 140 : 122) * scale;
+  const gapHalf = 28 * scale;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, divTopY);
+  ctx.lineTo(cx, actionCenterY - gapHalf);
+  ctx.moveTo(cx, actionCenterY + gapHalf);
+  ctx.lineTo(cx, divBotY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 ${(isA6 ? 30 : 25) * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('or', cx, actionCenterY);
+  ctx.restore();
+
+  // Bottom Captions under NFC & QR
+  const captionY = actionCenterY + padSize / 2 + (isA6 ? 86 : 74) * scale;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 ${(isA6 ? 33 : 28) * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Tap your phone', leftCx, captionY);
+  ctx.fillText('Scan QR code', rightCx, captionY);
+
+  if (registrationCode && registrationCode.trim()) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.font = `700 ${(isA6 ? 22 : 19) * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(registrationCode.trim(), rightCx, captionY + (isA6 ? 34 : 28) * scale);
+  }
+}
+
+/**
+ * 4b. A6 Instagram Full Sunset Gradient Follow Us (105 x 148 mm)
+ */
+async function renderA6InstagramSunset(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  igOutlineImg: HTMLImageElement | null,
+  igNfcHandImg: HTMLImageElement | null
+) {
+  await drawInstagramSunsetStandLayout(ctx, {
+    width,
+    height,
+    scale,
+    options,
+    igOutlineImg,
+    igNfcHandImg,
+    isA6: true
+  });
+}
+
+/**
+ * 4c. Persegi 1:1 Instagram Full Sunset Gradient Follow Us (1200 x 1200 px)
+ */
+async function renderSquareInstagramSunset(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  igOutlineImg: HTMLImageElement | null,
+  igNfcHandImg: HTMLImageElement | null
+) {
+  await drawInstagramSunsetStandLayout(ctx, {
+    width,
+    height,
+    scale,
+    options,
+    igOutlineImg,
+    igNfcHandImg,
+    isA6: false
   });
 }
 
@@ -2314,6 +2971,140 @@ async function renderSquareFacebook(
 }
 
 /**
+ * 8b. A6 Facebook Full Royal Blue Follow Us On (105 x 148 mm)
+ */
+async function renderA6FacebookBlue(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  fbWhiteCircleImg: HTMLImageElement | null,
+  handTapImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName, registrationCode } = options;
+  const cx = width / 2;
+
+  // Full-Bleed Royal Facebook Blue Background
+  ctx.fillStyle = '#15479B';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Heading ("FOLLOW US ON")
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${52 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('FOLLOW US ON', cx, 175 * scale);
+
+  // Solid White Circle with Cutout "f"
+  if (fbWhiteCircleImg) {
+    const logoSize = 335 * scale;
+    ctx.drawImage(fbWhiteCircleImg, cx - logoSize / 2, 245 * scale, logoSize, logoSize);
+  }
+
+  // Crisp White Lowercase "facebook" Wordmark
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${116 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('facebook', cx, 695 * scale);
+
+  // Optional Place Name
+  const hasPlace = Boolean(showPlaceName && placeName && placeName.trim());
+  if (hasPlace) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.font = `700 ${32 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(placeName!.trim(), cx, 762 * scale);
+  }
+
+  // Dual White-Outlined Boxes: Tap Your Phone & Scan QR Code
+  await drawWhatsAppGreenActionRow(ctx, {
+    centerX: cx,
+    boxY: hasPlace ? 845 * scale : 820 * scale,
+    boxSize: 360 * scale,
+    gap: 116 * scale,
+    scale,
+    qrText,
+    registrationCode,
+    handTapImg,
+    captionFontSize: 27 * scale,
+    orRadius: 27 * scale
+  });
+
+  // Bottom Clean Brand Attribution
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.font = `600 ${25 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Powered by Projecttapp', cx, 1585 * scale);
+}
+
+/**
+ * 8c. Persegi 1:1 Facebook Full Royal Blue Follow Us On (1200 x 1200 px)
+ */
+async function renderSquareFacebookBlue(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scale: number,
+  options: StandDesignOptions,
+  fbWhiteCircleImg: HTMLImageElement | null,
+  handTapImg: HTMLImageElement | null
+) {
+  const { qrText, placeName, showPlaceName, registrationCode } = options;
+  const cx = width / 2;
+
+  // Full-Bleed Royal Facebook Blue Background
+  ctx.fillStyle = '#15479B';
+  ctx.fillRect(0, 0, width, height);
+
+  // Top Heading ("FOLLOW US ON")
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `800 ${42 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('FOLLOW US ON', cx, 112 * scale);
+
+  // Solid White Circle with Cutout "f"
+  if (fbWhiteCircleImg) {
+    const logoSize = 232 * scale;
+    ctx.drawImage(fbWhiteCircleImg, cx - logoSize / 2, 155 * scale, logoSize, logoSize);
+  }
+
+  // Crisp White Lowercase "facebook" Wordmark
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `800 ${88 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.fillText('facebook', cx, 472 * scale);
+
+  // Optional Place Name
+  const hasPlace = Boolean(showPlaceName && placeName && placeName.trim());
+  if (hasPlace) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.font = `700 ${26 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+    ctx.fillText(placeName!.trim(), cx, 520 * scale);
+  }
+
+  // Dual White-Outlined Boxes: Tap Your Phone & Scan QR Code
+  await drawWhatsAppGreenActionRow(ctx, {
+    centerX: cx,
+    boxY: hasPlace ? 565 * scale : 548 * scale,
+    boxSize: 320 * scale,
+    gap: 108 * scale,
+    scale,
+    qrText,
+    registrationCode,
+    handTapImg,
+    captionFontSize: 25 * scale,
+    orRadius: 24 * scale
+  });
+
+  // Bottom Clean Brand Attribution
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.font = `600 ${23 * scale}px "Plus Jakarta Sans", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Powered by Projecttapp', cx, 1134 * scale);
+}
+
+/**
  * 9. A6 Semua Sosmed All-in-One (105 x 148 mm)
  */
 async function renderA6SocialAll(
@@ -2548,24 +3339,38 @@ export async function renderGoogleReviewStandToCanvas(
   // Preload SVG logos based on template requirements
   let gLogoImg: HTMLImageElement | null = null;
   let waLogoImg: HTMLImageElement | null = null;
+  let waWhiteLogoImg: HTMLImageElement | null = null;
+  let handTapWhiteImg: HTMLImageElement | null = null;
   let igLogoImg: HTMLImageElement | null = null;
+  let igWhiteOutlineImg: HTMLImageElement | null = null;
+  let igNfcHandWhiteImg: HTMLImageElement | null = null;
   let ttLogoImg: HTMLImageElement | null = null;
   let fbLogoImg: HTMLImageElement | null = null;
+  let fbWhiteCircleImg: HTMLImageElement | null = null;
 
   try {
-    if (templateId.includes('whatsapp') || templateId.includes('social')) {
+    if (templateId === 'a6-whatsapp-green' || templateId === 'square-whatsapp-green') {
+      waWhiteLogoImg = await loadSvgImage(WHATSAPP_WHITE_OUTLINE_SVG);
+      handTapWhiteImg = await loadSvgImage(createHandTapPhoneWhiteSvg('#229A42'));
+    } else if (templateId.includes('whatsapp') || templateId.includes('social')) {
       waLogoImg = await loadSvgImage(WHATSAPP_SVG);
     }
-    if (templateId.includes('instagram') || templateId.includes('social')) {
+    if (templateId === 'a6-instagram-sunset' || templateId === 'square-instagram-sunset') {
+      igWhiteOutlineImg = await loadSvgImage(INSTAGRAM_WHITE_OUTLINE_SVG);
+      igNfcHandWhiteImg = await loadSvgImage(INSTAGRAM_NFC_HAND_WHITE_SVG);
+    } else if (templateId.includes('instagram') || templateId.includes('social')) {
       igLogoImg = await loadSvgImage(INSTAGRAM_SVG);
     }
     if (templateId.includes('tiktok') || templateId.includes('social')) {
       ttLogoImg = await loadSvgImage(TIKTOK_SVG);
     }
-    if (templateId.includes('facebook') || templateId.includes('social')) {
+    if (templateId === 'a6-facebook-blue' || templateId === 'square-facebook-blue') {
+      fbWhiteCircleImg = await loadSvgImage(FACEBOOK_WHITE_CIRCLE_SVG);
+      handTapWhiteImg = await loadSvgImage(createHandTapPhoneWhiteSvg('#15479B'));
+    } else if (templateId.includes('facebook') || templateId.includes('social')) {
       fbLogoImg = await loadSvgImage(FACEBOOK_SVG);
     }
-    if (!waLogoImg && !igLogoImg && !ttLogoImg && !fbLogoImg) {
+    if (!waLogoImg && !waWhiteLogoImg && !igLogoImg && !igWhiteOutlineImg && !ttLogoImg && !fbLogoImg && !fbWhiteCircleImg) {
       gLogoImg = await loadSvgImage(GOOGLE_G_SVG);
     }
   } catch (err) {
@@ -2580,16 +3385,28 @@ export async function renderGoogleReviewStandToCanvas(
     case 'a6-whatsapp':
       await renderA6WhatsApp(ctx, width, height, scale, options, waLogoImg);
       break;
+    case 'a6-whatsapp-green':
+      await renderA6WhatsAppGreen(ctx, width, height, scale, options, waWhiteLogoImg, handTapWhiteImg);
+      break;
     case 'square-whatsapp':
       await renderSquareWhatsApp(ctx, width, height, scale, options, waLogoImg);
+      break;
+    case 'square-whatsapp-green':
+      await renderSquareWhatsAppGreen(ctx, width, height, scale, options, waWhiteLogoImg, handTapWhiteImg);
       break;
 
     // === INSTAGRAM STAND TEMPLATES ===
     case 'a6-instagram':
       await renderA6Instagram(ctx, width, height, scale, options, igLogoImg);
       break;
+    case 'a6-instagram-sunset':
+      await renderA6InstagramSunset(ctx, width, height, scale, options, igWhiteOutlineImg, igNfcHandWhiteImg);
+      break;
     case 'square-instagram':
       await renderSquareInstagram(ctx, width, height, scale, options, igLogoImg);
+      break;
+    case 'square-instagram-sunset':
+      await renderSquareInstagramSunset(ctx, width, height, scale, options, igWhiteOutlineImg, igNfcHandWhiteImg);
       break;
 
     // === TIKTOK STAND TEMPLATES ===
@@ -2604,8 +3421,14 @@ export async function renderGoogleReviewStandToCanvas(
     case 'a6-facebook':
       await renderA6Facebook(ctx, width, height, scale, options, fbLogoImg);
       break;
+    case 'a6-facebook-blue':
+      await renderA6FacebookBlue(ctx, width, height, scale, options, fbWhiteCircleImg, handTapWhiteImg);
+      break;
     case 'square-facebook':
       await renderSquareFacebook(ctx, width, height, scale, options, fbLogoImg);
+      break;
+    case 'square-facebook-blue':
+      await renderSquareFacebookBlue(ctx, width, height, scale, options, fbWhiteCircleImg, handTapWhiteImg);
       break;
 
     // === ALL-IN-ONE MULTI-SOCIAL STAND TEMPLATES ===

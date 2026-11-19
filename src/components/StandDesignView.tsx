@@ -486,7 +486,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               Desain Stand Meja: WhatsApp, Instagram, TikTok, Facebook &amp; Google Review
             </h1>
             <p className="text-xs sm:text-sm text-[#104F38]/80 leading-relaxed font-medium">
-              Tersedia <strong>19 variasi desain siap cetak</strong> dalam ukuran <strong>A6 (105 × 148 mm)</strong> dan <strong>Persegi 1:1</strong> untuk stand akrilik meja kasir maupun kafe. Tautan dinamis dapat diganti kapan saja tanpa cetak ulang.
+              Tersedia <strong>{STAND_TEMPLATES.length} variasi desain siap cetak</strong> dalam ukuran <strong>A6 (105 × 148 mm)</strong> dan <strong>Persegi 1:1</strong> untuk stand akrilik meja kasir maupun kafe. Tautan dinamis dapat diganti kapan saja tanpa cetak ulang.
             </p>
           </div>
 
@@ -700,7 +700,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }`}
             >
               <Maximize2 className="w-3 h-3" />
-              <span>Stand A6 (9)</span>
+              <span>Stand A6 ({STAND_TEMPLATES.filter(t => t.formatSize === 'a6').length})</span>
             </button>
 
             <button
@@ -719,7 +719,7 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
               }`}
             >
               <Square className="w-3 h-3" />
-              <span>Persegi 1:1 (10)</span>
+              <span>Persegi 1:1 ({STAND_TEMPLATES.filter(t => t.formatSize === 'square').length})</span>
             </button>
           </div>
         </div>
@@ -1334,20 +1334,33 @@ export const StandDesignView: React.FC<StandDesignViewProps> = ({
                     <label htmlFor="wa-custom-heading" className="text-[11px] font-bold text-[#104F38]">
                       Ketik Bebas Teks Heading Stand Sendiri:
                     </label>
-                    <span className="text-[10px] text-[#104F38]/60 font-mono tabular-nums">
-                      {waHeadingText.length} huruf
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {selectedTemplate.includes('whatsapp-green') && (
+                        <button
+                          type="button"
+                          onClick={() => setWaHeadingText('Hubungi & Pesan Menu di')}
+                          className="text-[10px] font-bold text-[#104F38] underline hover:opacity-80 cursor-pointer"
+                        >
+                          Default (CONTACT US ON)
+                        </button>
+                      )}
+                      <span className="text-[10px] text-[#104F38]/60 font-mono tabular-nums">
+                        {waHeadingText.length} huruf
+                      </span>
+                    </div>
                   </div>
                   <input
                     id="wa-custom-heading"
                     type="text"
                     value={waHeadingText}
                     onChange={(e) => setWaHeadingText(e.target.value)}
-                    placeholder="Contoh: Hubungi & Konsultasi Layanan di / Pesan Kopi di"
+                    placeholder={selectedTemplate.includes('whatsapp-green') ? 'Default: CONTACT US ON' : 'Contoh: Hubungi & Konsultasi Layanan di / Pesan Kopi di'}
                     className="w-full px-3 py-2 text-xs bg-white border border-[#104F38]/25 rounded-none focus:outline-none focus:ring-2 focus:ring-[#104F38]/30 font-bold text-[#104F38]"
                   />
                   <p className="text-[10px] text-[#104F38]/70 mt-1">
-                    Teks ini langsung muncul di atas tulisan &quot;WhatsApp&quot; pada lembar cetak akrilik fisik Anda.
+                    {selectedTemplate.includes('whatsapp-green')
+                      ? 'Secara bawaan menampilkan "CONTACT US ON". Ubah teks di atas atau pilih sektor untuk menyesuaikan heading atas.'
+                      : 'Teks ini langsung muncul di atas tulisan "WhatsApp" pada lembar cetak akrilik fisik Anda.'}
                   </p>
                 </div>
 

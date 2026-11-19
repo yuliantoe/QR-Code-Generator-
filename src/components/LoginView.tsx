@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock, ArrowLeft, Radio } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, User, Eye, EyeOff, AlertTriangle, LogIn, Clock, ArrowLeft, Radio, ShieldAlert } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { AuthUser } from '../types.ts';
 
@@ -22,9 +22,29 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds]);
+
+  const formatCooldown = (secs: number): string => {
+    const mins = Math.floor(secs / 60);
+    const rem = secs % 60;
+    if (mins > 0) {
+      return `${mins} menit ${rem.toString().padStart(2, '0')} detik`;
+    }
+    return `${rem} detik`;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldownSeconds > 0) return;
+
     const cleanUser = username.trim();
     if (!cleanUser || !password) {
       setErrorMessage('Username dan password wajib diisi.');
@@ -34,28 +54,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setLoading(true);
     setErrorMessage(null);
 
-    // Direct verification for default admin account
-    if (cleanUser.toLowerCase() === 'admin' && password === 'admin123') {
-      const adminUser: AuthUser = {
-        username: 'admin',
-        name: 'Administrator',
-        plan: 'monthly',
-        isWatermarkActive: false,
-        subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-      };
-      const token = 'auth_admin_' + Date.now();
-      localStorage.setItem('dinamis_auth_token', token);
-      localStorage.setItem('dinamis_auth_user', JSON.stringify(adminUser));
-
-      try {
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-      } catch {}
-
-      onLoginSuccess(adminUser, token);
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -64,43 +62,35 @@ export const LoginView: React.FC<LoginViewProps> = ({
       });
 
       const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const json = await res.json();
-        if (json.success && json.user && json.token) {
-          localStorage.setItem('dinamis_auth_token', json.token);
-          localStorage.setItem('dinamis_auth_user', JSON.stringify(json.user));
-          try {
-            confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
-          } catch {}
-          onLoginSuccess(json.user, json.token);
-          return;
-        } else {
-          setErrorMessage(json.error || 'Username atau password tidak sesuai.');
-          setLoading(false);
-          return;
-        }
-      } else {
-        const json = await res.json().catch(() => null);
-        setErrorMessage(json?.error || 'Username atau password tidak sesuai.');
-        setLoading(false);
+      const json = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
+
+      if (res.status === 429 || json?.rateLimited) {
+        const retryHeader = parseInt(res.headers.get('Retry-After') || '0', 10);
+        const retrySecs = Number(json?.retryAfterSeconds) || (!isNaN(retryHeader) && retryHeader > 0 ? retryHeader : 60);
+        setCooldownSeconds(retrySecs);
+        setErrorMessage(
+          json?.error ||
+            `Terlalu banyak percobaan login gagal. Silakan tunggu ${formatCooldown(retrySecs)} sebelum mencoba lagi.`
+        );
         return;
       }
-    } catch (err) {
-      console.warn('Server offline/fallback:', err);
-    }
 
-    // Resilient fallback login if server is offline
-    const fallbackUser: AuthUser = {
-      username: cleanUser,
-      name: cleanUser.charAt(0).toUpperCase() + cleanUser.slice(1),
-      plan: 'monthly',
-      isWatermarkActive: false
-    };
-    const fallbackToken = 'auth_local_' + Date.now();
-    localStorage.setItem('dinamis_auth_token', fallbackToken);
-    localStorage.setItem('dinamis_auth_user', JSON.stringify(fallbackUser));
-    onLoginSuccess(fallbackUser, fallbackToken);
-    setLoading(false);
+      if (res.ok && json?.success && json?.user && json?.token) {
+        localStorage.setItem('dinamis_auth_token', json.token);
+        localStorage.setItem('dinamis_auth_user', JSON.stringify(json.user));
+        try {
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+        } catch {}
+        onLoginSuccess(json.user, json.token);
+        return;
+      }
+
+      setErrorMessage(json?.error || 'Username atau password tidak sesuai.');
+    } catch {
+      setErrorMessage('Gagal terhubung ke server autentikasi. Pastikan server aktif dan coba lagi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -150,7 +140,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
 
         {/* Session Inactivity Timeout Notification (3 Menit Inactive) */}
-        {sessionExpiredMessage && !errorMessage && (
+        {sessionExpiredMessage && !errorMessage && cooldownSeconds === 0 && (
           <div className="mb-4 p-3 bg-amber-50 border border-amber-300 text-amber-950 text-xs font-semibold flex items-start gap-2.5">
             <Clock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
             <div>
@@ -160,9 +150,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </div>
         )}
 
+        {/* Rate Limit / Security Lockout Banner */}
+        {cooldownSeconds > 0 && (
+          <div role="alert" className="mb-4 p-3 bg-amber-50 border border-amber-400 text-amber-950 text-xs flex items-start gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-extrabold text-amber-900">Proteksi Rate Limit Login Aktif</div>
+              <div className="text-[11px] text-amber-900 leading-snug">{errorMessage}</div>
+              <div className="text-[11px] font-mono font-bold text-[#104F38] tabular-nums">
+                Tunggu: {formatCooldown(cooldownSeconds)}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error notification */}
-        {errorMessage && (
-          <div className="mb-4 p-3 bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-center gap-2">
+        {errorMessage && cooldownSeconds === 0 && (
+          <div role="alert" className="mb-4 p-3 bg-rose-50 border border-rose-300 text-rose-900 text-xs font-semibold flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -217,11 +221,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold tracking-tight transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            disabled={loading || cooldownSeconds > 0}
+            className="w-full py-2.5 bg-[#104F38] hover:bg-[#0C3B2A] text-white text-xs font-bold tracking-tight transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <LogIn className="w-3.5 h-3.5 text-[#FFE600]" />
-            <span>{loading ? 'Memeriksa...' : 'Masuk ke Dashboard'}</span>
+            <span>
+              {cooldownSeconds > 0
+                ? `Terkunci (${formatCooldown(cooldownSeconds)})`
+                : loading
+                  ? 'Memeriksa...'
+                  : 'Masuk ke Dashboard'}
+            </span>
           </button>
         </form>
 

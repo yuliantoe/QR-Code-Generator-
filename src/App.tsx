@@ -60,12 +60,12 @@ export default function App() {
     return hasStoredSessionTimedOut() ? SESSION_EXPIRED_NOTICE : null;
   });
 
-  // Authentication State - Starts clean, requiring explicit login
+  // Authentication State - Starts clean, requiring signed server token verification
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
       const token = localStorage.getItem('dinamis_auth_token');
-      // Clear default auto-token or expired 3-minute idle session immediately on load
-      if (!token || token === 'auth_admin_default' || hasStoredSessionTimedOut()) {
+      // Clear unsigned/legacy tokens or expired 3-minute idle session immediately on load
+      if (!token || !token.startsWith('auth_v2.') || hasStoredSessionTimedOut()) {
         localStorage.removeItem('dinamis_auth_user');
         localStorage.removeItem('dinamis_auth_token');
         localStorage.removeItem('dinamis_last_activity');
@@ -79,7 +79,7 @@ export default function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => {
     try {
       const token = localStorage.getItem('dinamis_auth_token');
-      if (!token || token === 'auth_admin_default' || hasStoredSessionTimedOut()) return null;
+      if (!token || !token.startsWith('auth_v2.') || hasStoredSessionTimedOut()) return null;
       return token;
     } catch {}
     return null;
@@ -701,8 +701,14 @@ export default function App() {
   }, [currentUser, authToken, fetchSyncSnapshot, checkSyncVersion, applyRealtimeSyncEvent]);
 
   const handleLogout = useCallback(async (isAutoTimeout = false) => {
+    const activeToken = authToken || (() => {
+      try { return localStorage.getItem('dinamis_auth_token'); } catch { return null; }
+    })();
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: activeToken ? { Authorization: `Bearer ${activeToken}` } : undefined
+      });
     } catch (e) {
       console.warn(e);
     }
@@ -720,7 +726,39 @@ export default function App() {
       setShowLoginScreen(false);
       setCurrentTab('landing');
     }
-  }, []);
+  }, [authToken]);
+
+  // Verify stored token against authoritative User Middleware (/api/auth/me)
+  useEffect(() => {
+    if (!authToken) return;
+    let active = true;
+    fetch('/api/auth/me', {
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${authToken}` }
+    })
+      .then(async (res) => {
+        if (!active) return;
+        if (res.status === 401) {
+          localStorage.removeItem('dinamis_auth_token');
+          localStorage.removeItem('dinamis_auth_user');
+          localStorage.removeItem('dinamis_last_activity');
+          setCurrentUser(null);
+          setAuthToken(null);
+          return;
+        }
+        const json = await res.json().catch(() => null);
+        if (res.ok && json?.success && json?.user) {
+          setCurrentUser(json.user);
+          try {
+            localStorage.setItem('dinamis_auth_user', JSON.stringify(json.user));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [authToken]);
 
   const handleLoginSuccess = (user: AuthUser, token: string) => {
     setCurrentUser(user);
